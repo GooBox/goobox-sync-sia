@@ -67,7 +67,7 @@ public class CheckConsensusTask implements Runnable {
 			}
 
 		} catch (ApiException e) {
-			this.logger.error("siad seems not running: {}", e.getMessage());
+			this.logger.error("siad seems not running: {}", APIUtils.getErrorMessage(e));
 			System.exit(1);
 		}
 

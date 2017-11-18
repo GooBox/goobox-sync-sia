@@ -195,11 +195,13 @@ public class CheckStateTask implements Runnable {
 			}
 
 		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			this.logger.error("Failed to retreive files stored in the SIA network", APIUtils.getErrorMessage(e));
+
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			this.logger.catching(e);
+
 		}
 
 		DB.commit();

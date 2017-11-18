@@ -105,8 +105,9 @@ public class CheckDownloadTask implements Runnable {
 			this.logger.info("Downloading {} files", nFiles);
 
 		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			this.logger.error("Failed to retreive downloading files: {}", APIUtils.getErrorMessage(e));
+
 		}
 
 		// Enqueue this task.
