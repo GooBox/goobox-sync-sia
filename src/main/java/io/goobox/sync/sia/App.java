@@ -149,9 +149,12 @@ public class App {
 				this.logger.info("Initializing a wallet");
 				try {
 
-					final InlineResponse20016 seed = api.walletInitPost("", null, false);
-					cfg.primarySeed = seed.getPrimaryseed();
-
+					if (cfg.primarySeed != null && !cfg.primarySeed.isEmpty()) {
+						api.walletInitSeedPost("", cfg.primarySeed, false, null);
+					} else {
+						final InlineResponse20016 seed = api.walletInitPost("", null, false);
+						cfg.primarySeed = seed.getPrimaryseed();
+					}
 					api.walletUnlockPost(cfg.primarySeed);
 
 				} catch (ApiException e1) {
