@@ -1,0 +1,3 @@
+[submodule "apispec"]
+	path = apispec
+	url = https://github.com/jkawamoto/sia-swagger.git
