@@ -20,7 +20,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
@@ -62,10 +62,10 @@ public class Config {
 	/**
 	 * Save this configurations to the given file.
 	 * 
-	 * @param filename
+	 * @param path
 	 * @throws IOException
 	 */
-	public void save(final String filename) throws IOException {
+	public void save(final Path path) throws IOException {
 
 		final Properties props = new Properties();
 		props.setProperty("username", this.userName);
@@ -73,7 +73,7 @@ public class Config {
 		props.setProperty("data-pieces", String.valueOf(this.dataPieces));
 		props.setProperty("parity-pieces", String.valueOf(this.parityPieces));
 
-		try (final BufferedWriter output = Files.newBufferedWriter(Paths.get(filename),
+		try (final BufferedWriter output = Files.newBufferedWriter(path,
 				StandardOpenOption.CREATE_NEW)) {
 			props.store(output, "");
 		}
@@ -83,16 +83,15 @@ public class Config {
 	/**
 	 * Load configurations from the given file.
 	 * 
-	 * @param filename
+	 * @param path
 	 * @return
 	 * @throws IOException
 	 */
-	public static Config load(final String filename) throws IOException {
+	public static Config load(final Path path) throws IOException {
 
-		logger.info("Loading config file {}", filename);
-
+		logger.info("Loading config file {}", path);
 		final Properties props = new Properties();
-		try (final InputStream in = Files.newInputStream(Paths.get(filename))) {
+		try (final InputStream in = Files.newInputStream(path)) {
 			props.load(in);
 		}
 

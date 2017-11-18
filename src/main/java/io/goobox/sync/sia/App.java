@@ -41,6 +41,7 @@ public class App {
 
 	static final String CONFIG_FILE = "goobox.properties";
 
+	private Path configPath;
 	private Logger logger = LogManager.getLogger();
 
 	public static void main(String[] args) {
@@ -49,7 +50,8 @@ public class App {
 
 	private void init() {
 
-		final Config cfg = this.loadConfig(CONFIG_FILE);
+		this.configPath = Utils.getDataDir().resolve(CONFIG_FILE);
+		final Config cfg = this.loadConfig(this.configPath);
 		if (!checkAndCreateSyncDir()) {
 			System.exit(1);
 		}
@@ -78,13 +80,13 @@ public class App {
 	 * @param filename
 	 * @return
 	 */
-	private Config loadConfig(final String filename) {
+	private Config loadConfig(final Path path) {
 
 		Config cfg;
 		try {
-			cfg = Config.load(CONFIG_FILE);
+			cfg = Config.load(path);
 		} catch (IOException e) {
-			System.err.printf("cannot load the config file: %s\n", e.getMessage());
+			this.logger.error("cannot load config file {}: {}", path, e.getMessage());
 			cfg = new Config();
 		}
 		return cfg;
@@ -150,7 +152,7 @@ public class App {
 					cfg.primarySeed = seed.getPrimaryseed();
 
 					api.walletUnlockPost(cfg.primarySeed);
-					cfg.save(CONFIG_FILE);
+					cfg.save(this.configPath);
 
 				} catch (ApiException e1) {
 					// Cannot initialize new wallet.

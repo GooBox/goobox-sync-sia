@@ -96,6 +96,7 @@ public class CheckStateTask implements Runnable {
 									DB.setConflict(file);
 								} else {
 									// download
+									// TODO: create sub directories.
 									this.logger.info("Downloading {} to {}", file.getRemotePath(), file.getLocalPath());
 									DB.addForDownload(file);
 									api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(),
@@ -134,6 +135,7 @@ public class CheckStateTask implements Runnable {
 					if (!file.getLocalPath().toFile().exists()) {
 						// The file also doesn't exist in the local directory.
 
+						// TODO: create sub directories.
 						this.logger.info("Downloading {} to {}", file.getRemotePath(), file.getLocalPath());
 						DB.addForDownload(file);
 						api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(), file.getLocalPath().toString());
