@@ -22,7 +22,8 @@ import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.goobox.sync.storj.db.DB;
+import io.goobox.sync.sia.db.DB;
+
 
 /**
  * DeleteLocalFileTask deletes a given local file.
