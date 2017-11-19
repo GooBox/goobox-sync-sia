@@ -132,7 +132,7 @@ public class App {
 		try {
 			wallet = api.walletGet();
 		} catch (ApiException e) {
-			this.logger.error("siad seems not running: {}", e.getMessage());
+			this.logger.error("siad seems not running: {}", APIUtils.getErrorMessage(e));
 			System.exit(1);
 		}
 
@@ -144,23 +144,30 @@ public class App {
 				api.walletUnlockPost(cfg.primarySeed);
 
 			} catch (ApiException e) {
+				this.logger.debug("Failed to unlock a wallet: {}", APIUtils.getErrorMessage(e));
 
 				this.logger.info("Initializing a wallet");
 				try {
 
-					final InlineResponse20016 seed = api.walletInitPost("", null, false);
-					cfg.primarySeed = seed.getPrimaryseed();
-
+					if (cfg.primarySeed != null && !cfg.primarySeed.isEmpty()) {
+						api.walletInitSeedPost("", cfg.primarySeed, false, null);
+					} else {
+						final InlineResponse20016 seed = api.walletInitPost("", null, false);
+						cfg.primarySeed = seed.getPrimaryseed();
+					}
 					api.walletUnlockPost(cfg.primarySeed);
-					cfg.save(this.configPath);
 
 				} catch (ApiException e1) {
 					// Cannot initialize new wallet.
-					e1.printStackTrace();
+					this.logger.error("Cannot initialize new wallet: {}", APIUtils.getErrorMessage(e1));
 					System.exit(1);
+				}
+
+				try {
+					cfg.save(this.configPath);
 				} catch (IOException e1) {
-					// Cannot save the configuration.
-					e1.printStackTrace();
+					this.logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(),
+							cfg.primarySeed);
 					System.exit(1);
 				}
 
@@ -170,8 +177,7 @@ public class App {
 				InlineResponse20014 addr = api.walletAddressGet();
 				this.logger.info("Address of the wallet is {}", addr.getAddress());
 			} catch (ApiException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				this.logger.error("Cannot get a wallet address: {}", APIUtils.getErrorMessage(e));
 			}
 
 		}

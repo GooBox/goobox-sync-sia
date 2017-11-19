@@ -17,6 +17,9 @@
 package io.goobox.sync.sia;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,8 +56,9 @@ public class CheckDownloadTask implements Runnable {
 
 			final InlineResponse20010 downloads = api.renterDownloadsGet();
 			int nFiles = 0;
-			for (InlineResponse20010Downloads rawFile : downloads.getDownloads()) {
-				
+
+			for (InlineResponse20010Downloads rawFile : checkNullCollection(downloads.getDownloads())) {
+
 				final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(rawFile, this.ctx.pathPrefix);
 				if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
 					// This file isn't managed by Goobox.
@@ -66,20 +70,20 @@ public class CheckDownloadTask implements Runnable {
 
 					// TODO: Error handling.
 					this.logger.error("Failed to download {}: {}", file.getName(), err);
-					if(DB.contains(file)) {
+					if (DB.contains(file)) {
 						final SyncFile syncFile = DB.get(file);
-						if(syncFile.getState() == SyncState.FOR_DOWNLOAD) {
+						if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
 							DB.setDownloadFailed(file);
 						}
 					}
-				
+
 				} else if (file.getFileSize() == file.getReceived()) {
 
 					// This file has been downloaded.
 					this.logger.debug("File {} has been downloaded", file.getRemotePath());
-					if(DB.contains(file)) {
+					if (DB.contains(file)) {
 						final SyncFile syncFile = DB.get(file);
-						if(syncFile.getState() == SyncState.FOR_DOWNLOAD) {
+						if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
 							try {
 								DB.setSynced(file);
 							} catch (IOException e) {
@@ -88,7 +92,7 @@ public class CheckDownloadTask implements Runnable {
 							}
 						}
 					}
-					
+
 				} else {
 
 					this.logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(),
@@ -101,13 +105,24 @@ public class CheckDownloadTask implements Runnable {
 			this.logger.info("Downloading {} files", nFiles);
 
 		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			this.logger.error("Failed to retreive downloading files: {}", APIUtils.getErrorMessage(e));
+
 		}
 
 		// Enqueue this task.
 		this.ctx.tasks.add(this);
 
+	}
+
+	/**
+	 * Check the given collection is null and if so, returns an empty collection.
+	 */
+	private static <T> Collection<T> checkNullCollection(final Collection<T> list) {
+		if(list == null) {
+			return new ArrayList<T>();
+		}
+		return list;
 	}
 
 }

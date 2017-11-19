@@ -74,7 +74,7 @@ public class Config {
 		props.setProperty("parity-pieces", String.valueOf(this.parityPieces));
 
 		try (final BufferedWriter output = Files.newBufferedWriter(path,
-				StandardOpenOption.CREATE_NEW)) {
+				StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
 			props.store(output, "");
 		}
 

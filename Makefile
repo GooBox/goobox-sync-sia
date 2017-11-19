@@ -14,7 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-.PHONY: swagger
+NAME := goobox-sync-sia
+VERSION := 0.0.1
+.PHONY: build test dist swagger
+
+build:
+	mvn package
+
+test:
+	mvn test
+
+dist: 
+	mkdir -p dist && \
+	cd dist && \
+  cp ../LICENSE . && \
+  cp ../README.md . && \
+	cp ../target/$(NAME)-$(VERSION).jar . && \
+	cp ../asset/* . && \
+	zip -r $(NAME)-$(VERSION).zip . && \
+	cd ..
+
 swagger:
 	swagger-codegen generate -i apispec/swagger.json -l java \
 			--git-user-id GooBox --git-repo-id goobox-sync-sia \

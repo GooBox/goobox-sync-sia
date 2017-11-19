@@ -138,7 +138,8 @@ public class CheckStateTask implements Runnable {
 						// TODO: create sub directories.
 						this.logger.info("Downloading {} to {}", file.getRemotePath(), file.getLocalPath());
 						DB.addForDownload(file);
-						api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(), file.getLocalPath().toString());
+						api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(),
+								file.getLocalPath().toString());
 
 					} else {
 						// The file exists in the local directory.
@@ -194,11 +195,13 @@ public class CheckStateTask implements Runnable {
 			}
 
 		} catch (ApiException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			this.logger.error("Failed to retreive files stored in the SIA network", APIUtils.getErrorMessage(e));
+
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			this.logger.catching(e);
+
 		}
 
 		DB.commit();
@@ -221,40 +224,42 @@ public class CheckStateTask implements Runnable {
 
 		// Key: remote path, Value: file object.
 		final Map<String, SiaFile> filemap = new HashMap<String, SiaFile>();
-		for (InlineResponse20011Files file : files) {
+		if (files != null) {
+			for (InlineResponse20011Files file : files) {
 
-			if (!file.getAvailable()) {
-				// This file is still being uploaded.
-				this.logger.trace("File {} is not available", file.getSiapath());
-				continue;
-			}
-
-			final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-			if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
-				// This file isn't managed by Goobox.
-				this.logger.trace("File {} is not managed by Goobox", siaFile.getRemotePath());
-				continue;
-			}
-
-			if (filemap.containsKey(siaFile.getName())) {
-
-				final SiaFile prev = filemap.get(siaFile.getName());
-				if (siaFile.getCreationTime() > prev.getCreationTime()) {
-					this.logger.trace("Found newer version of remote file {} created at {}", siaFile.getName(),
-							siaFile.getCreationTime());
-					filemap.put(siaFile.getName(), siaFile);
-				} else {
-					this.logger.trace("Found older version of remote file {} created at {} but ignored",
-							siaFile.getName(), siaFile.getCreationTime());
+				if (!file.getAvailable()) {
+					// This file is still being uploaded.
+					this.logger.trace("File {} is not available", file.getSiapath());
+					continue;
 				}
 
-			} else {
-				this.logger.trace("Found remote file {} created at {}", siaFile.getName(), siaFile.getCreationTime());
-				filemap.put(siaFile.getName(), siaFile);
+				final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+				if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+					// This file isn't managed by Goobox.
+					this.logger.trace("File {} is not managed by Goobox", siaFile.getRemotePath());
+					continue;
+				}
+
+				if (filemap.containsKey(siaFile.getName())) {
+
+					final SiaFile prev = filemap.get(siaFile.getName());
+					if (siaFile.getCreationTime() > prev.getCreationTime()) {
+						this.logger.trace("Found newer version of remote file {} created at {}", siaFile.getName(),
+								siaFile.getCreationTime());
+						filemap.put(siaFile.getName(), siaFile);
+					} else {
+						this.logger.trace("Found older version of remote file {} created at {} but ignored",
+								siaFile.getName(), siaFile.getCreationTime());
+					}
+
+				} else {
+					this.logger.trace("Found remote file {} created at {}", siaFile.getName(),
+							siaFile.getCreationTime());
+					filemap.put(siaFile.getName(), siaFile);
+				}
+
 			}
-
 		}
-
 		return filemap.values();
 
 	}
