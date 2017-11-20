@@ -25,14 +25,14 @@ test:
 	mvn test
 
 dist: 
-	mkdir -p dist && \
-	cd dist && \
-  cp ../LICENSE . && \
-  cp ../README.md . && \
-	cp ../target/$(NAME)-$(VERSION).jar . && \
-	cp ../asset/* . && \
+	mkdir -p dist/$(VERSION) && \
+	cd dist/$(VERSION) && \
+  cp ../../LICENSE . && \
+  cp ../../README.md . && \
+	cp ../../target/$(NAME)-$(VERSION).jar . && \
+	cp ../../asset/* . && \
 	zip -r $(NAME)-$(VERSION).zip . && \
-	cd ..
+	cd ../..
 
 swagger:
 	swagger-codegen generate -i apispec/swagger.json -l java \
