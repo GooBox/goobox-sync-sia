@@ -24,7 +24,7 @@ build:
 test:
 	mvn test
 
-dist: 
+dist: build
 	mkdir -p dist/$(VERSION) && \
 	cd dist/$(VERSION) && \
   cp ../../LICENSE . && \
