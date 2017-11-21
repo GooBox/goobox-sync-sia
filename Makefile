@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 NAME := goobox-sync-sia
-VERSION := 0.0.2
+VERSION := 0.0.3
 .PHONY: build test dist swagger
 
 build:
