@@ -27,16 +27,16 @@ import java.io.IOException;
 /**
  * HostdbHosts
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class HostdbHosts {
   @SerializedName("acceptingcontracts")
   private Boolean acceptingcontracts = null;
 
   @SerializedName("maxdownloadbatchsize")
-  private Integer maxdownloadbatchsize = null;
+  private Long maxdownloadbatchsize = null;
 
   @SerializedName("maxduration")
-  private Integer maxduration = null;
+  private Long maxduration = null;
 
   @SerializedName("maxrevisebatchsize")
   private Integer maxrevisebatchsize = null;
@@ -45,13 +45,13 @@ public class HostdbHosts {
   private String netaddress = null;
 
   @SerializedName("remainingstorage")
-  private Integer remainingstorage = null;
+  private Long remainingstorage = null;
 
   @SerializedName("sectorsize")
-  private Integer sectorsize = null;
+  private Long sectorsize = null;
 
   @SerializedName("totalstorage")
-  private Integer totalstorage = null;
+  private Long totalstorage = null;
 
   @SerializedName("unlockhash")
   private String unlockhash = null;
@@ -80,7 +80,7 @@ public class HostdbHosts {
     this.acceptingcontracts = acceptingcontracts;
   }
 
-  public HostdbHosts maxdownloadbatchsize(Integer maxdownloadbatchsize) {
+  public HostdbHosts maxdownloadbatchsize(Long maxdownloadbatchsize) {
     this.maxdownloadbatchsize = maxdownloadbatchsize;
     return this;
   }
@@ -90,15 +90,15 @@ public class HostdbHosts {
    * @return maxdownloadbatchsize
   **/
   @ApiModelProperty(example = "17825792", value = "Maximum number of bytes that the host will allow to be requested by a single download request.")
-  public Integer getMaxdownloadbatchsize() {
+  public Long getMaxdownloadbatchsize() {
     return maxdownloadbatchsize;
   }
 
-  public void setMaxdownloadbatchsize(Integer maxdownloadbatchsize) {
+  public void setMaxdownloadbatchsize(Long maxdownloadbatchsize) {
     this.maxdownloadbatchsize = maxdownloadbatchsize;
   }
 
-  public HostdbHosts maxduration(Integer maxduration) {
+  public HostdbHosts maxduration(Long maxduration) {
     this.maxduration = maxduration;
     return this;
   }
@@ -108,11 +108,11 @@ public class HostdbHosts {
    * @return maxduration
   **/
   @ApiModelProperty(example = "25920", value = "Maximum duration in blocks that a host will allow for a file contract. The host commits to keeping files for the full duration under the threat of facing a large penalty for losing or dropping data before the duration is complete. The storage proof window of an incoming file contract must end before the current height + maxduration. There is a block approximately every 10 minutes. e.g. 1 day = 144 blocks ")
-  public Integer getMaxduration() {
+  public Long getMaxduration() {
     return maxduration;
   }
 
-  public void setMaxduration(Integer maxduration) {
+  public void setMaxduration(Long maxduration) {
     this.maxduration = maxduration;
   }
 
@@ -152,7 +152,7 @@ public class HostdbHosts {
     this.netaddress = netaddress;
   }
 
-  public HostdbHosts remainingstorage(Integer remainingstorage) {
+  public HostdbHosts remainingstorage(Long remainingstorage) {
     this.remainingstorage = remainingstorage;
     return this;
   }
@@ -162,15 +162,15 @@ public class HostdbHosts {
    * @return remainingstorage
   **/
   @ApiModelProperty(example = "35000000000", value = "Unused storage capacity the host claims it has, in bytes.")
-  public Integer getRemainingstorage() {
+  public Long getRemainingstorage() {
     return remainingstorage;
   }
 
-  public void setRemainingstorage(Integer remainingstorage) {
+  public void setRemainingstorage(Long remainingstorage) {
     this.remainingstorage = remainingstorage;
   }
 
-  public HostdbHosts sectorsize(Integer sectorsize) {
+  public HostdbHosts sectorsize(Long sectorsize) {
     this.sectorsize = sectorsize;
     return this;
   }
@@ -180,15 +180,15 @@ public class HostdbHosts {
    * @return sectorsize
   **/
   @ApiModelProperty(example = "4194304", value = "Smallest amount of data in bytes that can be uploaded or downloaded to or from the host.")
-  public Integer getSectorsize() {
+  public Long getSectorsize() {
     return sectorsize;
   }
 
-  public void setSectorsize(Integer sectorsize) {
+  public void setSectorsize(Long sectorsize) {
     this.sectorsize = sectorsize;
   }
 
-  public HostdbHosts totalstorage(Integer totalstorage) {
+  public HostdbHosts totalstorage(Long totalstorage) {
     this.totalstorage = totalstorage;
     return this;
   }
@@ -198,11 +198,11 @@ public class HostdbHosts {
    * @return totalstorage
   **/
   @ApiModelProperty(example = "35000000000", value = "Total amount of storage capacity the host claims it has, in bytes.")
-  public Integer getTotalstorage() {
+  public Long getTotalstorage() {
     return totalstorage;
   }
 
-  public void setTotalstorage(Integer totalstorage) {
+  public void setTotalstorage(Long totalstorage) {
     this.totalstorage = totalstorage;
   }
 

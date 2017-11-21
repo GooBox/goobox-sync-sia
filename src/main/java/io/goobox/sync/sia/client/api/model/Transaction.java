@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Transaction
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class Transaction {
   @SerializedName("transaction")
   private Object transaction = null;
@@ -39,10 +39,10 @@ public class Transaction {
   private String transactionid = null;
 
   @SerializedName("confirmationheight")
-  private Integer confirmationheight = null;
+  private Long confirmationheight = null;
 
   @SerializedName("confirmationtimestamp")
-  private Integer confirmationtimestamp = null;
+  private Long confirmationtimestamp = null;
 
   @SerializedName("inputs")
   private List<TransactionInputs> inputs = null;
@@ -86,7 +86,7 @@ public class Transaction {
     this.transactionid = transactionid;
   }
 
-  public Transaction confirmationheight(Integer confirmationheight) {
+  public Transaction confirmationheight(Long confirmationheight) {
     this.confirmationheight = confirmationheight;
     return this;
   }
@@ -96,15 +96,15 @@ public class Transaction {
    * @return confirmationheight
   **/
   @ApiModelProperty(example = "50000", value = "Block height at which the transaction was confirmed. If the transaction is unconfirmed the height will be the max value of an unsigned 64-bit integer.")
-  public Integer getConfirmationheight() {
+  public Long getConfirmationheight() {
     return confirmationheight;
   }
 
-  public void setConfirmationheight(Integer confirmationheight) {
+  public void setConfirmationheight(Long confirmationheight) {
     this.confirmationheight = confirmationheight;
   }
 
-  public Transaction confirmationtimestamp(Integer confirmationtimestamp) {
+  public Transaction confirmationtimestamp(Long confirmationtimestamp) {
     this.confirmationtimestamp = confirmationtimestamp;
     return this;
   }
@@ -114,11 +114,11 @@ public class Transaction {
    * @return confirmationtimestamp
   **/
   @ApiModelProperty(example = "1257894000", value = "Time, in unix time, at which a transaction was confirmed. If the transaction is unconfirmed the timestamp will be the max value of an unsigned 64-bit integer.")
-  public Integer getConfirmationtimestamp() {
+  public Long getConfirmationtimestamp() {
     return confirmationtimestamp;
   }
 
-  public void setConfirmationtimestamp(Integer confirmationtimestamp) {
+  public void setConfirmationtimestamp(Long confirmationtimestamp) {
     this.confirmationtimestamp = confirmationtimestamp;
   }
 

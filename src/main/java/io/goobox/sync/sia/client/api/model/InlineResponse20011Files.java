@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 /**
  * InlineResponse20011Files
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class InlineResponse20011Files {
   @SerializedName("siapath")
   private String siapath = null;
@@ -36,7 +36,7 @@ public class InlineResponse20011Files {
   private String localpath = null;
 
   @SerializedName("filesize")
-  private Integer filesize = null;
+  private Long filesize = null;
 
   @SerializedName("available")
   private Boolean available = null;
@@ -51,7 +51,7 @@ public class InlineResponse20011Files {
   private BigDecimal uploadprogress = null;
 
   @SerializedName("expiration")
-  private Integer expiration = null;
+  private Long expiration = null;
 
   public InlineResponse20011Files siapath(String siapath) {
     this.siapath = siapath;
@@ -89,7 +89,7 @@ public class InlineResponse20011Files {
     this.localpath = localpath;
   }
 
-  public InlineResponse20011Files filesize(Integer filesize) {
+  public InlineResponse20011Files filesize(Long filesize) {
     this.filesize = filesize;
     return this;
   }
@@ -99,11 +99,11 @@ public class InlineResponse20011Files {
    * @return filesize
   **/
   @ApiModelProperty(example = "8192", value = "Size of the file in bytes.")
-  public Integer getFilesize() {
+  public Long getFilesize() {
     return filesize;
   }
 
-  public void setFilesize(Integer filesize) {
+  public void setFilesize(Long filesize) {
     this.filesize = filesize;
   }
 
@@ -179,7 +179,7 @@ public class InlineResponse20011Files {
     this.uploadprogress = uploadprogress;
   }
 
-  public InlineResponse20011Files expiration(Integer expiration) {
+  public InlineResponse20011Files expiration(Long expiration) {
     this.expiration = expiration;
     return this;
   }
@@ -189,11 +189,11 @@ public class InlineResponse20011Files {
    * @return expiration
   **/
   @ApiModelProperty(example = "60000", value = "Block height at which the file ceases availability.")
-  public Integer getExpiration() {
+  public Long getExpiration() {
     return expiration;
   }
 
-  public void setExpiration(Integer expiration) {
+  public void setExpiration(Long expiration) {
     this.expiration = expiration;
   }
 

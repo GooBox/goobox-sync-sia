@@ -27,7 +27,7 @@ import java.io.IOException;
  * Allowance dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.
  */
 @ApiModel(description = "Allowance dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class InlineResponse2008SettingsAllowance {
   @SerializedName("funds")
   private String funds = null;
@@ -36,10 +36,10 @@ public class InlineResponse2008SettingsAllowance {
   private Integer hosts = null;
 
   @SerializedName("period")
-  private Integer period = null;
+  private Long period = null;
 
   @SerializedName("renewwindow")
-  private Integer renewwindow = null;
+  private Long renewwindow = null;
 
   public InlineResponse2008SettingsAllowance funds(String funds) {
     this.funds = funds;
@@ -77,7 +77,7 @@ public class InlineResponse2008SettingsAllowance {
     this.hosts = hosts;
   }
 
-  public InlineResponse2008SettingsAllowance period(Integer period) {
+  public InlineResponse2008SettingsAllowance period(Long period) {
     this.period = period;
     return this;
   }
@@ -87,15 +87,15 @@ public class InlineResponse2008SettingsAllowance {
    * @return period
   **/
   @ApiModelProperty(example = "6048", value = "Duration of contracts formed, in number of blocks.")
-  public Integer getPeriod() {
+  public Long getPeriod() {
     return period;
   }
 
-  public void setPeriod(Integer period) {
+  public void setPeriod(Long period) {
     this.period = period;
   }
 
-  public InlineResponse2008SettingsAllowance renewwindow(Integer renewwindow) {
+  public InlineResponse2008SettingsAllowance renewwindow(Long renewwindow) {
     this.renewwindow = renewwindow;
     return this;
   }
@@ -105,11 +105,11 @@ public class InlineResponse2008SettingsAllowance {
    * @return renewwindow
   **/
   @ApiModelProperty(example = "3024", value = "If the current blockheight + the renew window >= the height the contract is scheduled to end, the contract is renewed automatically. Is always nonzero.")
-  public Integer getRenewwindow() {
+  public Long getRenewwindow() {
     return renewwindow;
   }
 
-  public void setRenewwindow(Integer renewwindow) {
+  public void setRenewwindow(Long renewwindow) {
     this.renewwindow = renewwindow;
   }
 

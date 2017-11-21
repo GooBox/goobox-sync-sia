@@ -26,10 +26,10 @@ import java.io.IOException;
 /**
  * InlineResponse2009Contracts
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class InlineResponse2009Contracts {
   @SerializedName("endheight")
-  private Integer endheight = null;
+  private Long endheight = null;
 
   @SerializedName("id")
   private String id = null;
@@ -44,9 +44,9 @@ public class InlineResponse2009Contracts {
   private String renterfunds = null;
 
   @SerializedName("size")
-  private Integer size = null;
+  private Long size = null;
 
-  public InlineResponse2009Contracts endheight(Integer endheight) {
+  public InlineResponse2009Contracts endheight(Long endheight) {
     this.endheight = endheight;
     return this;
   }
@@ -56,11 +56,11 @@ public class InlineResponse2009Contracts {
    * @return endheight
   **/
   @ApiModelProperty(example = "50000", value = "Block height that the file contract ends on.")
-  public Integer getEndheight() {
+  public Long getEndheight() {
     return endheight;
   }
 
-  public void setEndheight(Integer endheight) {
+  public void setEndheight(Long endheight) {
     this.endheight = endheight;
   }
 
@@ -136,7 +136,7 @@ public class InlineResponse2009Contracts {
     this.renterfunds = renterfunds;
   }
 
-  public InlineResponse2009Contracts size(Integer size) {
+  public InlineResponse2009Contracts size(Long size) {
     this.size = size;
     return this;
   }
@@ -146,11 +146,11 @@ public class InlineResponse2009Contracts {
    * @return size
   **/
   @ApiModelProperty(example = "8192", value = "Size of the file contract, which is typically equal to the number of bytes that have been uploaded to the host.")
-  public Integer getSize() {
+  public Long getSize() {
     return size;
   }
 
-  public void setSize(Integer size) {
+  public void setSize(Long size) {
     this.size = size;
   }
 

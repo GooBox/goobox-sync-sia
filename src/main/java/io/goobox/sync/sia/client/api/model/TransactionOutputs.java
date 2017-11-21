@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * TransactionOutputs
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class TransactionOutputs {
   @SerializedName("id")
   private String id = null;
@@ -35,7 +35,7 @@ public class TransactionOutputs {
   private String fundtype = null;
 
   @SerializedName("maturityheight")
-  private Integer maturityheight = null;
+  private Long maturityheight = null;
 
   @SerializedName("walletaddress")
   private Boolean walletaddress = null;
@@ -82,7 +82,7 @@ public class TransactionOutputs {
     this.fundtype = fundtype;
   }
 
-  public TransactionOutputs maturityheight(Integer maturityheight) {
+  public TransactionOutputs maturityheight(Long maturityheight) {
     this.maturityheight = maturityheight;
     return this;
   }
@@ -92,11 +92,11 @@ public class TransactionOutputs {
    * @return maturityheight
   **/
   @ApiModelProperty(example = "50000", value = "Block height the output becomes available to be spent. Siacoin outputs and siafund outputs mature immediately - their maturity height will always be the confirmation height of the transaction. Claim outputs cannot be spent until they have had 144 confirmations, thus the maturity height of a claim output will always be 144 larger than the confirmation height of the transaction.")
-  public Integer getMaturityheight() {
+  public Long getMaturityheight() {
     return maturityheight;
   }
 
-  public void setMaturityheight(Integer maturityheight) {
+  public void setMaturityheight(Long maturityheight) {
     this.maturityheight = maturityheight;
   }
 

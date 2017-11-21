@@ -38,7 +38,7 @@ public class SiaFileFromDownloadsAPITest {
 		final Path prefix = Paths.get(user, "Goobox");
 		final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
 
-		final int filesize = 12345;
+		final long filesize = 12345;
 		final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
 		file.setSiapath(remotePath.toString());
 		file.setFilesize(filesize);

@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse20010Downloads
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class InlineResponse20010Downloads {
   @SerializedName("siapath")
   private String siapath = null;
@@ -35,10 +35,10 @@ public class InlineResponse20010Downloads {
   private String destination = null;
 
   @SerializedName("filesize")
-  private Integer filesize = null;
+  private Long filesize = null;
 
   @SerializedName("received")
-  private Integer received = null;
+  private Long received = null;
 
   @SerializedName("starttime")
   private String starttime = null;
@@ -82,7 +82,7 @@ public class InlineResponse20010Downloads {
     this.destination = destination;
   }
 
-  public InlineResponse20010Downloads filesize(Integer filesize) {
+  public InlineResponse20010Downloads filesize(Long filesize) {
     this.filesize = filesize;
     return this;
   }
@@ -92,15 +92,15 @@ public class InlineResponse20010Downloads {
    * @return filesize
   **/
   @ApiModelProperty(example = "8192", value = "Size, in bytes, of the file being downloaded.")
-  public Integer getFilesize() {
+  public Long getFilesize() {
     return filesize;
   }
 
-  public void setFilesize(Integer filesize) {
+  public void setFilesize(Long filesize) {
     this.filesize = filesize;
   }
 
-  public InlineResponse20010Downloads received(Integer received) {
+  public InlineResponse20010Downloads received(Long received) {
     this.received = received;
     return this;
   }
@@ -110,11 +110,11 @@ public class InlineResponse20010Downloads {
    * @return received
   **/
   @ApiModelProperty(example = "4096", value = "Number of bytes downloaded thus far.")
-  public Integer getReceived() {
+  public Long getReceived() {
     return received;
   }
 
-  public void setReceived(Integer received) {
+  public void setReceived(Long received) {
     this.received = received;
   }
 

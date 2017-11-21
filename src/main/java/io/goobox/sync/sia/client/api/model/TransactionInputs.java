@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * TransactionInputs
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class TransactionInputs {
   @SerializedName("parentid")
   private String parentid = null;

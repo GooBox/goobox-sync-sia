@@ -28,13 +28,13 @@ import java.util.List;
 /**
  * InlineResponse20017
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-17T14:17:27.462-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-21T13:36:31.527-05:00")
 public class InlineResponse20017 {
   @SerializedName("primaryseed")
   private String primaryseed = null;
 
   @SerializedName("addressesremaining")
-  private Integer addressesremaining = null;
+  private Long addressesremaining = null;
 
   @SerializedName("allseeds")
   private List<String> allseeds = null;
@@ -57,7 +57,7 @@ public class InlineResponse20017 {
     this.primaryseed = primaryseed;
   }
 
-  public InlineResponse20017 addressesremaining(Integer addressesremaining) {
+  public InlineResponse20017 addressesremaining(Long addressesremaining) {
     this.addressesremaining = addressesremaining;
     return this;
   }
@@ -67,11 +67,11 @@ public class InlineResponse20017 {
    * @return addressesremaining
   **/
   @ApiModelProperty(example = "2500", value = "Number of addresses that remain in the primary seed until exhaustion has been reached. Once exhaustion has been reached, new addresses will continue to be generated but they will be more difficult to recover in the event of a lost wallet file or encryption password.")
-  public Integer getAddressesremaining() {
+  public Long getAddressesremaining() {
     return addressesremaining;
   }
 
-  public void setAddressesremaining(Integer addressesremaining) {
+  public void setAddressesremaining(Long addressesremaining) {
     this.addressesremaining = addressesremaining;
   }
 
