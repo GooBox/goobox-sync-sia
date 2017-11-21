@@ -1,2 +1,2 @@
 @echo off
-java -jar goobox-sync-sia-0.0.1.jar %1
+java -jar goobox-sync-sia-0.0.2.jar %1
