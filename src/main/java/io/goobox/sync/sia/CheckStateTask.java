@@ -29,6 +29,7 @@ import io.goobox.sync.storj.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -282,13 +283,20 @@ public class CheckStateTask implements Runnable {
         final Set<Path> paths = new HashSet<>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(parent)) {
             for (Path path : stream) {
-                if(path.toFile().isDirectory()){
+
+                final File file = path.toFile();
+                if(file.isHidden() && !this.ctx.config.includeHiddenFiles){
+                    continue;
+                }
+
+                if(file.isDirectory()){
                     // Search paths in the sub directory.
                     paths.addAll(this.getLocalPaths(path));
                 }else {
                     this.logger.debug("Found local file {}", path);
                     paths.add(path);
                 }
+
             }
         } catch (IOException e) {
             this.logger.error("Failed to list files: {}", e.getMessage());

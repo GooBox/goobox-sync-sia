@@ -17,6 +17,7 @@
 package io.goobox.sync.sia;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,6 +34,7 @@ public class ConfigTest {
 	String primarySeed;
 	int dataPieces;
 	int parityPieces;
+	Boolean includeHiddenFiles;
 	
 	@Test
 	public void testLoad() throws IOException {
@@ -41,6 +43,7 @@ public class ConfigTest {
 		this.primarySeed = "a b c d e f g";
 		this.dataPieces = 5;
 		this.parityPieces = 12;
+		this.includeHiddenFiles = true;
 
 		File tmpFile = null;
 		try {
@@ -54,10 +57,11 @@ public class ConfigTest {
 			writer.close();
 			
 			Config cfg = Config.load(tmpPath);
-			assertEquals(cfg.userName, userName);
-			assertEquals(cfg.primarySeed, primarySeed);
-			assertEquals(cfg.dataPieces, dataPieces);
-			assertEquals(cfg.parityPieces, parityPieces);
+			assertEquals(userName, cfg.userName);
+			assertEquals(primarySeed, cfg.primarySeed);
+			assertEquals(dataPieces, cfg.dataPieces);
+			assertEquals(parityPieces, cfg.parityPieces);
+			assertEquals(includeHiddenFiles.booleanValue(), cfg.includeHiddenFiles);
 
 		} finally {
 			if(tmpFile != null && tmpFile.exists()) {
@@ -87,19 +91,54 @@ public class ConfigTest {
 			writer.close();
 			
 			Config cfg = Config.load(tmpPath);
-			assertEquals(cfg.userName, userName);
-			assertEquals(cfg.primarySeed, primarySeed);
-			assertEquals(cfg.dataPieces, dataPieces);
-			assertEquals(cfg.parityPieces, 12);
+			assertEquals(userName, cfg.userName);
+			assertEquals(primarySeed, cfg.primarySeed);
+			assertEquals(dataPieces, cfg.dataPieces);
+			assertEquals(12, cfg.parityPieces);
 
 		} finally {
 			if(tmpFile != null && tmpFile.exists()) {
 				tmpFile.delete();
 			}
 		}
-	
-	
+
 	}
+
+	@Test
+    public void testLoadWihoutIncludeHiddenFilesOption() throws IOException {
+
+        this.userName = "testuser@sample.com";
+        this.primarySeed = "a b c d e f g";
+        this.dataPieces = 5;
+        this.parityPieces = 12;
+        this.includeHiddenFiles = null;
+
+        File tmpFile = null;
+        try {
+
+            Path tmpPath = Files.createTempFile(null, null);
+            tmpFile = tmpPath.toFile();
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
+            writer.write(this.getPropertiesString());
+            writer.flush();
+            writer.close();
+
+            Config cfg = Config.load(tmpPath);
+            assertEquals(userName, cfg.userName);
+            assertEquals(primarySeed, cfg.primarySeed);
+            assertEquals(dataPieces, cfg.dataPieces);
+            assertEquals(parityPieces, cfg.parityPieces);
+            assertFalse(cfg.includeHiddenFiles);
+
+        } finally {
+            if(tmpFile != null && tmpFile.exists()) {
+                tmpFile.delete();
+            }
+        }
+
+    }
+
 	
 	@Test
 	public void testSave() throws IOException {
@@ -109,7 +148,8 @@ public class ConfigTest {
 		cfg.primarySeed = "a b c d e f g";
 		cfg.dataPieces = 5;
 		cfg.parityPieces = 12;
-		
+		cfg.includeHiddenFiles = true;
+
 		Path tmpPath = null;
 		try {
 		
@@ -117,10 +157,11 @@ public class ConfigTest {
 			cfg.save(tmpPath);
 			
 			Config cfg2 = Config.load(tmpPath);
-			assertEquals(cfg2.userName, cfg.userName);
-			assertEquals(cfg2.primarySeed, cfg.primarySeed);
-			assertEquals(cfg2.dataPieces, cfg.dataPieces);
-			assertEquals(cfg2.parityPieces, cfg.parityPieces);
+			assertEquals(cfg.userName, cfg2.userName);
+			assertEquals(cfg.primarySeed, cfg2.primarySeed);
+			assertEquals(cfg.dataPieces, cfg2.dataPieces);
+			assertEquals(cfg.parityPieces, cfg2.parityPieces);
+			assertEquals(cfg.includeHiddenFiles, cfg2.includeHiddenFiles);
 		
 		} finally {
 			if(tmpPath != null && tmpPath.toFile().exists()) {
@@ -138,6 +179,7 @@ public class ConfigTest {
 		cfg.primarySeed = "a b c d e f g";
 		cfg.dataPieces = 5;
 		cfg.parityPieces = 12;
+		cfg.includeHiddenFiles = true;
 		
 		Path tmpPath = null;
 		try {
@@ -151,10 +193,11 @@ public class ConfigTest {
 			cfg.save(tmpPath);
 			
 			Config cfg2 = Config.load(tmpPath);
-			assertEquals(cfg2.userName, cfg.userName);
-			assertEquals(cfg2.primarySeed, cfg.primarySeed);
-			assertEquals(cfg2.dataPieces, cfg.dataPieces);
-			assertEquals(cfg2.parityPieces, cfg.parityPieces);
+			assertEquals(cfg.userName, cfg2.userName);
+			assertEquals(cfg.primarySeed, cfg2.primarySeed);
+			assertEquals(cfg.dataPieces, cfg2.dataPieces);
+			assertEquals(cfg.parityPieces, cfg2.parityPieces);
+			assertEquals(cfg.includeHiddenFiles, cfg2.includeHiddenFiles);
 		
 		} finally {
 			if(tmpPath != null && tmpPath.toFile().exists()) {
@@ -181,6 +224,11 @@ public class ConfigTest {
 		
 		buf.append("parity-pieces = ");
 		buf.append(parityPieces);
+
+		if(this.includeHiddenFiles != null){
+		    buf.append("\ninclude-hidden-files = ");
+		    buf.append(includeHiddenFiles.booleanValue());
+        }
 		return buf.toString();
 		
 	}

@@ -36,6 +36,7 @@ import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -260,9 +261,48 @@ public class CheckStateTaskTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testGetLocalPaths() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
 
         final Config cfg = new Config();
         cfg.userName = "testuser";
+        final Context ctx = new Context(cfg, null);
+
+        // Test files:
+        // - file1
+        // - subdir/file2
+        // - hidden1 (hidden file)
+        final Path file1 = Utils.getSyncDir().resolve("file1");
+        file1.toFile().createNewFile();
+
+        final Path subdir = Utils.getSyncDir().resolve("subdir");
+        subdir.toFile().mkdir();
+
+        final Path file2 = subdir.resolve("file2");
+        file2.toFile().createNewFile();
+
+        final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
+        hidden1.toFile().createNewFile();
+
+        final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
+
+        final Method getLocalPaths = CheckStateTask.class.getDeclaredMethod("getLocalPaths");
+        getLocalPaths.setAccessible(true);
+        final Set<Path> res = (Set<Path>) getLocalPaths.invoke(target);
+        assertEquals(2, res.size());
+        assertTrue(res.contains(file1));
+        assertTrue(res.contains(file2));
+        assertFalse(res.contains(subdir));
+
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testGetLocalPathsIncludingHiddenFiles() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
+
+        final Config cfg = new Config();
+        cfg.userName = "testuser";
+        cfg.includeHiddenFiles = true;
         final Context ctx = new Context(cfg, null);
 
         // Test files:
@@ -277,15 +317,19 @@ public class CheckStateTaskTest {
         final Path file2 = subdir.resolve("file2");
         file2.toFile().createNewFile();
 
+        final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
+        hidden1.toFile().createNewFile();
+
         final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
 
         final Method getLocalPaths = CheckStateTask.class.getDeclaredMethod("getLocalPaths");
         getLocalPaths.setAccessible(true);
         final Set<Path> res = (Set<Path>) getLocalPaths.invoke(target);
-        assertEquals(2, res.size());
+        assertEquals(3, res.size());
         assertTrue(res.contains(file1));
         assertTrue(res.contains(file2));
         assertFalse(res.contains(subdir));
+        assertTrue(res.contains(hidden1));
 
     }
 
