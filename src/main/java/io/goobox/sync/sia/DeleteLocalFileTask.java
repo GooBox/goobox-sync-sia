@@ -16,46 +16,45 @@
  */
 package io.goobox.sync.sia;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
+import io.goobox.sync.sia.db.DB;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.goobox.sync.sia.db.DB;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 /**
  * DeleteLocalFileTask deletes a given local file.
- * 
- * @author junpei
  *
+ * @author junpei
  */
 public class DeleteLocalFileTask implements Runnable {
 
-	private final Path path;
-	private final Logger logger = LogManager.getLogger();
+    private final Path path;
+    private final Logger logger = LogManager.getLogger();
 
-	public DeleteLocalFileTask(final Path path) {
-		this.path = path;
-	}
+    public DeleteLocalFileTask(final Path path) {
+        this.path = path;
+    }
 
-	@Override
-	public void run() {
+    @Override
+    public void run() {
 
-		this.logger.info("Deleting local file {}", this.path);
-		try {
-			boolean success = Files.deleteIfExists(this.path);
-			if (success) {
-				DB.remove(this.path);
-				DB.commit();
-			} else {
-				this.logger.warn("File {} doesn't exist", this.path);
-			}
-		} catch (Exception e) {
-			this.logger.error("Cannot delete local file {}: {}", this.path, e.getMessage());
-		}
+        this.logger.info("Deleting local file {}", this.path);
+        try {
+            boolean success = Files.deleteIfExists(this.path);
+            if (success) {
+                DB.remove(this.path);
+                DB.commit();
+            } else {
+                this.logger.warn("File {} doesn't exist", this.path);
+            }
+        } catch (IOException e) {
+            this.logger.error("Cannot delete local file {}: {}", this.path, e.getMessage());
+        }
 
-	}
+    }
 
 }

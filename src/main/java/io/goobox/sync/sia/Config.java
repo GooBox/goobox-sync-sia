@@ -73,8 +73,7 @@ public class Config {
 		props.setProperty("data-pieces", String.valueOf(this.dataPieces));
 		props.setProperty("parity-pieces", String.valueOf(this.parityPieces));
 
-		try (final BufferedWriter output = Files.newBufferedWriter(path,
-				StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+		try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
 			props.store(output, "");
 		}
 

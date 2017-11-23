@@ -22,22 +22,21 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 
 public class APIUtils {
-	
-	/**
-	 * Parse error massages in an APIException.
-	 */
-	public static String getErrorMessage(final ApiException e) {
-		
-		final String body = e.getResponseBody();
-		if(body == null || body.isEmpty()) {
-			return "";
-		}
 
-		final Gson gson = new Gson();
-		final StandardError err = gson.fromJson(body, StandardError.class);
-		
-		return err.getMessage();
-		
-	}
+    /**
+     * Parse error massages in an APIException.
+     */
+    public static String getErrorMessage(final ApiException e) {
+
+        final String body = e.getResponseBody();
+        if (body == null || body.isEmpty()) {
+            return "";
+        }
+
+        final Gson gson = new Gson();
+        final StandardError err = gson.fromJson(body, StandardError.class);
+        return err.getMessage();
+
+    }
 
 }

@@ -22,13 +22,13 @@ build:
 	mvn package
 
 test:
-	mvn test
+	mvn clean test
 
 dist: build
 	mkdir -p dist/$(VERSION) && \
 	cd dist/$(VERSION) && \
-  cp ../../LICENSE . && \
-  cp ../../README.md . && \
+	cp ../../LICENSE . && \
+	cp ../../README.md . && \
 	cp ../../target/$(NAME)-$(VERSION).jar . && \
 	cp ../../asset/* . && \
 	zip -r $(NAME)-$(VERSION).zip . && \

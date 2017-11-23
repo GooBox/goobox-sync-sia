@@ -4,18 +4,22 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
 import org.dizitart.no2.objects.filters.ObjectFilters;
 
-import io.goobox.sync.sia.util.SiaFile;
+import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.storj.Utils;
 import io.goobox.sync.storj.db.SyncState;
 
 public class DB {
 
     private static Nitrite db;
+    private static final Logger logger = LogManager.getLogger();
+    public static final String DatabaseFileName = "sync.sia.db";
 
     private static Nitrite db() {
         if (db == null || db.isClosed()) {
@@ -33,7 +37,7 @@ public class DB {
     }
 
     private static Nitrite open() {
-        Path dbPath = Utils.getDataDir().resolve("sync.sia.db");
+        Path dbPath = Utils.getDataDir().resolve(DatabaseFileName);
         return Nitrite.builder()
                 .compressed()
                 .filePath(dbPath.toFile())
@@ -49,35 +53,39 @@ public class DB {
     }
 
     public synchronized static boolean contains(SiaFile file) {
-    		return contains(	file.getName());
+        return contains(file.getName());
     }
 
-    public synchronized static boolean contains(Path path) {
-        return contains(path.toString());
+    public synchronized static boolean contains(Path localPath) {
+        return contains(Utils.getSyncDir().relativize(localPath).toString());
     }
 
     synchronized static boolean contains(String name) {
-        return get(name) != null;
+        boolean res = (get(name) != null);
+        logger.trace("contains({}) = {}", name, res);
+        return res;
     }
 
     public synchronized static SyncFile get(SiaFile file) {
         return get(file.getName());
     }
 
-    public synchronized static SyncFile get(Path path) {
-        return get(path.toString());
+    public synchronized static SyncFile get(Path localPath) {
+        return get(Utils.getSyncDir().relativize(localPath).toString());
     }
 
     synchronized static SyncFile get(String name) {
-        return repo().find(withName(name)).firstOrDefault();
+        final SyncFile res = repo().find(withName(name)).firstOrDefault();
+        logger.trace("get({}) = {}", name, res);
+        return res;
     }
 
     private synchronized static SyncFile getOrCreate(SiaFile file) {
         return getOrCreate(file.getName());
     }
 
-    private synchronized static SyncFile getOrCreate(Path path) {
-        return getOrCreate(path.toString());
+    private synchronized static SyncFile getOrCreate(Path localPath) {
+        return getOrCreate(Utils.getSyncDir().relativize(localPath).toString());
     }
 
     synchronized static SyncFile getOrCreate(String name) {
@@ -86,6 +94,7 @@ public class DB {
             syncFile = new SyncFile();
             syncFile.setName(name);
             repo().insert(syncFile);
+            logger.trace("create({})", name);
         }
         return syncFile;
     }
@@ -94,11 +103,12 @@ public class DB {
         remove(file.getName());
     }
 
-    public synchronized static void remove(Path path) {
-        remove(path.toString());
+    public synchronized static void remove(Path localPath) {
+        remove(Utils.getSyncDir().relativize(localPath).toString());
     }
 
     synchronized static void remove(String name) {
+        logger.trace("remove({})", name);
         repo().remove(withName(name));
     }
 
@@ -107,13 +117,14 @@ public class DB {
     }
 
     public synchronized static void setSynced(SiaFile siaFile) throws IOException {
+        logger.trace("setSynced({})", siaFile);
         SyncFile syncFile = getOrCreate(siaFile);
         syncFile.setCloudData(siaFile);
         syncFile.setLocalData(siaFile.getLocalPath());
         syncFile.setState(SyncState.SYNCED);
         repo().update(syncFile);
     }
-    
+
     public synchronized static void addForDownload(SiaFile file) {
         SyncFile syncFile = getOrCreate(file);
         syncFile.setCloudData(file);
@@ -121,9 +132,16 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized static void addForUpload(Path path) throws IOException {
-        SyncFile syncFile = getOrCreate(path);
-        syncFile.setLocalData(path);
+    public synchronized static void addForUpload(SiaFile file) throws IOException {
+        SyncFile syncFile = getOrCreate(file);
+        syncFile.setLocalData(file.getLocalPath());
+        syncFile.setState(SyncState.FOR_UPLOAD);
+        repo().update(syncFile);
+    }
+
+    public synchronized static void addForUpload(Path localPath) throws IOException {
+        SyncFile syncFile = getOrCreate(localPath);
+        syncFile.setLocalData(localPath);
         syncFile.setState(SyncState.FOR_UPLOAD);
         repo().update(syncFile);
     }
@@ -134,14 +152,14 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized static void setUploadFailed(Path path) {
-        SyncFile syncFile = get(path);
+    public synchronized static void setUploadFailed(Path localPath) {
+        SyncFile syncFile = get(localPath);
         syncFile.setState(SyncState.UPLOAD_FAILED);
         repo().update(syncFile);
     }
 
-    public synchronized static void setForLocalDelete(Path path) {
-        SyncFile syncFile = get(path);
+    public synchronized static void setForLocalDelete(Path localPath) {
+        SyncFile syncFile = get(localPath);
         syncFile.setState(SyncState.FOR_LOCAL_DELETE);
         repo().update(syncFile);
     }

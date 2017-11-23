@@ -16,21 +16,30 @@
  */
 package io.goobox.sync.sia;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static org.junit.Assert.assertEquals;
 
-public class SleepTask implements Runnable {
+import java.nio.file.Paths;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
-	private final Logger logger = LogManager.getLogger();
+import org.junit.Test;
 
-	@Override
-	public void run() {
-		this.logger.info("Sleeping for 1 minute");
-		try {
-			Thread.sleep(60000);
-		} catch (InterruptedException e) {
-			// nothing to do
-		}
+import io.goobox.sync.sia.client.ApiClient;
+
+public class ContextTest {
+
+	@Test
+	public void test() {
+
+		final Config cfg = new Config();
+		cfg.userName = "test-user";
+		final ApiClient cli = new ApiClient();
+
+		final Context ctx = new Context(cfg, cli);
+		assertEquals(ctx.config, cfg);
+		assertEquals(ctx.apiClient, cli);
+		assertEquals(ctx.pathPrefix, Paths.get(cfg.userName, "Goobox"));
+
 	}
 
 }

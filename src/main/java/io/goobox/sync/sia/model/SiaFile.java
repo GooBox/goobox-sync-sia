@@ -14,46 +14,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia.util;
+package io.goobox.sync.sia.model;
 
 import java.nio.file.Path;
 
 /**
  * SiaFile defines an API representing a file stored in SIA network.
- * 
- * @author junpei
  *
+ * @author junpei
  */
 public interface SiaFile {
 
-	/**
-	 * Returns the name of this file.
-	 */
-	public String getName();
+    /**
+     * Returns the name of this file.
+     */
+    public String getName();
 
-	/**
-	 * Returns the path where this file located in the blockchain.
-	 */
-	public Path getRemotePath();
+    /**
+     * Returns the path where this file located in the blockchain.
+     */
+    public Path getRemotePath();
 
-	/**
-	 * Returns the path where this file located in a local computer.
-	 */
-	public Path getLocalPath();
+    /**
+     * Returns the path where this file located in a local computer.
+     */
+    public Path getLocalPath();
 
-	/**
-	 * Returns the creation time of this file.
-	 */
-	public long getCreationTime();
+    /**
+     * Returns the creation time of this file.
+     */
+    public long getCreationTime();
 
-	/**
-	 * Returns the byte size of this file.
-	 */
-	public long getFileSize();
+    /**
+     * Returns the byte size of this file.
+     */
+    public long getFileSize();
 
-	/**
-	 * Returns a SiaPath object.
-	 */
-	public SiaPath getSiaPath();
+    /**
+     * Returns a SiaPath object.
+     */
+    public SiaPath getSiaPath();
 
 }

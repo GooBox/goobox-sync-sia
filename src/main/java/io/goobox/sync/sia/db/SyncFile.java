@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.dizitart.no2.objects.Id;
 
-import io.goobox.sync.sia.util.SiaFile;
+import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.storj.db.SyncState;
 
 public class SyncFile implements Serializable {

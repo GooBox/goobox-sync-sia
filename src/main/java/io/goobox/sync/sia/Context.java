@@ -32,7 +32,6 @@ public class Context {
 
 	public final Config config;
 	public final ApiClient apiClient;
-	public final BlockingQueue<Runnable> tasks;
 	public final Path pathPrefix;
 
 	/**
@@ -42,13 +41,10 @@ public class Context {
 	 *            Config object
 	 * @param apiClient
 	 *            API client
-	 * @param tasks
-	 *            Task queue
 	 */
-	public Context(final Config cfg, final ApiClient apiClient, final BlockingQueue<Runnable> tasks) {
+	public Context(final Config cfg, final ApiClient apiClient) {
 		this.config = cfg;
 		this.apiClient = apiClient;
-		this.tasks = tasks;
 		this.pathPrefix = Paths.get(this.config.userName, "Goobox");
 	}
 

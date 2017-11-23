@@ -16,273 +16,268 @@
  */
 package io.goobox.sync.sia;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
-import io.goobox.sync.sia.util.SiaFile;
-import io.goobox.sync.sia.util.SiaFileFromFilesAPI;
+import io.goobox.sync.sia.model.SiaFile;
+import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import io.goobox.sync.storj.Utils;
 import io.goobox.sync.storj.db.SyncState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
 
 /**
- * 
  * @author junpei
- *
  */
 public class CheckStateTask implements Runnable {
 
-	private final Context ctx;
-	private final Logger logger = LogManager.getLogger();
+    private final Context ctx;
+    private final Executor executor;
+    private final Logger logger = LogManager.getLogger();
 
-	public CheckStateTask(final Context ctx) {
-		this.ctx = ctx;
-	}
+    public CheckStateTask(final Context ctx, final Executor executor) {
+        this.ctx = ctx;
+        this.executor = executor;
+    }
 
-	@Override
-	public void run() {
+    @Override
+    public void run() {
 
-		this.logger.info("Checking for changes");
-		final RenterApi api = new RenterApi(this.ctx.apiClient);
-		try {
+        this.logger.info("Checking for changes");
+        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        try {
 
-			final Set<Path> localPaths = this.getLocalPaths();
-			final InlineResponse20011 files = api.renterFilesGet();
-			for (SiaFile file : this.takeNewestFiles(files.getFiles())) {
+            final Set<Path> localPaths = this.getLocalPaths();
+            final InlineResponse20011 files = api.renterFilesGet();
+            for (SiaFile file : this.takeNewestFiles(files.getFiles())) {
 
-				if (DB.contains(file)) {
+                if (DB.contains(file)) {
 
-					if (!file.getLocalPath().toFile().exists()) {
+                    if (!file.getLocalPath().toFile().exists()) {
+                        // The file exists in the DB but not in the local directory.
+                        this.logger.info("Remote file {} is going to be deleted", file.getName());
+                        DB.setForCloudDelete(file);
+                        this.executor.execute(new DeleteRemoteFileTask(this.ctx, file));
 
-						this.logger.debug("File {} was deleted from the local directory", file.getName());
-						// The file exists in the DB but not in the local directory.
+                    } else {
 
-						// TODO: Currently disabled because it is out of one way sync.
-						// DB.setForCloudDelete(file);
-						// api.renterDeleteSiapathPost(file.getSiapath());
+                        try {
 
-					} else {
+                            SyncFile syncFile = DB.get(file);
+                            final boolean cloudChanged = syncFile.getState() != SyncState.UPLOAD_FAILED
+                                    && syncFile.getRemoteCreatedTime() != file.getCreationTime();
+                            final boolean localChanged = syncFile.getState() != SyncState.DOWNLOAD_FAILED
+                                    && syncFile.getLocalModifiedTime() != Files.getLastModifiedTime(file.getLocalPath()).toMillis();
+                            this.logger.trace("Status of {}: cloudChanged = {}, localChanged = {}", file.getName(), cloudChanged, localChanged);
+                            if (cloudChanged && localChanged) {
+                                // both local and cloud has been changed - conflict
+                                this.logger.warn("File {} is conflict", file.getLocalPath());
+                                DB.setConflict(file);
+                            } else if (cloudChanged) {
 
-						try {
+                                if (syncFile.getState().isConflict()) {
+                                    // the file has been in conflict before - keep the conflict
+                                    this.logger.warn("File {} is conflict", file.getLocalPath());
+                                    DB.setConflict(file);
+                                } else {
 
-							SyncFile syncFile = DB.get(file);
-							final boolean cloudChanged = syncFile.getState() != SyncState.UPLOAD_FAILED
-									&& syncFile.getRemoteCreatedTime() != file.getCreationTime();
-							final boolean localChanged = syncFile.getState() != SyncState.DOWNLOAD_FAILED
-									&& syncFile.getLocalModifiedTime() != Files.getLastModifiedTime(file.getLocalPath())
-											.toMillis();
-							if (cloudChanged && localChanged) {
-								// both local and cloud has been changed - conflict
-								DB.setConflict(file);
-							} else if (cloudChanged) {
+                                    // download
+                                    this.logger.info("Remote file {} is going to be downloaded", file.getName());
+                                    DB.addForDownload(file);
+                                    this.executor.execute(new DownloadRemoteFileTask(ctx, file));
 
-								if (syncFile.getState().isConflict()) {
-									// the file has been in conflict before - keep the conflict
-									DB.setConflict(file);
-								} else {
-									// download
-									// TODO: create sub directories.
-									this.logger.info("Downloading {} to {}", file.getRemotePath(), file.getLocalPath());
-									DB.addForDownload(file);
-									api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(),
-											file.getLocalPath().toString());
-								}
+                                }
 
-							} else if (localChanged) {
+                            } else if (localChanged) {
 
-								if (syncFile.getState().isConflict()) {
-									// the file has been in conflict before - keep the conflict
-									DB.setConflict(file);
-								} else {
+                                if (syncFile.getState().isConflict()) {
+                                    // the file has been in conflict before - keep the conflict
+                                    this.logger.warn("File {} is conflict", file.getLocalPath());
+                                    DB.setConflict(file);
+                                } else {
 
-									// TODO: Currently disabled because it is out of one way sync.
-									// upload
-									// DB.addForUpload(file);
-									// api.renterUploadSiapathPost(file.path.siaPath.toString(),
-									// this.ctx.config.dataPieces, this.ctx.config.parityPieces,
-									// file.path.localPath.toString());
-								}
+                                    // upload
+                                    this.logger.info("Local file {} is going to be uploaded", file.getName());
+                                    DB.addForUpload(file);
+                                    final Date created = new Date(file.getLocalPath().toFile().lastModified());
+                                    this.executor.execute(new UploadLocalFileTask(this.ctx, file, created));
 
-							} else {
-								// no change - do nothing
-							}
+                                }
 
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
+                            } else {
+                                // no change - do nothing
+                            }
 
-					}
+                        } catch (IOException e) {
+                            this.logger.error("Failed to access {}: {}", file.getLocalPath(), e.getMessage());
+                        }
 
-				} else {
-					// The file doesn't exist in the local DB.
-					this.logger.debug("New file {} is found in the cloud storage", file.getName());
+                    }
 
-					if (!file.getLocalPath().toFile().exists()) {
-						// The file also doesn't exist in the local directory.
+                } else {
+                    // The file doesn't exist in the local DB.
+                    this.logger.debug("New file {} is found in the cloud storage", file.getName());
 
-						// TODO: create sub directories.
-						this.logger.info("Downloading {} to {}", file.getRemotePath(), file.getLocalPath());
-						DB.addForDownload(file);
-						api.renterDownloadasyncSiapathGet(file.getRemotePath().toString(),
-								file.getLocalPath().toString());
+                    if (!file.getLocalPath().toFile().exists()) {
+                        // The file also doesn't exist in the local directory.
 
-					} else {
-						// The file exists in the local directory.
+                        this.logger.info("Remote file {} is going to be downloaded", file.getName());
+                        DB.addForDownload(file);
+                        this.executor.execute(new DownloadRemoteFileTask(ctx, file));
 
-						// check if local and cloud file are same
-						if (file.getFileSize() == Files.size(file.getLocalPath())) {
-							DB.setSynced(file);
-						} else {
-							DB.setConflict(file);
-						}
+                    } else {
+                        // The file exists in the local directory.
 
-					}
-				}
+                        // check if local and cloud file are same
+                        if (file.getFileSize() == Files.size(file.getLocalPath())) {
+                            this.logger.debug("File {} exists in the local sync folder", file.getName());
+                            DB.setSynced(file);
+                        } else {
+                            this.logger.warn("File {} is conflict", file.getLocalPath());
+                            DB.setConflict(file);
+                        }
 
-				localPaths.remove(file.getLocalPath());
+                    }
+                }
 
-			}
+                localPaths.remove(file.getLocalPath());
 
-			// Process local files without cloud counterpart
-			for (Path absPath : localPaths) {
+            }
 
-				final Path path = Utils.getSyncDir().relativize(absPath);
-				if (DB.contains(path)) {
+            // Process local files without cloud counterpart
+            for (Path localPath : localPaths) {
 
-					DB.setForLocalDelete(path);
-					this.ctx.tasks.add(new DeleteLocalFileTask(absPath));
+                if (DB.contains(localPath)) {
 
-					// TODO: Update here to support two way sync.
-					// SyncFile syncFile = DB.get(path);
-					// if (syncFile.getState().isSynced()) {
-					//
-					// DB.setForLocalDelete(path);
-					// this.ctx.tasks.add(new DeleteLocalFileTask(path));
-					//
-					// } else if (syncFile.getState() == SyncState.UPLOAD_FAILED
-					// && syncFile.getLocalModifiedTime() !=
-					// Files.getLastModifiedTime(path).toMillis()) {
-					//
-					// // TODO: Currently disabled because it is out of one way sync.
-					// // DB.addForUpload(path);
-					// // tasks.add(new UploadFileTask(gooboxBucket, path));
-					//
-					// }
+                    SyncFile syncFile = DB.get(localPath);
+                    if (syncFile.getState().isSynced()) {
 
-				} else {
+                        this.logger.info("Local file {} is going to be deleted", localPath);
+                        DB.setForLocalDelete(localPath);
+                        this.executor.execute(new DeleteLocalFileTask(localPath));
 
-					// TODO: Currently disabled because it is out of one way sync.
-					// DB.addForUpload(path);
-					// tasks.add(new UploadFileTask(gooboxBucket, path));
+                    } else if (syncFile.getState() == SyncState.UPLOAD_FAILED
+                            && syncFile.getLocalModifiedTime() !=
+                            Files.getLastModifiedTime(localPath).toMillis()) {
 
-				}
+                        this.logger.info("Local file {} is going to be uploaded", localPath);
+                        DB.addForUpload(localPath);
+                        final Date created = new Date(localPath.toFile().lastModified());
+                        this.executor.execute(new UploadLocalFileTask(this.ctx, localPath, created));
 
-			}
+                    }
 
-		} catch (ApiException e) {
-			
-			this.logger.error("Failed to retreive files stored in the SIA network", APIUtils.getErrorMessage(e));
+                } else {
 
-		} catch (IOException e) {
+                    this.logger.info("Local file {} is going to be uploaded", localPath);
+                    // TODO:
+                    DB.addForUpload(localPath);
+                    final Date created = new Date(localPath.toFile().lastModified());
+                    this.executor.execute(new UploadLocalFileTask(this.ctx, localPath, created));
 
-			this.logger.catching(e);
+                }
 
-		}
+            }
 
-		DB.commit();
-		if (this.ctx.tasks.size() < 2) {
-			// Sleep some time
-			this.ctx.tasks.add(new SleepTask());
-		}
-		// Add itself to the queueAdd itself to the queue
-		this.ctx.tasks.add(this);
+        } catch (ApiException e) {
 
-	}
+            this.logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
 
-	/**
-	 * Takes only newest files managed by Goobox from a given file collection.
-	 * 
-	 * @param files
-	 * @return
-	 */
-	private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
+        } catch (IOException e) {
 
-		// Key: remote path, Value: file object.
-		final Map<String, SiaFile> filemap = new HashMap<String, SiaFile>();
-		if (files != null) {
-			for (InlineResponse20011Files file : files) {
+            this.logger.catching(e);
 
-				if (!file.getAvailable()) {
-					// This file is still being uploaded.
-					this.logger.trace("File {} is not available", file.getSiapath());
-					continue;
-				}
+        }
 
-				final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-				if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
-					// This file isn't managed by Goobox.
-					this.logger.trace("File {} is not managed by Goobox", siaFile.getRemotePath());
-					continue;
-				}
+        DB.commit();
 
-				if (filemap.containsKey(siaFile.getName())) {
+    }
 
-					final SiaFile prev = filemap.get(siaFile.getName());
-					if (siaFile.getCreationTime() > prev.getCreationTime()) {
-						this.logger.trace("Found newer version of remote file {} created at {}", siaFile.getName(),
-								siaFile.getCreationTime());
-						filemap.put(siaFile.getName(), siaFile);
-					} else {
-						this.logger.trace("Found older version of remote file {} created at {} but ignored",
-								siaFile.getName(), siaFile.getCreationTime());
-					}
+    /**
+     * Takes only newest files managed by Goobox from a given file collection.
+     *
+     * @param files
+     * @return
+     */
+    private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
 
-				} else {
-					this.logger.trace("Found remote file {} created at {}", siaFile.getName(),
-							siaFile.getCreationTime());
-					filemap.put(siaFile.getName(), siaFile);
-				}
+        // Key: file name, Value: file object.
+        final Map<String, SiaFile> filemap = new HashMap<String, SiaFile>();
+        if (files != null) {
+            for (InlineResponse20011Files file : files) {
 
-			}
-		}
-		return filemap.values();
+                if (!file.getAvailable()) {
+                    // This file is still being uploaded.
+                    this.logger.debug("Found remote file {} but it's not available", file.getSiapath());
+                    continue;
+                }
 
-	}
+                final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                    // This file isn't managed by Goobox.
+                    this.logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getRemotePath());
+                    continue;
+                }
 
-	/**
-	 * Returns a list of paths representing local files in the sync directory.
-	 * 
-	 * The returned paths include sub directories.
-	 * 
-	 * @return
-	 */
-	private Set<Path> getLocalPaths() {
+                if (filemap.containsKey(siaFile.getName())) {
 
-		final Set<Path> paths = new HashSet<>();
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(Utils.getSyncDir())) {
-			for (Path path : stream) {
-				this.logger.trace("Found local file {}", path);
-				paths.add(path);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return paths;
-	}
+                    final SiaFile prev = filemap.get(siaFile.getName());
+                    if (siaFile.getCreationTime() > prev.getCreationTime()) {
+                        this.logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
+                                siaFile.getCreationTime());
+                        filemap.put(siaFile.getName(), siaFile);
+                    } else {
+                        this.logger.debug("Found older version of remote file {} created at {} but ignored",
+                                siaFile.getName(), siaFile.getCreationTime());
+                    }
+
+                } else {
+                    this.logger.debug("Found remote file {} created at {}", siaFile.getName(),
+                            siaFile.getCreationTime());
+                    filemap.put(siaFile.getName(), siaFile);
+                }
+
+            }
+        }
+        return filemap.values();
+
+    }
+
+    /**
+     * Returns a list of paths representing local files in the sync directory.
+     * <p>
+     * The returned paths include sub directories.
+     *
+     * @return
+     */
+    private Set<Path> getLocalPaths() {
+
+        final Set<Path> paths = new HashSet<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Utils.getSyncDir())) {
+            for (Path path : stream) {
+                this.logger.debug("Found local file {}", path);
+                paths.add(path);
+            }
+        } catch (IOException e) {
+            this.logger.error("Failed to list files: {}", e.getMessage());
+
+        }
+        return paths;
+    }
 
 }
