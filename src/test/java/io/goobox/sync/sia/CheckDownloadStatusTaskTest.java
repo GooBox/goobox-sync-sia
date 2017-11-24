@@ -112,6 +112,7 @@ public class CheckDownloadStatusTaskTest {
         }};
 
         final Config cfg = new Config();
+        cfg.setUserName("");
         final Context ctx = new Context(cfg, null);
         new CheckDownloadStatusTask(ctx).run();
 
