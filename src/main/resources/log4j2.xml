@@ -7,15 +7,15 @@
   </Appenders>
 
   <Loggers>
-    <Root level="trace">
-    <AppenderRef ref="Console"/>
-    </Root>
-    <!--<Root level="debug">-->
-      <!--<AppenderRef ref="Console"/>-->
+    <!--<Root level="trace">-->
+    <!--<AppenderRef ref="Console"/>-->
     <!--</Root>-->
-    <!--<Logger name="org.dizitart" level="info">-->
-    <!--</Logger>-->
-    <!--<Logger name="net.harawata" level="info">-->
-    <!--</Logger>-->
+    <Root level="debug">
+      <AppenderRef ref="Console"/>
+    </Root>
+    <Logger name="org.dizitart" level="info">
+    </Logger>
+    <Logger name="net.harawata" level="info">
+    </Logger>
   </Loggers>
 </Configuration>

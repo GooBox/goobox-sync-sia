@@ -16,13 +16,16 @@
 #
 NAME := goobox-sync-sia
 VERSION := 0.0.4
-.PHONY: build test dist swagger
+.PHONY: clean build test dist swagger
 
-build:
+clean:
+	mvn clean
+
+build: clean
 	mvn package
 
-test:
-	mvn clean test
+test: clean
+	mvn test
 
 dist: build
 	mkdir -p dist/$(VERSION) && \
