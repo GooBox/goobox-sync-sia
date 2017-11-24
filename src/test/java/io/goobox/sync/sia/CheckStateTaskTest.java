@@ -36,20 +36,26 @@ import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class CheckStateTaskTest {
@@ -101,7 +107,7 @@ public class CheckStateTaskTest {
     public void test() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         // Test files:
@@ -249,6 +255,81 @@ public class CheckStateTaskTest {
                 assertEquals(String.format("Creation time of %s", path.remotePath), newTimeStamp.getTime() / 1000, creationTime.getTime() / 1000);
             }
         }
+
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testGetLocalPaths() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
+
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        final Context ctx = new Context(cfg, null);
+
+        // Test files:
+        // - file1
+        // - subdir/file2
+        // - hidden1 (hidden file)
+        final Path file1 = Utils.getSyncDir().resolve("file1");
+        file1.toFile().createNewFile();
+
+        final Path subdir = Utils.getSyncDir().resolve("subdir");
+        subdir.toFile().mkdir();
+
+        final Path file2 = subdir.resolve("file2");
+        file2.toFile().createNewFile();
+
+        final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
+        hidden1.toFile().createNewFile();
+
+        final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
+
+        final Method getLocalPaths = CheckStateTask.class.getDeclaredMethod("getLocalPaths");
+        getLocalPaths.setAccessible(true);
+        final Set<Path> res = (Set<Path>) getLocalPaths.invoke(target);
+        assertEquals(2, res.size());
+        assertTrue(res.contains(file1));
+        assertTrue(res.contains(file2));
+        assertFalse(res.contains(subdir));
+
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testGetLocalPathsIncludingHiddenFiles() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
+
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        cfg.setIncludeHiddenFiles(true);
+        final Context ctx = new Context(cfg, null);
+
+        // Test files:
+        // - file1
+        // - subdir/file2
+        final Path file1 = Utils.getSyncDir().resolve("file1");
+        file1.toFile().createNewFile();
+
+        final Path subdir = Utils.getSyncDir().resolve("subdir");
+        subdir.toFile().mkdir();
+
+        final Path file2 = subdir.resolve("file2");
+        file2.toFile().createNewFile();
+
+        final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
+        hidden1.toFile().createNewFile();
+
+        final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
+
+        final Method getLocalPaths = CheckStateTask.class.getDeclaredMethod("getLocalPaths");
+        getLocalPaths.setAccessible(true);
+        final Set<Path> res = (Set<Path>) getLocalPaths.invoke(target);
+        assertEquals(3, res.size());
+        assertTrue(res.contains(file1));
+        assertTrue(res.contains(file2));
+        assertFalse(res.contains(subdir));
+        assertTrue(res.contains(hidden1));
 
     }
 

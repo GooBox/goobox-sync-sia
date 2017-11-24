@@ -41,7 +41,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class CheckUploadStatusTaskTest {
 
@@ -92,7 +92,7 @@ public class CheckUploadStatusTaskTest {
     public void test() throws ApiException, IOException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         // Test files:

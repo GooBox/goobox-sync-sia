@@ -16,6 +16,11 @@
  */
 package io.goobox.sync.sia;
 
+import com.sun.istack.internal.NotNull;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,100 +29,183 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
  * Config defines information stored in a config file.
- * 
- * @author junpei
  *
+ * @author junpei
  */
 public class Config {
 
-	/**
-	 * user name.
-	 */
-	String userName;
+    private static final String UserName = "username";
+    private static final String PrimarySeed = "primary-seed";
+    private static final String DataPieces = "data-pieces";
+    private static final String ParityPieces = "parity-pieces";
+    private static final String IncludeHiddenFiles = "include-hidden-files";
+    private static final Logger logger = LogManager.getLogger();
 
-	/**
-	 * primary seed.
-	 */
-	String primarySeed;
+    /**
+     * user name.
+     */
+    private String userName;
 
-	/**
-	 * The number of data pieces to use when erasure coding the file.
-	 */
-	int dataPieces;
+    /**
+     * primary seed.
+     */
+    private String primarySeed;
 
-	/**
-	 * The number of parity pieces to use when erasure coding the file. Total
-	 * redundancy of the file is (datapieces+paritypieces)/datapieces. Minimum
-	 * required: 12
-	 */
-	int parityPieces;
+    /**
+     * The number of data pieces to use when erasure coding the file.
+     */
+    private int dataPieces;
 
-	private static Logger logger = LogManager.getLogger();
+    /**
+     * The number of parity pieces to use when erasure coding the file. Total
+     * redundancy of the file is (datapieces+paritypieces)/datapieces. Minimum
+     * required: 12
+     */
+    private int parityPieces;
 
-	/**
-	 * Save this configurations to the given file.
-	 * 
-	 * @param path
-	 * @throws IOException
-	 */
-	public void save(final Path path) throws IOException {
+    /**
+     * if true, sync hidden files, too.
+     */
+    private boolean includeHiddenFiles;
 
-		final Properties props = new Properties();
-		props.setProperty("username", this.userName);
-		props.setProperty("primary-seed", this.primarySeed);
-		props.setProperty("data-pieces", String.valueOf(this.dataPieces));
-		props.setProperty("parity-pieces", String.valueOf(this.parityPieces));
+    @NotNull
+    public String getUserName() {
+        return userName;
+    }
 
-		try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-			props.store(output, "");
-		}
+    void setUserName(@NotNull String userName) {
+        this.userName = userName;
+    }
 
-	}
+    @NotNull
+    public String getPrimarySeed() {
+        return primarySeed;
+    }
 
-	/**
-	 * Load configurations from the given file.
-	 * 
-	 * @param path
-	 * @return
-	 * @throws IOException
-	 */
-	public static Config load(final Path path) throws IOException {
+    void setPrimarySeed(@NotNull String primarySeed) {
+        this.primarySeed = primarySeed;
+    }
 
-		logger.info("Loading config file {}", path);
-		final Properties props = new Properties();
-		try (final InputStream in = Files.newInputStream(path)) {
-			props.load(in);
-		}
+    public int getDataPieces() {
+        return dataPieces;
+    }
 
-		final Config cfg = new Config();
-		cfg.userName = props.getProperty("username");
-		cfg.primarySeed = props.getProperty("primary-seed");
+    void setDataPieces(int dataPieces) {
+        this.dataPieces = dataPieces;
+    }
 
-		try {
-			cfg.dataPieces = Integer.valueOf(props.getProperty("data-pieces"));
-		} catch (NumberFormatException e) {
-			logger.warn("Invalid data pieces {}, use 1 instead", props.getProperty("data-pieces"));
-			cfg.dataPieces = 1;
-		}
+    public int getParityPieces() {
+        return parityPieces;
+    }
 
-		try {
-			cfg.parityPieces = Integer.valueOf(props.getProperty("parity-pieces"));
-			if (cfg.parityPieces < 12) {
-				logger.warn("Invalid parity pieces {}, use 12 instead", cfg.parityPieces);
-				cfg.parityPieces = 12;
-			}
-		} catch (NumberFormatException e) {
-			logger.warn("Invalid parity pieces {}, use 12 instead", props.getProperty("parity-pieces"));
-			cfg.parityPieces = 12;
-		}
+    void setParityPieces(int parityPieces) {
+        this.parityPieces = parityPieces;
+    }
 
-		return cfg;
+    public boolean isIncludeHiddenFiles() {
+        return includeHiddenFiles;
+    }
 
-	}
+    void setIncludeHiddenFiles(boolean includeHiddenFiles) {
+        this.includeHiddenFiles = includeHiddenFiles;
+    }
+
+    @Override
+    public String toString() {
+        return new ReflectionToStringBuilder(this).toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Config config = (Config) o;
+
+        if (dataPieces != config.dataPieces) return false;
+        if (parityPieces != config.parityPieces) return false;
+        if (includeHiddenFiles != config.includeHiddenFiles) return false;
+        if (!userName.equals(config.userName)) return false;
+        return primarySeed.equals(config.primarySeed);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userName.hashCode();
+        result = 31 * result + primarySeed.hashCode();
+        result = 31 * result + dataPieces;
+        result = 31 * result + parityPieces;
+        result = 31 * result + (includeHiddenFiles ? 1 : 0);
+        return result;
+    }
+
+    /**
+     * Save this configurations to the given file.
+     *
+     * @param path to the config file.
+     * @throws IOException if failed to write a file.
+     */
+    public void save(@NotNull final Path path) throws IOException {
+
+        final Properties props = new Properties();
+        props.setProperty(UserName, this.userName);
+        props.setProperty(PrimarySeed, this.primarySeed);
+        props.setProperty(DataPieces, String.valueOf(this.dataPieces));
+        props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
+        props.setProperty(IncludeHiddenFiles, String.valueOf(this.includeHiddenFiles));
+
+        try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            props.store(output, "");
+        }
+
+    }
+
+    /**
+     * Load configurations from the given file.
+     *
+     * @param path to the config file.
+     * @return a Config object.
+     * @throws IOException if failed to read a file.
+     */
+    public static Config load(@NotNull final Path path) throws IOException {
+
+        logger.info("Loading config file {}", path);
+        final Properties props = new Properties();
+        try (final InputStream in = Files.newInputStream(path)) {
+            props.load(in);
+        }
+
+        final Config cfg = new Config();
+        cfg.userName = props.getProperty(UserName, "");
+        cfg.primarySeed = props.getProperty(PrimarySeed, "");
+
+        try {
+            cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, "1"));
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid data pieces {}", props.getProperty(DataPieces));
+            cfg.dataPieces = 1;
+        }
+
+        try {
+            cfg.parityPieces = Integer.valueOf(props.getProperty(ParityPieces, "12"));
+            if (cfg.parityPieces < 12) {
+                logger.warn("Invalid parity pieces {}, minimum 12 pieces are required", cfg.parityPieces);
+                cfg.parityPieces = 12;
+            }
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid parity pieces {}", props.getProperty(ParityPieces));
+            cfg.parityPieces = 12;
+        }
+
+        cfg.includeHiddenFiles = Boolean.valueOf(props.getProperty(IncludeHiddenFiles, "false"));
+
+        logger.info(
+                "Sync configuration: data pieces = {}, parity pieces = {}, include hidden files = {}",
+                cfg.dataPieces, cfg.parityPieces, cfg.includeHiddenFiles);
+        return cfg;
+
+    }
 
 }

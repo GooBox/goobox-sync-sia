@@ -92,9 +92,9 @@ public class UploadLocalFileTaskTest {
     public void testUploadFile() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
-        cfg.dataPieces = 120;
-        cfg.parityPieces = 50;
+        cfg.setUserName("testuser");
+        cfg.setDataPieces(120);
+        cfg.setParityPieces(50);
         final Context ctx = new Context(cfg, null);
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
@@ -105,7 +105,7 @@ public class UploadLocalFileTaskTest {
 
         new Expectations() {{
             final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.dataPieces, cfg.parityPieces, localPath.toString());
+            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
         }};
 
         final SiaFileMock file = new SiaFileMock(localPath);
@@ -118,9 +118,9 @@ public class UploadLocalFileTaskTest {
     public void testUploadFileWithLocalPath() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
-        cfg.dataPieces = 120;
-        cfg.parityPieces = 50;
+        cfg.setUserName("testuser");
+        cfg.setDataPieces(120);
+        cfg.setParityPieces(50);
         final Context ctx = new Context(cfg, null);
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
@@ -131,7 +131,7 @@ public class UploadLocalFileTaskTest {
 
         new Expectations() {{
             final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.dataPieces, cfg.parityPieces, localPath.toString());
+            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
         }};
 
         // Use a local path instead of a SiaFile instance.
@@ -143,9 +143,9 @@ public class UploadLocalFileTaskTest {
     public void testFailedToUpload() throws ApiException, IOException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
-        cfg.dataPieces = 120;
-        cfg.parityPieces = 50;
+        cfg.setUserName("testuser");
+        cfg.setDataPieces(120);
+        cfg.setParityPieces(50);
         final Context ctx = new Context(cfg, null);
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
@@ -156,7 +156,7 @@ public class UploadLocalFileTaskTest {
 
         new Expectations() {{
             final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.dataPieces, cfg.parityPieces, localPath.toString());
+            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
             result = new ApiException();
         }};
 

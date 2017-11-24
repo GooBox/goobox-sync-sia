@@ -32,13 +32,13 @@ public class ContextTest {
 	public void test() {
 
 		final Config cfg = new Config();
-		cfg.userName = "test-user";
+		cfg.setUserName("test-user");
 		final ApiClient cli = new ApiClient();
 
 		final Context ctx = new Context(cfg, cli);
 		assertEquals(ctx.config, cfg);
 		assertEquals(ctx.apiClient, cli);
-		assertEquals(ctx.pathPrefix, Paths.get(cfg.userName, "Goobox"));
+		assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
 
 	}
 

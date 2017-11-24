@@ -62,7 +62,7 @@ public class UploadLocalFileTask implements Runnable {
             final Path siaPath = this.remotePath.resolve(String.valueOf(this.creationTime.getTime()));
             api.renterUploadSiapathPost(
                     siaPath.toString(),
-                    this.ctx.config.dataPieces, this.ctx.config.parityPieces,
+                    this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
                     this.localPath.toString());
         } catch (ApiException e) {
             logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));

@@ -26,13 +26,13 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
+import io.goobox.sync.sia.command.CreateAllowance;
+import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.storj.Utils;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -63,33 +64,47 @@ public class App {
      */
     static final String CONFIG_FILE = "goobox.properties";
 
-	private Path configPath;
-	private static final Logger logger = LogManager.getLogger();
+    private Path configPath;
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * The main function.
      *
      * @param args command line arguments.
      */
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
-	    final Options opts = new Options();
-	    opts.addOption(null, "reset-db", false, "reset sync DB");
-        opts.addOption("h", "help", false,"show this help");
+        if (args.length != 0) {
+            // Checking sub commands.
+            switch (args[0]) {
+                case Wallet.CommandName:
+                    Wallet.main(Arrays.copyOfRange(args, 1, args.length));
+                    return;
+
+                case CreateAllowance.CommandName:
+                    CreateAllowance.main((Arrays.copyOfRange(args, 1, args.length)));
+                    return;
+
+            }
+        }
+
+        final Options opts = new Options();
+        opts.addOption(null, "reset-db", false, "reset sync DB");
+        opts.addOption("h", "help", false, "show this help");
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
-            if(cmd.hasOption("h")){
+            if (cmd.hasOption("h")) {
                 final HelpFormatter help = new HelpFormatter();
                 help.printHelp("goobox-sync-sia", opts, true);
                 System.exit(0);
             }
 
-            if(cmd.hasOption("reset-db")){
+            if (cmd.hasOption("reset-db")) {
 
                 final File dbFile = Utils.getDataDir().resolve(DB.DatabaseFileName).toFile();
                 logger.info("Deleting old sync database {}", dbFile);
-                if(dbFile.exists()){
+                if (dbFile.exists()) {
                     dbFile.delete();
                 }
 
@@ -107,31 +122,31 @@ public class App {
 
         }
 
-	}
+    }
 
     /**
      * Initialize the app and starts an event loop.
      */
-	private void init() {
+    private void init() {
 
-		this.configPath = Utils.getDataDir().resolve(CONFIG_FILE);
-		final Config cfg = this.loadConfig(this.configPath);
+        this.configPath = Utils.getDataDir().resolve(CONFIG_FILE);
+        final Config cfg = this.loadConfig(this.configPath);
 
-		if (!checkAndCreateSyncDir()) {
-			System.exit(1);
-		}
-		if (!checkAndCreateDataDir()) {
-			System.exit(1);
-		}
+        if (!checkAndCreateSyncDir()) {
+            System.exit(1);
+        }
+        if (!checkAndCreateDataDir()) {
+            System.exit(1);
+        }
 
-		final ApiClient apiClient = new ApiClient();
-		apiClient.setBasePath("http://localhost:9980");
-		final OkHttpClient httpClient = apiClient.getHttpClient();
-		httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-		httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        final ApiClient apiClient = new ApiClient();
+        apiClient.setBasePath("http://localhost:9980");
+        final OkHttpClient httpClient = apiClient.getHttpClient();
+        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
+        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
 
         final BlockingQueue<Runnable> tasks = new LinkedBlockingQueue<>();
-		final Context ctx = new Context(cfg, apiClient);
+        final Context ctx = new Context(cfg, apiClient);
 
         try {
 
@@ -151,46 +166,46 @@ public class App {
         executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 0, 30, TimeUnit.SECONDS);
         executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 0, 30, TimeUnit.SECONDS);
 
-	}
+    }
 
-	/**
-	 * Load configuration.
-	 * 
-	 * @param path
-	 * @return
-	 */
-	private Config loadConfig(final Path path) {
+    /**
+     * Load configuration.
+     *
+     * @param path
+     * @return
+     */
+    private Config loadConfig(final Path path) {
 
-		Config cfg;
-		try {
-			cfg = Config.load(path);
-		} catch (IOException e) {
-			this.logger.error("cannot load config file {}: {}", path, e.getMessage());
-			cfg = new Config();
-		}
-		return cfg;
+        Config cfg;
+        try {
+            cfg = Config.load(path);
+        } catch (IOException e) {
+            this.logger.error("cannot load config file {}: {}", path, e.getMessage());
+            cfg = new Config();
+        }
+        return cfg;
 
-	}
+    }
 
     /**
      * Creates a directory which will be synchronized with cloud storage if not exists.
      *
      * @return true if the synchronizing directory is ready.
      */
-	private boolean checkAndCreateSyncDir() {
-		this.logger.info("Checking if local Goobox sync folder exists: {}", Utils.getSyncDir());
-		return checkAndCreateFolder(Utils.getSyncDir());
-	}
+    private boolean checkAndCreateSyncDir() {
+        this.logger.info("Checking if local Goobox sync folder exists: {}", Utils.getSyncDir());
+        return checkAndCreateFolder(Utils.getSyncDir());
+    }
 
     /**
      * Create a directory which have Goobox data files if not exists.
      *
      * @return true if the data directory is ready.
      */
-	private boolean checkAndCreateDataDir() {
-		this.logger.info("Checking if Goobox data folder exists: {}", Utils.getDataDir());
-		return checkAndCreateFolder(Utils.getDataDir());
-	}
+    private boolean checkAndCreateDataDir() {
+        this.logger.info("Checking if Goobox data folder exists: {}", Utils.getDataDir());
+        return checkAndCreateFolder(Utils.getDataDir());
+    }
 
     /**
      * Create a folder represented by the given path if not exists.
@@ -198,24 +213,24 @@ public class App {
      * @param path represents a folder to be checked and created.
      * @return true if the target folder has been existed or created.
      */
-	private boolean checkAndCreateFolder(Path path) {
-		if (Files.exists(path)) {
-			return true;
-		} else {
-			try {
-				Files.createDirectory(path);
-				this.logger.info("Folder {} has been created", path);
-				return true;
-			} catch (IOException e) {
-				this.logger.error("Failed to create folder {}: {}", path, e.getMessage());
-				return false;
-			}
-		}
-	}
+    private boolean checkAndCreateFolder(Path path) {
+        if (Files.exists(path)) {
+            return true;
+        } else {
+            try {
+                Files.createDirectory(path);
+                this.logger.info("Folder {} has been created", path);
+                return true;
+            } catch (IOException e) {
+                this.logger.error("Failed to create folder {}: {}", path, e.getMessage());
+                return false;
+            }
+        }
+    }
 
     /**
      * Prepare the wallet.
-     *
+     * <p>
      * If no wallets have been created, it'll initialize a wallet.
      *
      * @param ctx context object.
@@ -231,33 +246,33 @@ public class App {
             try {
 
                 this.logger.info("Unlocking a wallet");
-                api.walletUnlockPost(ctx.config.primarySeed);
+                api.walletUnlockPost(ctx.config.getPrimarySeed());
 
             } catch (ApiException e) {
                 this.logger.info("Failed to unlock a wallet: {}", APIUtils.getErrorMessage(e));
 
                 try {
 
-                    if (ctx.config.primarySeed != null && !ctx.config.primarySeed.isEmpty()) {
+                    if (!ctx.config.getPrimarySeed().isEmpty()) {
 
                         // If a primary seed is given but the corresponding wallet doesn't exist,
                         // initialize a wallet with the seed.
                         this.waitSynchronization(ctx);
 
                         this.logger.info("Initializing a wallet with the given seed");
-                        api.walletInitSeedPost("", ctx.config.primarySeed, true, null);
+                        api.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
 
                     } else {
 
                         // If there is no information about wallets, create a wallet.
                         this.logger.info("Initializing a wallet");
                         final InlineResponse20016 seed = api.walletInitPost("", null, false);
-                        ctx.config.primarySeed = seed.getPrimaryseed();
+                        ctx.config.setPrimarySeed(seed.getPrimaryseed());
                     }
 
                     // Try to unlock the wallet, again.
                     this.logger.info("Unlocking a wallet");
-                    api.walletUnlockPost(ctx.config.primarySeed);
+                    api.walletUnlockPost(ctx.config.getPrimarySeed());
 
                 } catch (ApiException e1) {
                     // Cannot initialize new wallet.
@@ -268,7 +283,7 @@ public class App {
                 try {
                     ctx.config.save(this.configPath);
                 } catch (IOException e1) {
-                    this.logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(), ctx.config.primarySeed);
+                    this.logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(), ctx.config.getPrimarySeed());
                     System.exit(1);
                 }
 
@@ -291,11 +306,11 @@ public class App {
      * @param ctx context object.
      * @throws ApiException when an error occurs in Consensus API.
      */
-	private void waitSynchronization(final Context ctx) throws ApiException {
+    private void waitSynchronization(final Context ctx) throws ApiException {
 
-	    this.logger.info("Checking consensus DB");
+        this.logger.info("Checking consensus DB");
         final ConsensusApi api = new ConsensusApi(ctx.apiClient);
-        while(true) {
+        while (true) {
 
             final InlineResponse2006 res = api.consensusGet();
             if (res.getSynced()) {
@@ -307,7 +322,7 @@ public class App {
 
                 this.logger.info("Consensus DB isn't synchronized, wait a minute");
                 try {
-                    Thread.sleep(60*1000);
+                    Thread.sleep(60 * 1000);
                 } catch (InterruptedException e) {
                     this.logger.trace("Thread {} was interrupted until waiting synchronization: {}", Thread.currentThread().getName(), e.getMessage());
                 }
@@ -328,7 +343,7 @@ public class App {
 
         this.logger.info("Checking contracts");
         final RenterApi api = new RenterApi(ctx.apiClient);
-        while(true) {
+        while (true) {
 
             final int contracts = api.renterContractsGet().getContracts().size();
             if (contracts >= MIN_CONTRACTS) {
@@ -340,7 +355,7 @@ public class App {
 
                 this.logger.info("Signed contracts aren't enough ({} / {}), wait a minute", contracts, MIN_CONTRACTS);
                 try {
-                    Thread.sleep(60*1000);
+                    Thread.sleep(60 * 1000);
                 } catch (InterruptedException e) {
                     this.logger.trace("Thread {} was interrupted until waiting contracts: {}", Thread.currentThread().getName(), e.getMessage());
                 }

@@ -29,6 +29,7 @@ import io.goobox.sync.storj.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -263,15 +264,39 @@ public class CheckStateTask implements Runnable {
      * <p>
      * The returned paths include sub directories.
      *
-     * @return
+     * @return a set of paths.
      */
     private Set<Path> getLocalPaths() {
+        return this.getLocalPaths(Utils.getSyncDir());
+    }
+
+    /**
+     * Returns a list of paths representing local files in the given parent directory.
+     * <p>
+     * The returned paths include sub directories.
+     *
+     * @param parent directory of this search
+     * @return a set of paths.
+     */
+    private Set<Path> getLocalPaths(Path parent) {
 
         final Set<Path> paths = new HashSet<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Utils.getSyncDir())) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(parent)) {
             for (Path path : stream) {
-                this.logger.debug("Found local file {}", path);
-                paths.add(path);
+
+                final File file = path.toFile();
+                if(file.isHidden() && !this.ctx.config.isIncludeHiddenFiles()){
+                    continue;
+                }
+
+                if(file.isDirectory()){
+                    // Search paths in the sub directory.
+                    paths.addAll(this.getLocalPaths(path));
+                }else {
+                    this.logger.debug("Found local file {}", path);
+                    paths.add(path);
+                }
+
             }
         } catch (IOException e) {
             this.logger.error("Failed to list files: {}", e.getMessage());

@@ -31,12 +31,16 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -117,7 +121,7 @@ public class CheckDownloadStatusTaskTest {
     public void testDownloadingFiles() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
@@ -213,7 +217,7 @@ public class CheckDownloadStatusTaskTest {
     public void testFailedDownloads() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
@@ -248,7 +252,7 @@ public class CheckDownloadStatusTaskTest {
     public void testCreationTimeOfDownloadedFile() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
@@ -279,6 +283,33 @@ public class CheckDownloadStatusTaskTest {
 
         assertEquals(SyncState.SYNCED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
         assertEquals(targetDate.getTime() / 1000, new Date(file1LocalPath.toFile().lastModified()).getTime() / 1000);
+
+    }
+
+    @Test
+    public void testParseDate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        final String rfc3339 = new String("2009-11-10T23:00:00Z");
+
+        final Method parseDateTime = CheckDownloadStatusTask.class.getDeclaredMethod("parseDateTime", String.class);
+        parseDateTime.setAccessible(true);
+        final DateTime res1 = ((DateTime) parseDateTime.invoke(null, rfc3339)).toDateTime(DateTimeZone.UTC);
+        assertEquals(2009, res1.year().get());
+        assertEquals(11, res1.monthOfYear().get());
+        assertEquals(10, res1.dayOfMonth().get());
+        assertEquals(23, res1.hourOfDay().get());
+        assertEquals(0, res1.minuteOfHour().get());
+        assertEquals(0, res1.secondOfMinute().get());
+
+
+        final String rfc3339tz = new String("2017-11-23T14:42:59.864874-05:00");
+        final DateTime res2 = (DateTime) parseDateTime.invoke(null, rfc3339tz);
+        assertEquals(2017, res2.year().get());
+        assertEquals(11, res2.monthOfYear().get());
+        assertEquals(23, res2.dayOfMonth().get());
+        assertEquals(14, res2.hourOfDay().get());
+        assertEquals(42, res2.minuteOfHour().get());
+        assertEquals(59, res2.secondOfMinute().get());
 
     }
 
