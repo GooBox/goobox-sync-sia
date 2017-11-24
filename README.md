@@ -38,7 +38,7 @@ primary-seed = foo bar baz foo bar baz foo bar baz foo bar baz foo bar baz foo b
 ## Usage
 1. Open a Command Prompt / Terminal
 2. Navigate to the extracted goobox-sync-sia folder
-3. Run the batch file, i.e. goobox-sync-sia.bat (for Windows), goobox-sync-sia (for Mac/Linux)
+3. Run the batch file, i.e. `goobox-sync-sia.bat` (for Windows), `goobox-sync-sia` (for Mac/Linux)
 
 
 Currently this app supports basic one-way sync from the SIA cloud to the local file system.
@@ -55,6 +55,20 @@ The app uses an embedded Nitrine database for storing the current sync state of 
 
 The `list-db.bat` (for Windows) `list-db` (for Max/Linux) scripts can be used to dump the content of the database.
 This might be useful for debugging.
+
+### Sub commands
+`goobox-sync-sia.bat` and `goobox-sync-sia` have some sub commands.
+
+#### wallet command
+`goobox-sync-sia.bat wallet` and `goobox-sync-sia wallet` print the following your wallet information:
+
+  - the main wallet address
+  - confirmed balance (in SC)
+  - current spending
+  - current prices (approx.)
+
+#### create-allowance command
+`goobox-sync-sia.bat create-allowance` and `goobox-sync-sia create-allowance` creates allowance. By default, this command adds your confirmed balance to the fund. You can choose hastings to be added to the fund with `--fund` flag, e.g. `goobox-sync-sia.bat create-allowance --fund 100000` add 100000 hastings to your current fund.
 
 ## License
 This software is released under The GNU General Public License Version 3, see [LICENSE](LICENSE) for more detail.
