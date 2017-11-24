@@ -36,6 +36,10 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
 import io.goobox.sync.storj.db.SyncState;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 
 /**
  * CheckDownloadStatusTask requests current downloading status to siad and prints it.
@@ -46,9 +50,6 @@ public class CheckDownloadStatusTask implements Runnable {
 
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
-
-    private static final SimpleDateFormat RFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ssZ");
-
 
     public CheckDownloadStatusTask(final Context ctx) {
         this.ctx = ctx;
@@ -138,13 +139,13 @@ public class CheckDownloadStatusTask implements Runnable {
 
                 try {
 
-                    final Date prev = RFC3339.parse(map.get(file.getSiapath()).getStarttime());
-                    final Date curr = RFC3339.parse(file.getStarttime());
-                    if (prev.before(curr)) {
+                    final DateTime prev = parseDateTime(map.get(file.getSiapath()).getStarttime());
+                    final DateTime curr = parseDateTime(file.getStarttime());
+                    if (prev.isBefore(curr)){
                         map.put(file.getSiapath(), file);
                     }
 
-                } catch (ParseException e) {
+                } catch (IllegalArgumentException e) {
                     logger.error("Failed to parse the start date of {}: {}", file.getSiapath(), e.getMessage());
                     map.put(file.getSiapath(), file);
                 }
@@ -156,6 +157,16 @@ public class CheckDownloadStatusTask implements Runnable {
         }
         return map.values();
 
+    }
+
+    /**
+     * Parse the given string to a date object.
+     *
+     * @param input string representing a date time in RFC3339 format.
+     * @return a date object.
+     */
+    private static DateTime parseDateTime(final String input) throws IllegalArgumentException{
+        return ISODateTimeFormat.dateTimeParser().parseDateTime(input);
     }
 
 }
