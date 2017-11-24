@@ -26,10 +26,16 @@ import java.nio.file.Path;
 public class UtilsMock extends MockUp<Utils> {
 
     public static Path syncDir;
+    public static Path dataDir;
 
     @Mock
-    public static Path getSyncDir(){
+    public static Path getSyncDir() {
         return syncDir;
+    }
+
+    @Mock
+    public static Path getDataDir() {
+        return dataDir;
     }
 
 }

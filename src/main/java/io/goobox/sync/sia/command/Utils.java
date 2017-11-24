@@ -18,16 +18,36 @@
 package io.goobox.sync.sia.command;
 
 import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiClient;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
 
-    public static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
+    /**
+     * Default config file name.
+     */
+    static final String ConfigFileName = "goobox.properties";
 
-    public static ApiClient getApiClient() {
+    /**
+     * Defines 1 SC in hastings.
+     */
+    static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
+
+    private static final Logger logger = LogManager.getLogger();
+
+    /**
+     * Creates an API client.
+     *
+     * @return an ApiClient object.
+     */
+    static ApiClient getApiClient() {
 
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath("http://localhost:9980");
@@ -38,5 +58,25 @@ public class Utils {
         return apiClient;
 
     }
+
+    /**
+     * Load configuration.
+     *
+     * @param path file path to a configuration file.
+     * @return a Config object.
+     */
+    static Config loadConfig(final Path path) {
+
+        Config cfg;
+        try {
+            cfg = Config.load(path);
+        } catch (IOException e) {
+            logger.error("cannot load config file {}: {}", path, e.getMessage());
+            cfg = new Config();
+        }
+        return cfg;
+
+    }
+
 
 }

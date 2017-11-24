@@ -18,10 +18,12 @@
 package io.goobox.sync.sia.command;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
+import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -30,6 +32,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 
 /**
@@ -88,11 +91,18 @@ public class CreateAllowance implements Runnable {
         final ApiClient apiClient = Utils.getApiClient();
 
         try {
+            final WalletApi wallet = new WalletApi(apiClient);
+            final InlineResponse20013 walletInfo = wallet.walletGet();
+
+            // If the wallet is locked, unlock it first.
+            if(!walletInfo.getUnlocked()){
+                final Config cfg = Config.load(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
+                wallet.walletUnlockPost(cfg.primarySeed);
+            }
 
             // If fund is null, get current balance.
             if (this.fund == null) {
-                final WalletApi wallet = new WalletApi(apiClient);
-                this.fund = new BigDecimal(wallet.walletGet().getConfirmedsiacoinbalance());
+                this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
             }
 
             // Get current fund and compute updated fund by adding `fund` value.
@@ -105,6 +115,11 @@ public class CreateAllowance implements Runnable {
 
         } catch (ApiException e) {
             logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+        } catch (IOException e) {
+            logger.error(
+                    "Failed to read config file {}: {}",
+                    io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName),
+                    e.getMessage());
         }
 
     }

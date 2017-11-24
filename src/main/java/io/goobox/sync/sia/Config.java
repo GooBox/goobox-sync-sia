@@ -43,29 +43,29 @@ public class Config {
     /**
      * user name.
      */
-    String userName;
+    public String userName;
 
     /**
      * primary seed.
      */
-    String primarySeed;
+    public String primarySeed;
 
     /**
      * The number of data pieces to use when erasure coding the file.
      */
-    int dataPieces;
+    public int dataPieces;
 
     /**
      * The number of parity pieces to use when erasure coding the file. Total
      * redundancy of the file is (datapieces+paritypieces)/datapieces. Minimum
      * required: 12
      */
-    int parityPieces;
+    public int parityPieces;
 
     /**
      * if true, sync hidden files, too.
      */
-    boolean includeHiddenFiles;
+    public boolean includeHiddenFiles;
 
     private static Logger logger = LogManager.getLogger();
 
