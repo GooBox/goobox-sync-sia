@@ -36,15 +36,16 @@ public class APIUtilsTest {
         err.setMessage(errMsg);
 
         final ApiException e = new ApiException(501, "", null, gson.toJson(err));
-        assertEquals(APIUtils.getErrorMessage(e), errMsg);
+        assertEquals(errMsg, APIUtils.getErrorMessage(e));
 
     }
 
     @Test
     public void testGetErrorMessageWithEmptyBody() {
 
-        final ApiException e = new ApiException(501, "", null, "");
-        assertEquals(APIUtils.getErrorMessage(e), "");
+        final String anotherMsg = "another msg";
+        final ApiException e = new ApiException(501, anotherMsg, null, "");
+        assertEquals(anotherMsg, APIUtils.getErrorMessage(e));
 
     }
 
@@ -52,7 +53,7 @@ public class APIUtilsTest {
     public void testGetErrorMessageWithNullBody() {
 
         final ApiException e = new ApiException();
-        assertEquals(APIUtils.getErrorMessage(e), "");
+        assertEquals(null, APIUtils.getErrorMessage(e));
 
     }
 

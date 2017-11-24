@@ -30,7 +30,7 @@ public class APIUtils {
 
         final String body = e.getResponseBody();
         if (body == null || body.isEmpty()) {
-            return "";
+            return e.getMessage();
         }
 
         final Gson gson = new Gson();
