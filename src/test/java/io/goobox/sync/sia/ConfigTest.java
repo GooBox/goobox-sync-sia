@@ -57,11 +57,11 @@ public class ConfigTest {
 			writer.close();
 			
 			Config cfg = Config.load(tmpPath);
-			assertEquals(userName, cfg.userName);
-			assertEquals(primarySeed, cfg.primarySeed);
-			assertEquals(dataPieces, cfg.dataPieces);
-			assertEquals(parityPieces, cfg.parityPieces);
-			assertEquals(includeHiddenFiles.booleanValue(), cfg.includeHiddenFiles);
+			assertEquals(userName, cfg.getUserName());
+			assertEquals(primarySeed, cfg.getPrimarySeed());
+			assertEquals(dataPieces, cfg.getDataPieces());
+			assertEquals(parityPieces, cfg.getParityPieces());
+			assertEquals(includeHiddenFiles.booleanValue(), cfg.isIncludeHiddenFiles());
 
 		} finally {
 			if(tmpFile != null && tmpFile.exists()) {
@@ -91,10 +91,10 @@ public class ConfigTest {
 			writer.close();
 			
 			Config cfg = Config.load(tmpPath);
-			assertEquals(userName, cfg.userName);
-			assertEquals(primarySeed, cfg.primarySeed);
-			assertEquals(dataPieces, cfg.dataPieces);
-			assertEquals(12, cfg.parityPieces);
+			assertEquals(userName, cfg.getUserName());
+			assertEquals(primarySeed, cfg.getPrimarySeed());
+			assertEquals(dataPieces, cfg.getDataPieces());
+			assertEquals(12, cfg.getParityPieces());
 
 		} finally {
 			if(tmpFile != null && tmpFile.exists()) {
@@ -125,11 +125,11 @@ public class ConfigTest {
             writer.close();
 
             Config cfg = Config.load(tmpPath);
-            assertEquals(userName, cfg.userName);
-            assertEquals(primarySeed, cfg.primarySeed);
-            assertEquals(dataPieces, cfg.dataPieces);
-            assertEquals(parityPieces, cfg.parityPieces);
-            assertFalse(cfg.includeHiddenFiles);
+            assertEquals(userName, cfg.getUserName());
+            assertEquals(primarySeed, cfg.getPrimarySeed());
+            assertEquals(dataPieces, cfg.getDataPieces());
+            assertEquals(parityPieces, cfg.getParityPieces());
+            assertFalse(cfg.isIncludeHiddenFiles());
 
         } finally {
             if(tmpFile != null && tmpFile.exists()) {
@@ -144,25 +144,19 @@ public class ConfigTest {
 	public void testSave() throws IOException {
 		
 		Config cfg = new Config();
-		cfg.userName = "testuser@sample.com";
-		cfg.primarySeed = "a b c d e f g";
-		cfg.dataPieces = 5;
-		cfg.parityPieces = 12;
-		cfg.includeHiddenFiles = true;
+		cfg.setUserName("testuser@sample.com");
+		cfg.setPrimarySeed("a b c d e f g");
+		cfg.setDataPieces(5);
+		cfg.setParityPieces(12);
+		cfg.setIncludeHiddenFiles(true);
 
 		Path tmpPath = null;
 		try {
 		
 			tmpPath = Files.createTempFile(null, null);
 			cfg.save(tmpPath);
-			
-			Config cfg2 = Config.load(tmpPath);
-			assertEquals(cfg.userName, cfg2.userName);
-			assertEquals(cfg.primarySeed, cfg2.primarySeed);
-			assertEquals(cfg.dataPieces, cfg2.dataPieces);
-			assertEquals(cfg.parityPieces, cfg2.parityPieces);
-			assertEquals(cfg.includeHiddenFiles, cfg2.includeHiddenFiles);
-		
+			assertEquals(cfg, Config.load(tmpPath));
+
 		} finally {
 			if(tmpPath != null && tmpPath.toFile().exists()) {
 				tmpPath.toFile().delete();
@@ -175,11 +169,11 @@ public class ConfigTest {
 	public void testOverwrite() throws IOException {
 		
 		Config cfg = new Config();
-		cfg.userName = "testuser@sample.com";
-		cfg.primarySeed = "a b c d e f g";
-		cfg.dataPieces = 5;
-		cfg.parityPieces = 12;
-		cfg.includeHiddenFiles = true;
+		cfg.setUserName("testuser@sample.com");
+		cfg.setPrimarySeed("a b c d e f g");
+		cfg.setDataPieces(5);
+		cfg.setParityPieces(12);
+		cfg.setIncludeHiddenFiles(true);
 		
 		Path tmpPath = null;
 		try {
@@ -191,14 +185,8 @@ public class ConfigTest {
 			writer.close();
 			
 			cfg.save(tmpPath);
-			
-			Config cfg2 = Config.load(tmpPath);
-			assertEquals(cfg.userName, cfg2.userName);
-			assertEquals(cfg.primarySeed, cfg2.primarySeed);
-			assertEquals(cfg.dataPieces, cfg2.dataPieces);
-			assertEquals(cfg.parityPieces, cfg2.parityPieces);
-			assertEquals(cfg.includeHiddenFiles, cfg2.includeHiddenFiles);
-		
+			assertEquals(cfg, Config.load(tmpPath));
+
 		} finally {
 			if(tmpPath != null && tmpPath.toFile().exists()) {
 				tmpPath.toFile().delete();

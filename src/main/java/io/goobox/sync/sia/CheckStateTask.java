@@ -285,7 +285,7 @@ public class CheckStateTask implements Runnable {
             for (Path path : stream) {
 
                 final File file = path.toFile();
-                if(file.isHidden() && !this.ctx.config.includeHiddenFiles){
+                if(file.isHidden() && !this.ctx.config.isIncludeHiddenFiles()){
                     continue;
                 }
 

@@ -97,7 +97,7 @@ public class CreateAllowance implements Runnable {
             // If the wallet is locked, unlock it first.
             if(!walletInfo.getUnlocked()){
                 final Config cfg = Config.load(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
-                wallet.walletUnlockPost(cfg.primarySeed);
+                wallet.walletUnlockPost(cfg.getPrimarySeed());
             }
 
             // If fund is null, get current balance.

@@ -33,8 +33,6 @@ import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +49,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 
@@ -124,7 +121,7 @@ public class CheckDownloadStatusTaskTest {
     public void testDownloadingFiles() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
@@ -220,7 +217,7 @@ public class CheckDownloadStatusTaskTest {
     public void testFailedDownloads() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
@@ -255,7 +252,7 @@ public class CheckDownloadStatusTaskTest {
     public void testCreationTimeOfDownloadedFile() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();

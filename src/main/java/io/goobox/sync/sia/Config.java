@@ -16,6 +16,8 @@
  */
 package io.goobox.sync.sia;
 
+import com.sun.istack.internal.NotNull;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,35 +41,105 @@ public class Config {
     private static final String DataPieces = "data-pieces";
     private static final String ParityPieces = "parity-pieces";
     private static final String IncludeHiddenFiles = "include-hidden-files";
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * user name.
      */
-    public String userName;
+    private String userName;
 
     /**
      * primary seed.
      */
-    public String primarySeed;
+    private String primarySeed;
 
     /**
      * The number of data pieces to use when erasure coding the file.
      */
-    public int dataPieces;
+    private int dataPieces;
 
     /**
      * The number of parity pieces to use when erasure coding the file. Total
      * redundancy of the file is (datapieces+paritypieces)/datapieces. Minimum
      * required: 12
      */
-    public int parityPieces;
+    private int parityPieces;
 
     /**
      * if true, sync hidden files, too.
      */
-    public boolean includeHiddenFiles;
+    private boolean includeHiddenFiles;
 
-    private static Logger logger = LogManager.getLogger();
+    @NotNull
+    public String getUserName() {
+        return userName;
+    }
+
+    void setUserName(@NotNull String userName) {
+        this.userName = userName;
+    }
+
+    @NotNull
+    public String getPrimarySeed() {
+        return primarySeed;
+    }
+
+    void setPrimarySeed(@NotNull String primarySeed) {
+        this.primarySeed = primarySeed;
+    }
+
+    public int getDataPieces() {
+        return dataPieces;
+    }
+
+    void setDataPieces(int dataPieces) {
+        this.dataPieces = dataPieces;
+    }
+
+    public int getParityPieces() {
+        return parityPieces;
+    }
+
+    void setParityPieces(int parityPieces) {
+        this.parityPieces = parityPieces;
+    }
+
+    public boolean isIncludeHiddenFiles() {
+        return includeHiddenFiles;
+    }
+
+    void setIncludeHiddenFiles(boolean includeHiddenFiles) {
+        this.includeHiddenFiles = includeHiddenFiles;
+    }
+
+    @Override
+    public String toString() {
+        return new ReflectionToStringBuilder(this).toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Config config = (Config) o;
+
+        if (dataPieces != config.dataPieces) return false;
+        if (parityPieces != config.parityPieces) return false;
+        if (includeHiddenFiles != config.includeHiddenFiles) return false;
+        if (!userName.equals(config.userName)) return false;
+        return primarySeed.equals(config.primarySeed);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userName.hashCode();
+        result = 31 * result + primarySeed.hashCode();
+        result = 31 * result + dataPieces;
+        result = 31 * result + parityPieces;
+        result = 31 * result + (includeHiddenFiles ? 1 : 0);
+        return result;
+    }
 
     /**
      * Save this configurations to the given file.
@@ -75,7 +147,7 @@ public class Config {
      * @param path to the config file.
      * @throws IOException if failed to write a file.
      */
-    public void save(final Path path) throws IOException {
+    public void save(@NotNull final Path path) throws IOException {
 
         final Properties props = new Properties();
         props.setProperty(UserName, this.userName);
@@ -97,7 +169,7 @@ public class Config {
      * @return a Config object.
      * @throws IOException if failed to read a file.
      */
-    public static Config load(final Path path) throws IOException {
+    public static Config load(@NotNull final Path path) throws IOException {
 
         logger.info("Loading config file {}", path);
         final Properties props = new Properties();
@@ -106,8 +178,8 @@ public class Config {
         }
 
         final Config cfg = new Config();
-        cfg.userName = props.getProperty(UserName);
-        cfg.primarySeed = props.getProperty(PrimarySeed);
+        cfg.userName = props.getProperty(UserName, "");
+        cfg.primarySeed = props.getProperty(PrimarySeed, "");
 
         try {
             cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, "1"));

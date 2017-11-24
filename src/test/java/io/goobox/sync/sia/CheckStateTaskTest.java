@@ -107,7 +107,7 @@ public class CheckStateTaskTest {
     public void test() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         // Test files:
@@ -264,7 +264,7 @@ public class CheckStateTaskTest {
         Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         // Test files:
@@ -301,8 +301,8 @@ public class CheckStateTaskTest {
         Assume.assumeFalse("This test requires non-windows environment", System.getProperty("os.name").startsWith("Windows"));
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
-        cfg.includeHiddenFiles = true;
+        cfg.setUserName("testuser");
+        cfg.setIncludeHiddenFiles(true);
         final Context ctx = new Context(cfg, null);
 
         // Test files:

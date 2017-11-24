@@ -92,7 +92,7 @@ public class DownloadRemoteFileTaskTest {
     public void testDownloadFile() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
@@ -113,14 +113,14 @@ public class DownloadRemoteFileTaskTest {
     /**
      * This test checks DownloadRemoteFileTask creates not existing parent directories.
      *
-     * @throws IOException if failed file handlings
+     * @throws IOException  if failed file handlings
      * @throws ApiException if API call raises some error
      */
     @Test
     public void testDownloadToNotExistingDir() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final Path remotePath = ctx.pathPrefix.resolve("subdir/testfile");
@@ -145,7 +145,7 @@ public class DownloadRemoteFileTaskTest {
     public void testHandlingOfApiException() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
@@ -169,7 +169,7 @@ public class DownloadRemoteFileTaskTest {
     public void testHandlingOfIOException(@Mocked Files files) throws IOException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final Path remotePath = ctx.pathPrefix.resolve("subdir/testfile");

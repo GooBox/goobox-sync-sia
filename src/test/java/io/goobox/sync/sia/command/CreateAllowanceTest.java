@@ -26,6 +26,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.mocks.UtilsMock;
+import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import org.apache.commons.cli.HelpFormatter;
@@ -152,11 +153,11 @@ public class CreateAllowanceTest {
         final double fund = 2234.85;
 
         final Config cfg = new Config();
-        cfg.userName = "testuser@sample.com";
-        cfg.primarySeed = "a b c d e f g";
-        cfg.dataPieces = 5;
-        cfg.parityPieces = 12;
-        cfg.includeHiddenFiles = true;
+        Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
+        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g" );
+        Deencapsulation.setField(cfg, "dataPieces", 5);
+        Deencapsulation.setField(cfg, "parityPieces", 12);
+        Deencapsulation.setField(cfg, "includeHiddenFiles", true);
         cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
 
         new Expectations() {{
@@ -167,7 +168,7 @@ public class CreateAllowanceTest {
             wallet.walletGet();
             result = res1;
 
-            wallet.walletUnlockPost(cfg.primarySeed);
+            wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());
@@ -195,11 +196,11 @@ public class CreateAllowanceTest {
         final double param = 12345.02;
         final double fund = 2234.85;
         final Config cfg = new Config();
-        cfg.userName = "testuser@sample.com";
-        cfg.primarySeed = "a b c d e f g";
-        cfg.dataPieces = 5;
-        cfg.parityPieces = 12;
-        cfg.includeHiddenFiles = true;
+        Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
+        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g" );
+        Deencapsulation.setField(cfg, "dataPieces", 5);
+        Deencapsulation.setField(cfg, "parityPieces", 12);
+        Deencapsulation.setField(cfg, "includeHiddenFiles", true);
         cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
 
         new Expectations() {{
@@ -209,7 +210,7 @@ public class CreateAllowanceTest {
             wallet.walletGet();
             result = res1;
 
-            wallet.walletUnlockPost(cfg.primarySeed);
+            wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());

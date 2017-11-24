@@ -45,7 +45,7 @@ public class Context {
 	public Context(final Config cfg, final ApiClient apiClient) {
 		this.config = cfg;
 		this.apiClient = apiClient;
-		this.pathPrefix = Paths.get(this.config.userName, "Goobox");
+		this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
 	}
 
 }

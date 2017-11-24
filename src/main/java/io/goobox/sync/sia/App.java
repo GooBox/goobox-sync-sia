@@ -246,33 +246,33 @@ public class App {
             try {
 
                 this.logger.info("Unlocking a wallet");
-                api.walletUnlockPost(ctx.config.primarySeed);
+                api.walletUnlockPost(ctx.config.getPrimarySeed());
 
             } catch (ApiException e) {
                 this.logger.info("Failed to unlock a wallet: {}", APIUtils.getErrorMessage(e));
 
                 try {
 
-                    if (ctx.config.primarySeed != null && !ctx.config.primarySeed.isEmpty()) {
+                    if (!ctx.config.getPrimarySeed().isEmpty()) {
 
                         // If a primary seed is given but the corresponding wallet doesn't exist,
                         // initialize a wallet with the seed.
                         this.waitSynchronization(ctx);
 
                         this.logger.info("Initializing a wallet with the given seed");
-                        api.walletInitSeedPost("", ctx.config.primarySeed, true, null);
+                        api.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
 
                     } else {
 
                         // If there is no information about wallets, create a wallet.
                         this.logger.info("Initializing a wallet");
                         final InlineResponse20016 seed = api.walletInitPost("", null, false);
-                        ctx.config.primarySeed = seed.getPrimaryseed();
+                        ctx.config.setPrimarySeed(seed.getPrimaryseed());
                     }
 
                     // Try to unlock the wallet, again.
                     this.logger.info("Unlocking a wallet");
-                    api.walletUnlockPost(ctx.config.primarySeed);
+                    api.walletUnlockPost(ctx.config.getPrimarySeed());
 
                 } catch (ApiException e1) {
                     // Cannot initialize new wallet.
@@ -283,7 +283,7 @@ public class App {
                 try {
                     ctx.config.save(this.configPath);
                 } catch (IOException e1) {
-                    this.logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(), ctx.config.primarySeed);
+                    this.logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(), ctx.config.getPrimarySeed());
                     System.exit(1);
                 }
 

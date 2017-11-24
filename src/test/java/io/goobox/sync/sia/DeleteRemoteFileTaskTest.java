@@ -96,7 +96,7 @@ public class DeleteRemoteFileTaskTest {
     public void test() throws IOException, ApiException {
 
         final Config cfg = new Config();
-        cfg.userName = "testuser";
+        cfg.setUserName("testuser");
         final Context ctx = new Context(cfg, null);
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
