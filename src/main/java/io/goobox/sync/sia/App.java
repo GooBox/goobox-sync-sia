@@ -26,6 +26,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
+import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.storj.Utils;
@@ -73,9 +74,18 @@ public class App {
      */
     public static void main(String[] args) {
 
-        if(args.length != 0 && args[0].equals("wallet")){
-            Wallet.main(Arrays.copyOfRange(args, 1, args.length));
-            return;
+        if (args.length != 0) {
+            // Checking sub commands.
+            switch (args[0]) {
+                case Wallet.CommandName:
+                    Wallet.main(Arrays.copyOfRange(args, 1, args.length));
+                    return;
+
+                case CreateAllowance.CommandName:
+                    CreateAllowance.main((Arrays.copyOfRange(args, 1, args.length)));
+                    return;
+
+            }
         }
 
         final Options opts = new Options();

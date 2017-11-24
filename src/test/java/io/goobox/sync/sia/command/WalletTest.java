@@ -102,27 +102,27 @@ public class WalletTest {
             result = res1;
 
             final InlineResponse20013 res2 = new InlineResponse20013();
-            res2.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(Wallet.Hasting).toString());
-            res2.setUnconfirmedincomingsiacoins(new BigDecimal(income).multiply(Wallet.Hasting).toString());
-            res2.setUnconfirmedoutgoingsiacoins(new BigDecimal(outcome).multiply(Wallet.Hasting).toString());
+            res2.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(Utils.Hasting).toString());
+            res2.setUnconfirmedincomingsiacoins(new BigDecimal(income).multiply(Utils.Hasting).toString());
+            res2.setUnconfirmedoutgoingsiacoins(new BigDecimal(outcome).multiply(Utils.Hasting).toString());
             wallet.walletGet();
             result = res2;
 
             final InlineResponse2008 res3 = new InlineResponse2008();
             final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-            spending.setDownloadspending(new BigDecimal(downloadSpending).multiply(Wallet.Hasting).toString());
-            spending.setUploadspending(new BigDecimal(uploadSpending).multiply(Wallet.Hasting).toString());
-            spending.setStoragespending(new BigDecimal(storageSpending).multiply(Wallet.Hasting).toString());
-            spending.setContractspending(new BigDecimal(contractSpending).multiply(Wallet.Hasting).toString());
+            spending.setDownloadspending(new BigDecimal(downloadSpending).multiply(Utils.Hasting).toString());
+            spending.setUploadspending(new BigDecimal(uploadSpending).multiply(Utils.Hasting).toString());
+            spending.setStoragespending(new BigDecimal(storageSpending).multiply(Utils.Hasting).toString());
+            spending.setContractspending(new BigDecimal(contractSpending).multiply(Utils.Hasting).toString());
             res3.setFinancialmetrics(spending);
             renter.renterGet();
             result = res3;
 
             final InlineResponse20012 res4 = new InlineResponse20012();
-            res4.setDownloadterabyte(new BigDecimal(downloadPrice).multiply(Wallet.Hasting).toString());
-            res4.setUploadterabyte(new BigDecimal(uploadPrice).multiply(Wallet.Hasting).toString());
-            res4.setStorageterabytemonth(new BigDecimal(storagePrice).multiply(Wallet.Hasting).toString());
-            res4.setFormcontracts(new BigDecimal(contractPrice).multiply(Wallet.Hasting).toString());
+            res4.setDownloadterabyte(new BigDecimal(downloadPrice).multiply(Utils.Hasting).toString());
+            res4.setUploadterabyte(new BigDecimal(uploadPrice).multiply(Utils.Hasting).toString());
+            res4.setStorageterabytemonth(new BigDecimal(storagePrice).multiply(Utils.Hasting).toString());
+            res4.setFormcontracts(new BigDecimal(contractPrice).multiply(Utils.Hasting).toString());
             renter.renterPricesGet();
             result = res4;
 

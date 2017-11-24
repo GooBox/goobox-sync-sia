@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.command;
 
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
@@ -35,15 +34,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Wallet command shows wallet information.
  */
 public class Wallet implements Runnable {
 
-    public static final Logger logger = LogManager.getLogger();
-    public static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
+    public static final String CommandName = "wallet";
+    private static final Logger logger = LogManager.getLogger();
 
     public static void main(String[] args) {
 
@@ -55,7 +53,7 @@ public class Wallet implements Runnable {
             if (cmd.hasOption("h")) {
                 System.out.println("here");
                 final HelpFormatter help = new HelpFormatter();
-                help.printHelp("goobox-sync-sia wallet", opts, true);
+                help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
                 return;
             }
 
@@ -63,7 +61,7 @@ public class Wallet implements Runnable {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
-            help.printHelp("goobox-sync-sia wallet", opts, true);
+            help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
             System.exit(1);
             return;
 
@@ -99,11 +97,7 @@ public class Wallet implements Runnable {
     @Override
     public void run() {
 
-        final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        final ApiClient apiClient = Utils.getApiClient();
 
         try {
 
@@ -114,13 +108,13 @@ public class Wallet implements Runnable {
             System.out.println(String.format(
                     "balance: %s SC",
                     new BigDecimal(balances.getConfirmedsiacoinbalance()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "unconfirmed delta: %s SC",
                     new BigDecimal(balances.getUnconfirmedincomingsiacoins()).
                             subtract(new BigDecimal(balances.getUnconfirmedoutgoingsiacoins())).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
 
             final RenterApi renter = new RenterApi(apiClient);
@@ -129,22 +123,22 @@ public class Wallet implements Runnable {
             System.out.println(String.format(
                     "  download: %s SC",
                     new BigDecimal(spendings.getDownloadspending()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  upload: %s SC",
                     new BigDecimal(spendings.getUploadspending()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  storage: %s SC",
                     new BigDecimal(spendings.getStoragespending()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  fee: %s SC",
                     new BigDecimal(spendings.getContractspending()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
 
             final InlineResponse20012 prices = renter.renterPricesGet();
@@ -152,22 +146,22 @@ public class Wallet implements Runnable {
             System.out.println(String.format(
                     "  download: %s SC/TB",
                     new BigDecimal(prices.getDownloadterabyte()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  upload: %s SC/TB",
                     new BigDecimal(prices.getUploadterabyte()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  storage: %s SC/TB*Month",
                     new BigDecimal(prices.getStorageterabytemonth()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  fee: %s SC",
                     new BigDecimal(prices.getFormcontracts()).
-                            divide(Hasting).
+                            divide(Utils.Hasting).
                             setScale(4, BigDecimal.ROUND_HALF_UP)));
 
         } catch (ApiException e) {
