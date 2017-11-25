@@ -22,11 +22,11 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Expectations;
 import mockit.Mocked;
 import org.apache.commons.io.FileUtils;
@@ -46,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CheckUploadStatusTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -100,33 +101,37 @@ public class CheckUploadStatusTaskTest {
         // - file1: finished uploading
         // - file2: still uploading
         // - file3: uploaded but already synced
+        // - file4: pending to be uploaded
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final Path remotePath1 = ctx.pathPrefix.resolve("file1");
         final Path localPath1 = Utils.getSyncDir().resolve("file1");
-        localPath1.toFile().createNewFile();
+        assertTrue(        localPath1.toFile().createNewFile());
         final InlineResponse20011Files file1 = new InlineResponse20011Files();
         file1.setSiapath(remotePath1.toString());
         file1.setLocalpath(localPath1.toString());
         file1.setFilesize(1234L);
         file1.setUploadprogress(new BigDecimal(100));
-        DB.addForUpload(new SiaFileFromFilesAPI(file1, ctx.pathPrefix));
+
+        DB.addForUpload(localPath1);
+        DB.setUploading(localPath1);
         files.add(file1);
 
         final Path remotePath2 = ctx.pathPrefix.resolve("file2");
         final Path localPath2 = Utils.getSyncDir().resolve("file2");
-        localPath2.toFile().createNewFile();
+        assertTrue(localPath2.toFile().createNewFile());
         final InlineResponse20011Files file2 = new InlineResponse20011Files();
         file2.setSiapath(remotePath2.toString());
         file2.setLocalpath(localPath2.toString());
         file2.setFilesize(1234L);
         file2.setUploadprogress(new BigDecimal(95.2));
-        DB.addForUpload(new SiaFileFromFilesAPI(file2, ctx.pathPrefix));
+        DB.addForUpload(localPath2);
+        DB.setUploading(localPath2);
         files.add(file2);
 
         final Path remotePath3 = ctx.pathPrefix.resolve("file3");
         final Path localPath3 = Utils.getSyncDir().resolve("file3");
-        localPath3.toFile().createNewFile();
+        assertTrue(        localPath3.toFile().createNewFile());
         final InlineResponse20011Files file3 = new InlineResponse20011Files();
         file3.setSiapath(remotePath3.toString());
         file3.setLocalpath(localPath3.toString());
@@ -134,6 +139,17 @@ public class CheckUploadStatusTaskTest {
         file3.setUploadprogress(new BigDecimal(100));
         DB.setSynced(new SiaFileFromFilesAPI(file3, ctx.pathPrefix));
         files.add(file3);
+
+        final Path remotePath4 = ctx.pathPrefix.resolve("file4");
+        final Path localPath4 = Utils.getSyncDir().resolve("file4");
+        assertTrue(localPath4.toFile().createNewFile());
+        final InlineResponse20011Files file4 = new InlineResponse20011Files();
+        file4.setSiapath(remotePath4.toString());
+        file4.setLocalpath(localPath4.toString());
+        file4.setFilesize(1234L);
+        file4.setUploadprogress(new BigDecimal(0));
+        DB.addForUpload(localPath4);
+        files.add(file4);
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
@@ -144,8 +160,9 @@ public class CheckUploadStatusTaskTest {
 
         new CheckUploadStatusTask(ctx).run();
         assertEquals(SyncState.SYNCED, DB.get(localPath1).getState());
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath2).getState());
+        assertEquals(SyncState.UPLOADING, DB.get(localPath2).getState());
         assertEquals(SyncState.SYNCED, DB.get(localPath3).getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath4).getState());
         assertTrue(DBMock.committed);
 
     }

@@ -20,11 +20,11 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -45,6 +45,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -99,7 +100,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 
@@ -111,6 +112,8 @@ public class UploadLocalFileTaskTest {
         final SiaFileMock file = new SiaFileMock(localPath);
         file.setRemotePath(remotePath);
         new UploadLocalFileTask(ctx, file, now).run();
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -125,7 +128,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 
@@ -136,6 +139,8 @@ public class UploadLocalFileTaskTest {
 
         // Use a local path instead of a SiaFile instance.
         new UploadLocalFileTask(ctx, localPath, now).run();
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -150,7 +155,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 

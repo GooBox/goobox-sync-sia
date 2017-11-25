@@ -49,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JMockit.class)
 public class DeleteRemoteFileTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -124,9 +125,9 @@ public class DeleteRemoteFileTaskTest {
         files.add(file3);
 
         final SiaFile file = new SiaFileFromFilesAPI(file3, ctx.pathPrefix);
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.setSynced(file);
-        localPath.toFile().delete();
+        assertTrue(localPath.toFile().delete());
 
 
         new Expectations() {{

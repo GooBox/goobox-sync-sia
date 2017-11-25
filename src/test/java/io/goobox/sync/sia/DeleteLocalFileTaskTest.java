@@ -83,7 +83,7 @@ public class DeleteLocalFileTaskTest {
     public void testDeletingExistingFile() throws IOException {
 
         final Path localPath = Utils.getSyncDir().resolve("file1");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
 
         final SiaFileMock file = new SiaFileMock(localPath);
         DB.setSynced(file);
@@ -99,12 +99,12 @@ public class DeleteLocalFileTaskTest {
     public void testDeletingNotExistingFile() throws IOException {
 
         final Path localPath = Utils.getSyncDir().resolve("file1");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
 
         final SiaFileMock file = new SiaFileMock(localPath);
         DB.setSynced(file);
 
-        localPath.toFile().delete();
+        assertTrue(localPath.toFile().delete());
         assertFalse(localPath.toFile().exists());
 
         new DeleteLocalFileTask(localPath).run();

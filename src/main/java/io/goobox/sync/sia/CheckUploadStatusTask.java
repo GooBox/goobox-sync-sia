@@ -22,6 +22,8 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,21 +57,27 @@ class CheckUploadStatusTask implements Runnable {
             for (InlineResponse20011Files item : res.getFiles()) {
 
                 final SiaFileFromFilesAPI file = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
                     continue;
                 }
 
-                logger.debug("Found remote file {}", file.getRemotePath());
+                final SyncFile syncFile = DB.get(file);
+                if (syncFile.getState() != SyncState.UPLOADING) {
+                    logger.debug("Found remote file {} but it's not being uploaded", file.getRemotePath());
+                    continue;
+                }
+
                 if (file.getUploadProgress().compareTo(Completed) >= 0) {
-                    logger.debug("File {} has been uploaded", file.getLocalPath());
+                    logger.info("File {} has been uploaded", file.getLocalPath());
                     try {
                         DB.setSynced(file);
                     } catch (IOException e) {
                         logger.error("Failed to update the sync db: {}", e.getMessage());
+                        DB.setUploadFailed(file.getLocalPath());
                     }
                 } else {
-                    logger.info(
+                    logger.debug(
                             "File {} is now being uploaded ({}%)", file.getName(),
                             file.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
                     ++nFiles;
@@ -83,8 +91,9 @@ class CheckUploadStatusTask implements Runnable {
 
         } catch (ApiException e) {
             logger.error("Failed to retrieve uploaing status: {}", APIUtils.getErrorMessage(e));
+        } finally {
+            DB.commit();
         }
-        DB.commit();
 
     }
 

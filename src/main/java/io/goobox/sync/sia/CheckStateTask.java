@@ -22,10 +22,10 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,15 +116,16 @@ class CheckStateTask implements Runnable {
 
                                     // upload
                                     logger.info("Local file {} is going to be uploaded", file.getName());
-                                    DB.addForUpload(file);
+                                    DB.addForUpload(file.getLocalPath());
                                     final Date created = new Date(file.getLocalPath().toFile().lastModified());
                                     this.executor.execute(new UploadLocalFileTask(this.ctx, file, created));
 
                                 }
 
-                            } else {
-                                // no change - do nothing
                             }
+//                            else {
+//                                // no change - do nothing
+//                            }
 
                         } catch (IOException e) {
                             logger.error("Failed to access {}: {}", file.getLocalPath(), e.getMessage());
@@ -205,9 +206,11 @@ class CheckStateTask implements Runnable {
 
             logger.catching(e);
 
-        }
+        } finally {
 
-        DB.commit();
+            DB.commit();
+
+        }
 
     }
 

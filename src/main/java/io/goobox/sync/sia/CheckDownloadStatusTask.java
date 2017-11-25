@@ -22,8 +22,8 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20010;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
-import io.goobox.sync.storj.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joda.time.DateTime;
@@ -62,49 +62,44 @@ class CheckDownloadStatusTask implements Runnable {
             for (InlineResponse20010Downloads rawFile : getRecentDownloads(downloads.getDownloads())) {
 
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(rawFile, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
-                    // This file isn't managed by Goobox.
+                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                    continue;
+                }
+
+                final SyncFile syncFile = DB.get(file);
+                if (syncFile.getState() != SyncState.DOWNLOADING) {
+                    logger.debug("Found remote file {} but it's not being downloaded", file.getRemotePath());
                     continue;
                 }
 
                 final String err = file.getError();
                 if (err != null && !err.isEmpty()) {
 
-                    // TODO: Error handling.
                     logger.error("Failed to download {}: {}", file.getName(), err);
-                    if (DB.contains(file)) {
-                        final SyncFile syncFile = DB.get(file);
-                        if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
-                            DB.setDownloadFailed(file);
-                        }
-                    }
+                    DB.setDownloadFailed(file);
 
                 } else if (file.getFileSize() == file.getReceived()) {
 
                     // This file has been downloaded.
-                    logger.debug("File {} has been downloaded", file.getRemotePath());
+                    logger.info("File {} has been downloaded", file.getRemotePath());
                     if (file.getCreationTime() != 0) {
                         final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
-                        if(!success){
+                        if (!success) {
                             logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
                         }
                     }
-                    if (DB.contains(file)) {
-                        final SyncFile syncFile = DB.get(file);
-                        if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
-                            try {
-                                DB.setSynced(file);
-                            } catch (IOException e) {
-                                logger.error("Failed to set status: {}", e.getMessage());
-                            }
-                        }
+
+                    try {
+                        DB.setSynced(file);
+                    } catch (IOException e) {
+                        logger.error("Failed to set status: {}", e.getMessage());
+                        DB.setDownloadFailed(file);
                     }
 
                 } else {
 
-                    logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(),
-                            file.getFileSize());
+                    logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(), file.getFileSize());
                     ++nFiles;
 
                 }
@@ -116,8 +111,11 @@ class CheckDownloadStatusTask implements Runnable {
 
             logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
 
+        } finally {
+
+            DB.commit();
+
         }
-        DB.commit();
 
     }
 

@@ -64,9 +64,11 @@ class UploadLocalFileTask implements Runnable {
                     siaPath.toString(),
                     this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
                     this.localPath.toString());
+            DB.setUploading(this.localPath);
         } catch (ApiException e) {
             logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
             DB.setUploadFailed(this.localPath);
+        } finally {
             DB.commit();
         }
 

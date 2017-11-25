@@ -57,14 +57,15 @@ class DownloadRemoteFileTask implements Runnable {
 
             final RenterApi api = new RenterApi(this.ctx.apiClient);
             api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), this.file.getLocalPath().toString());
+            DB.setDownloading(file);
 
         } catch (IOException e) {
             logger.error("Cannot create directory {}: {}", parent, e.getMessage());
             DB.setDownloadFailed(file);
-            DB.commit();
         } catch (ApiException e) {
             logger.error("Cannot start downloading file {} to {}: {}", this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
             DB.setDownloadFailed(file);
+        }finally {
             DB.commit();
         }
 
