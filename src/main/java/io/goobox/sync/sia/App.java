@@ -162,9 +162,9 @@ public class App {
         }
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleWithFixedDelay​(new CheckStateTask(ctx, executor), 0, 30, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 0, 30, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 0, 30, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay​(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
 
     }
 
