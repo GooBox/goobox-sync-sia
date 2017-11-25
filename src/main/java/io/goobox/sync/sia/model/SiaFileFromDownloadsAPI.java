@@ -30,12 +30,12 @@ public class SiaFileFromDownloadsAPI implements SiaFile {
     /**
      * SiaPath object.
      */
-    public final SiaPath siaPath;
+    private final SiaPath siaPath;
 
     /**
      * File object returned by /renter/downloads.
      */
-    public final InlineResponse20010Downloads rawFile;
+    private final InlineResponse20010Downloads rawFile;
 
     public SiaFileFromDownloadsAPI(final InlineResponse20010Downloads file, final Path prefix) {
         this.siaPath = new SiaPath(file.getSiapath(), prefix);

@@ -28,31 +28,31 @@ public interface SiaFile {
     /**
      * Returns the name of this file.
      */
-    public String getName();
+    String getName();
 
     /**
      * Returns the path where this file located in the blockchain.
      */
-    public Path getRemotePath();
+    Path getRemotePath();
 
     /**
      * Returns the path where this file located in a local computer.
      */
-    public Path getLocalPath();
+    Path getLocalPath();
 
     /**
      * Returns the creation time of this file.
      */
-    public long getCreationTime();
+    long getCreationTime();
 
     /**
      * Returns the byte size of this file.
      */
-    public long getFileSize();
+    long getFileSize();
 
     /**
      * Returns a SiaPath object.
      */
-    public SiaPath getSiaPath();
+    SiaPath getSiaPath();
 
 }

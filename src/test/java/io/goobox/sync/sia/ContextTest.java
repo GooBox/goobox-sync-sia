@@ -16,30 +16,27 @@
  */
 package io.goobox.sync.sia;
 
-import static org.junit.Assert.assertEquals;
-
-import java.nio.file.Paths;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
+import io.goobox.sync.sia.client.ApiClient;
 import org.junit.Test;
 
-import io.goobox.sync.sia.client.ApiClient;
+import java.nio.file.Paths;
+
+import static org.junit.Assert.assertEquals;
 
 public class ContextTest {
 
-	@Test
-	public void test() {
+    @Test
+    public void test() {
 
-		final Config cfg = new Config();
-		cfg.setUserName("test-user");
-		final ApiClient cli = new ApiClient();
+        final Config cfg = new Config();
+        cfg.setUserName("test-user");
+        final ApiClient cli = new ApiClient();
 
-		final Context ctx = new Context(cfg, cli);
-		assertEquals(ctx.config, cfg);
-		assertEquals(ctx.apiClient, cli);
-		assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
+        final Context ctx = new Context(cfg, cli);
+        assertEquals(ctx.config, cfg);
+        assertEquals(ctx.apiClient, cli);
+        assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
 
-	}
+    }
 
 }
