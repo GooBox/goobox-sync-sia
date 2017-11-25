@@ -246,6 +246,7 @@ public class CheckStateTaskTest {
         assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(siaFile6).getState());
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile7).getState());
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile8).getState());
+        assertTrue(DBMock.committed);
 
         for (Runnable cmd : executor.queue) {
             if (cmd instanceof UploadLocalFileTask) {

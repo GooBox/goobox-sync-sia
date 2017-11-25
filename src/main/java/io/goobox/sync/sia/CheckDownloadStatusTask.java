@@ -16,18 +16,6 @@
  */
 package io.goobox.sync.sia;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Date;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010;
@@ -36,10 +24,16 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
 import io.goobox.sync.storj.db.SyncState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * CheckDownloadStatusTask requests current downloading status to siad and prints it.
@@ -90,7 +84,7 @@ public class CheckDownloadStatusTask implements Runnable {
 
                     // This file has been downloaded.
                     this.logger.debug("File {} has been downloaded", file.getRemotePath());
-                    if(file.getCreationTime() != 0){
+                    if (file.getCreationTime() != 0) {
                         file.getLocalPath().toFile().setLastModified(file.getCreationTime());
                     }
                     if (DB.contains(file)) {
@@ -120,6 +114,7 @@ public class CheckDownloadStatusTask implements Runnable {
             this.logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
 
         }
+        DB.commit();
 
     }
 
@@ -141,7 +136,7 @@ public class CheckDownloadStatusTask implements Runnable {
 
                     final DateTime prev = parseDateTime(map.get(file.getSiapath()).getStarttime());
                     final DateTime curr = parseDateTime(file.getStarttime());
-                    if (prev.isBefore(curr)){
+                    if (prev.isBefore(curr)) {
                         map.put(file.getSiapath(), file);
                     }
 
@@ -165,7 +160,7 @@ public class CheckDownloadStatusTask implements Runnable {
      * @param input string representing a date time in RFC3339 format.
      * @return a date object.
      */
-    private static DateTime parseDateTime(final String input) throws IllegalArgumentException{
+    private static DateTime parseDateTime(final String input) throws IllegalArgumentException {
         return ISODateTimeFormat.dateTimeParser().parseDateTime(input);
     }
 

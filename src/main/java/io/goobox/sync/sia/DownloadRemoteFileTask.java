@@ -61,9 +61,11 @@ public class DownloadRemoteFileTask implements Runnable {
         } catch (IOException e) {
             this.logger.error("Cannot create directory {}: {}", parent, e.getMessage());
             DB.setDownloadFailed(file);
+            DB.commit();
         } catch (ApiException e) {
             this.logger.error("Cannot start downloading file {} to {}: {}", this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
             DB.setDownloadFailed(file);
+            DB.commit();
         }
 
     }

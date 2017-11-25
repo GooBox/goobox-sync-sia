@@ -49,19 +49,20 @@ public class DeleteRemoteFileTask implements Runnable {
         try {
 
             final InlineResponse20011 files = api.renterFilesGet();
-            if(files.getFiles() == null){
+            if (files.getFiles() == null) {
                 logger.warn("No files exist in the cloud storage");
                 return;
             }
 
-            for(InlineResponse20011Files file: files.getFiles()){
+            for (InlineResponse20011Files file : files.getFiles()) {
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                if(!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)){
+                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
                     continue;
                 }
 
-                if(siaFile.getName().equals(this.target.getName())){
+                if (siaFile.getName().equals(this.target.getName())) {
+                    logger.debug("Delete file {}", siaFile.getName());
                     api.renterDeleteSiapathPost(siaFile.getRemotePath().toString());
                 }
 

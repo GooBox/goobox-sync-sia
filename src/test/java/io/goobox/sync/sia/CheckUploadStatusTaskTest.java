@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CheckUploadStatusTaskTest {
 
@@ -145,6 +146,7 @@ public class CheckUploadStatusTaskTest {
         assertEquals(SyncState.SYNCED, DB.get(localPath1).getState());
         assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath2).getState());
         assertEquals(SyncState.SYNCED, DB.get(localPath3).getState());
+        assertTrue(DBMock.committed);
 
     }
 

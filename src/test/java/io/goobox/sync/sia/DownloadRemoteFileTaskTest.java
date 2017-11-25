@@ -31,16 +31,16 @@ import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class DownloadRemoteFileTaskTest {
@@ -162,6 +162,7 @@ public class DownloadRemoteFileTaskTest {
 
         new DownloadRemoteFileTask(ctx, file).run();
         assertEquals(DB.get(file).getState(), SyncState.DOWNLOAD_FAILED);
+        assertTrue(DBMock.committed);
 
     }
 
@@ -187,6 +188,7 @@ public class DownloadRemoteFileTaskTest {
 
         new DownloadRemoteFileTask(ctx, file).run();
         assertEquals(DB.get(file).getState(), SyncState.DOWNLOAD_FAILED);
+        assertTrue(DBMock.committed);
 
     }
 

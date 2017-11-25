@@ -23,7 +23,6 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
@@ -41,10 +40,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertFalse;
-import java.util.Date;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class DeleteRemoteFileTaskTest {
@@ -141,6 +141,34 @@ public class DeleteRemoteFileTaskTest {
 
         new DeleteRemoteFileTask(ctx, file).run();
         assertFalse(DB.contains(file));
+        assertTrue(DBMock.committed);
+
+    }
+
+    @Test
+    public void testNoFiles() throws IOException, ApiException {
+
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        final Context ctx = new Context(cfg, null);
+
+        final Path localPath = Utils.getSyncDir().resolve("testfile");
+        final Path remotePath = ctx.pathPrefix.resolve("testfile");
+        final InlineResponse20011Files file3 = new InlineResponse20011Files();
+        file3.setSiapath(remotePath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+        file3.setLocalpath(localPath.toString());
+        file3.setAvailable(true);
+        file3.setFilesize(1234L);
+        final SiaFile file = new SiaFileFromFilesAPI(file3, ctx.pathPrefix);
+
+        new Expectations() {{
+            final InlineResponse20011 list = new InlineResponse20011();
+            list.setFiles(null);
+            api.renterFilesGet();
+            result = list;
+        }};
+
+        new DeleteRemoteFileTask(ctx, file).run();
 
     }
 

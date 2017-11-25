@@ -50,6 +50,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @RunWith(JMockit.class)
@@ -211,6 +212,7 @@ public class CheckDownloadStatusTaskTest {
         assertEquals(SyncState.SYNCED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file2")).getState());
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file3")).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -246,6 +248,7 @@ public class CheckDownloadStatusTaskTest {
 
         new CheckDownloadStatusTask(ctx).run();
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -284,6 +287,7 @@ public class CheckDownloadStatusTaskTest {
 
         assertEquals(SyncState.SYNCED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
         assertEquals(targetDate.getTime() / 1000, new Date(file1LocalPath.toFile().lastModified()).getTime() / 1000);
+        assertTrue(DBMock.committed);
 
     }
 

@@ -37,10 +37,10 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
@@ -162,6 +162,7 @@ public class UploadLocalFileTaskTest {
 
         new UploadLocalFileTask(ctx, localPath, now).run();
         assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 

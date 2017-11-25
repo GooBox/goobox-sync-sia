@@ -81,11 +81,10 @@ public class CheckUploadStatusTask implements Runnable {
                 logger.info("Uploading {} files", nFiles);
             }
 
-            DB.commit();
-
         } catch (ApiException e) {
             logger.error("Failed to retrieve uploaing status: {}", APIUtils.getErrorMessage(e));
         }
+        DB.commit();
 
     }
 

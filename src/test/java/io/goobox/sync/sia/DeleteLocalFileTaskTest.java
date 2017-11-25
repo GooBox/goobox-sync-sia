@@ -21,23 +21,20 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.storj.Utils;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
-import org.dizitart.no2.Nitrite;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class DeleteLocalFileTaskTest {
@@ -94,6 +91,7 @@ public class DeleteLocalFileTaskTest {
         new DeleteLocalFileTask(localPath).run();
         assertFalse(DB.contains(file));
         assertFalse(localPath.toFile().exists());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -110,7 +108,8 @@ public class DeleteLocalFileTaskTest {
         assertFalse(localPath.toFile().exists());
 
         new DeleteLocalFileTask(localPath).run();
-        assertTrue(DB.contains(file));
+        assertFalse(DB.contains(file));
+        assertTrue(DBMock.committed);
 
     }
 

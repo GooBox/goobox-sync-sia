@@ -67,6 +67,7 @@ public class UploadLocalFileTask implements Runnable {
         } catch (ApiException e) {
             logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
             DB.setUploadFailed(this.localPath);
+            DB.commit();
         }
 
     }
