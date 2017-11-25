@@ -31,13 +31,13 @@ import java.nio.file.Path;
 /**
  * Downloads a remote file to the local directory.
  */
-public class DownloadRemoteFileTask implements Runnable {
+class DownloadRemoteFileTask implements Runnable {
 
     private final Context ctx;
     private final SiaFile file;
-    private final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
-    public DownloadRemoteFileTask(final Context ctx, final SiaFile file) {
+    DownloadRemoteFileTask(final Context ctx, final SiaFile file) {
         this.ctx = ctx;
         this.file = file;
     }
@@ -45,13 +45,13 @@ public class DownloadRemoteFileTask implements Runnable {
     @Override
     public void run() {
 
-        this.logger.info("Downloading {} to {}", this.file.getRemotePath(), this.file.getLocalPath());
+        logger.info("Downloading {} to {}", this.file.getRemotePath(), this.file.getLocalPath());
         final Path parent = this.file.getLocalPath().getParent();
 
         try {
 
             if (!parent.toFile().exists()) {
-                this.logger.trace("Creating directory {}", parent);
+                logger.trace("Creating directory {}", parent);
                 Files.createDirectories(parent);
             }
 
@@ -59,11 +59,11 @@ public class DownloadRemoteFileTask implements Runnable {
             api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), this.file.getLocalPath().toString());
 
         } catch (IOException e) {
-            this.logger.error("Cannot create directory {}: {}", parent, e.getMessage());
+            logger.error("Cannot create directory {}: {}", parent, e.getMessage());
             DB.setDownloadFailed(file);
             DB.commit();
         } catch (ApiException e) {
-            this.logger.error("Cannot start downloading file {} to {}: {}", this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
+            logger.error("Cannot start downloading file {} to {}: {}", this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
             DB.setDownloadFailed(file);
             DB.commit();
         }

@@ -29,20 +29,20 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.math.BigDecimal;
 
-public class CheckUploadStatusTask implements Runnable {
+class CheckUploadStatusTask implements Runnable {
 
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
 
-    public CheckUploadStatusTask(final Context ctx) {
+    CheckUploadStatusTask(final Context ctx) {
         this.ctx = ctx;
     }
 
     @Override
     public void run() {
 
-        this.logger.info("Checking upload status");
+        logger.info("Checking upload status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 

@@ -30,14 +30,14 @@ import org.apache.logging.log4j.Logger;
 /**
  * Deletes a given file from the cloud storage and sync DB.
  */
-public class DeleteRemoteFileTask implements Runnable {
+class DeleteRemoteFileTask implements Runnable {
 
     private final Context ctx;
     private final SiaFile target;
 
     private static final Logger logger = LogManager.getLogger();
 
-    public DeleteRemoteFileTask(final Context ctx, final SiaFile file) {
+    DeleteRemoteFileTask(final Context ctx, final SiaFile file) {
         this.ctx = ctx;
         this.target = file;
     }

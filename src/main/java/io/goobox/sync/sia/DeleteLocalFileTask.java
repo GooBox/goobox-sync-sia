@@ -30,12 +30,12 @@ import java.nio.file.Path;
  *
  * @author junpei
  */
-public class DeleteLocalFileTask implements Runnable {
+class DeleteLocalFileTask implements Runnable {
 
     private final Path path;
     private static final Logger logger = LogManager.getLogger();
 
-    public DeleteLocalFileTask(final Path path) {
+    DeleteLocalFileTask(final Path path) {
         this.path = path;
     }
 

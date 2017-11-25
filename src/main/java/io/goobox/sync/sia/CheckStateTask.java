@@ -43,15 +43,17 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
+ * Checks changes in both cloud directory and local directory, and create tasks to handle them.
+ *
  * @author junpei
  */
-public class CheckStateTask implements Runnable {
+class CheckStateTask implements Runnable {
 
     private final Context ctx;
     private final Executor executor;
-    private final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
-    public CheckStateTask(final Context ctx, final Executor executor) {
+    CheckStateTask(final Context ctx, final Executor executor) {
         this.ctx = ctx;
         this.executor = executor;
     }
@@ -59,7 +61,7 @@ public class CheckStateTask implements Runnable {
     @Override
     public void run() {
 
-        this.logger.info("Checking for changes");
+        logger.info("Checking for changes");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
@@ -71,7 +73,7 @@ public class CheckStateTask implements Runnable {
 
                     if (!file.getLocalPath().toFile().exists()) {
                         // The file exists in the DB but not in the local directory.
-                        this.logger.info("Remote file {} is going to be deleted", file.getName());
+                        logger.info("Remote file {} is going to be deleted", file.getName());
                         DB.setForCloudDelete(file);
                         this.executor.execute(new DeleteRemoteFileTask(this.ctx, file));
 
@@ -84,21 +86,21 @@ public class CheckStateTask implements Runnable {
                                     && syncFile.getRemoteCreatedTime() != file.getCreationTime();
                             final boolean localChanged = syncFile.getState() != SyncState.DOWNLOAD_FAILED
                                     && syncFile.getLocalModifiedTime() != Files.getLastModifiedTime(file.getLocalPath()).toMillis();
-                            this.logger.trace("Status of {}: cloudChanged = {}, localChanged = {}", file.getName(), cloudChanged, localChanged);
+                            logger.trace("Status of {}: cloudChanged = {}, localChanged = {}", file.getName(), cloudChanged, localChanged);
                             if (cloudChanged && localChanged) {
                                 // both local and cloud has been changed - conflict
-                                this.logger.warn("File {} is conflict", file.getLocalPath());
+                                logger.warn("File {} is conflict", file.getLocalPath());
                                 DB.setConflict(file);
                             } else if (cloudChanged) {
 
                                 if (syncFile.getState().isConflict()) {
                                     // the file has been in conflict before - keep the conflict
-                                    this.logger.warn("File {} is conflict", file.getLocalPath());
+                                    logger.warn("File {} is conflict", file.getLocalPath());
                                     DB.setConflict(file);
                                 } else {
 
                                     // download
-                                    this.logger.info("Remote file {} is going to be downloaded", file.getName());
+                                    logger.info("Remote file {} is going to be downloaded", file.getName());
                                     DB.addForDownload(file);
                                     this.executor.execute(new DownloadRemoteFileTask(ctx, file));
 
@@ -108,12 +110,12 @@ public class CheckStateTask implements Runnable {
 
                                 if (syncFile.getState().isConflict()) {
                                     // the file has been in conflict before - keep the conflict
-                                    this.logger.warn("File {} is conflict", file.getLocalPath());
+                                    logger.warn("File {} is conflict", file.getLocalPath());
                                     DB.setConflict(file);
                                 } else {
 
                                     // upload
-                                    this.logger.info("Local file {} is going to be uploaded", file.getName());
+                                    logger.info("Local file {} is going to be uploaded", file.getName());
                                     DB.addForUpload(file);
                                     final Date created = new Date(file.getLocalPath().toFile().lastModified());
                                     this.executor.execute(new UploadLocalFileTask(this.ctx, file, created));
@@ -125,19 +127,19 @@ public class CheckStateTask implements Runnable {
                             }
 
                         } catch (IOException e) {
-                            this.logger.error("Failed to access {}: {}", file.getLocalPath(), e.getMessage());
+                            logger.error("Failed to access {}: {}", file.getLocalPath(), e.getMessage());
                         }
 
                     }
 
                 } else {
                     // The file doesn't exist in the local DB.
-                    this.logger.debug("New file {} is found in the cloud storage", file.getName());
+                    logger.debug("New file {} is found in the cloud storage", file.getName());
 
                     if (!file.getLocalPath().toFile().exists()) {
                         // The file also doesn't exist in the local directory.
 
-                        this.logger.info("Remote file {} is going to be downloaded", file.getName());
+                        logger.info("Remote file {} is going to be downloaded", file.getName());
                         DB.addForDownload(file);
                         this.executor.execute(new DownloadRemoteFileTask(ctx, file));
 
@@ -146,10 +148,10 @@ public class CheckStateTask implements Runnable {
 
                         // check if local and cloud file are same
                         if (file.getFileSize() == Files.size(file.getLocalPath())) {
-                            this.logger.debug("File {} exists in the local sync folder", file.getName());
+                            logger.debug("File {} exists in the local sync folder", file.getName());
                             DB.setSynced(file);
                         } else {
-                            this.logger.warn("File {} is conflict", file.getLocalPath());
+                            logger.warn("File {} is conflict", file.getLocalPath());
                             DB.setConflict(file);
                         }
 
@@ -168,7 +170,7 @@ public class CheckStateTask implements Runnable {
                     SyncFile syncFile = DB.get(localPath);
                     if (syncFile.getState().isSynced()) {
 
-                        this.logger.info("Local file {} is going to be deleted", localPath);
+                        logger.info("Local file {} is going to be deleted", localPath);
                         DB.setForLocalDelete(localPath);
                         this.executor.execute(new DeleteLocalFileTask(localPath));
 
@@ -176,7 +178,7 @@ public class CheckStateTask implements Runnable {
                             && syncFile.getLocalModifiedTime() !=
                             Files.getLastModifiedTime(localPath).toMillis()) {
 
-                        this.logger.info("Local file {} is going to be uploaded", localPath);
+                        logger.info("Local file {} is going to be uploaded", localPath);
                         DB.addForUpload(localPath);
                         final Date created = new Date(localPath.toFile().lastModified());
                         this.executor.execute(new UploadLocalFileTask(this.ctx, localPath, created));
@@ -185,7 +187,7 @@ public class CheckStateTask implements Runnable {
 
                 } else {
 
-                    this.logger.info("Local file {} is going to be uploaded", localPath);
+                    logger.info("Local file {} is going to be uploaded", localPath);
                     // TODO:
                     DB.addForUpload(localPath);
                     final Date created = new Date(localPath.toFile().lastModified());
@@ -197,11 +199,11 @@ public class CheckStateTask implements Runnable {
 
         } catch (ApiException e) {
 
-            this.logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
 
         } catch (IOException e) {
 
-            this.logger.catching(e);
+            logger.catching(e);
 
         }
 
@@ -212,26 +214,26 @@ public class CheckStateTask implements Runnable {
     /**
      * Takes only newest files managed by Goobox from a given file collection.
      *
-     * @param files
-     * @return
+     * @param files returned by renterFilesGet.
+     * @return a collection of SiaFile instances.
      */
     private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
 
         // Key: file name, Value: file object.
-        final Map<String, SiaFile> filemap = new HashMap<String, SiaFile>();
+        final Map<String, SiaFile> filemap = new HashMap<>();
         if (files != null) {
             for (InlineResponse20011Files file : files) {
 
                 if (!file.getAvailable()) {
                     // This file is still being uploaded.
-                    this.logger.debug("Found remote file {} but it's not available", file.getSiapath());
+                    logger.debug("Found remote file {} but it's not available", file.getSiapath());
                     continue;
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
                 if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    this.logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getRemotePath());
+                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getRemotePath());
                     continue;
                 }
 
@@ -239,16 +241,16 @@ public class CheckStateTask implements Runnable {
 
                     final SiaFile prev = filemap.get(siaFile.getName());
                     if (siaFile.getCreationTime() > prev.getCreationTime()) {
-                        this.logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
+                        logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
                                 siaFile.getCreationTime());
                         filemap.put(siaFile.getName(), siaFile);
                     } else {
-                        this.logger.debug("Found older version of remote file {} created at {} but ignored",
+                        logger.debug("Found older version of remote file {} created at {} but ignored",
                                 siaFile.getName(), siaFile.getCreationTime());
                     }
 
                 } else {
-                    this.logger.debug("Found remote file {} created at {}", siaFile.getName(),
+                    logger.debug("Found remote file {} created at {}", siaFile.getName(),
                             siaFile.getCreationTime());
                     filemap.put(siaFile.getName(), siaFile);
                 }
@@ -293,13 +295,13 @@ public class CheckStateTask implements Runnable {
                     // Search paths in the sub directory.
                     paths.addAll(this.getLocalPaths(path));
                 } else {
-                    this.logger.debug("Found local file {}", path);
+                    logger.debug("Found local file {}", path);
                     paths.add(path);
                 }
 
             }
         } catch (IOException e) {
-            this.logger.error("Failed to list files: {}", e.getMessage());
+            logger.error("Failed to list files: {}", e.getMessage());
 
         }
         return paths;

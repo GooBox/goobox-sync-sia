@@ -16,36 +16,32 @@
  */
 package io.goobox.sync.sia;
 
+import io.goobox.sync.sia.client.ApiClient;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.BlockingQueue;
-
-import io.goobox.sync.sia.client.ApiClient;
 
 /**
  * Context manages config, api client, and a task queue.
- * 
- * @author junpei
  *
+ * @author junpei
  */
 public class Context {
 
-	public final Config config;
-	public final ApiClient apiClient;
-	public final Path pathPrefix;
+    public final Config config;
+    public final ApiClient apiClient;
+    public final Path pathPrefix;
 
-	/**
-	 * Create a new context with a config object, an API client, and a task queue.
-	 * 
-	 * @param cfg
-	 *            Config object
-	 * @param apiClient
-	 *            API client
-	 */
-	public Context(final Config cfg, final ApiClient apiClient) {
-		this.config = cfg;
-		this.apiClient = apiClient;
-		this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
-	}
+    /**
+     * Create a new context with a config object, an API client, and a task queue.
+     *
+     * @param cfg       Config object
+     * @param apiClient API client
+     */
+    public Context(final Config cfg, final ApiClient apiClient) {
+        this.config = cfg;
+        this.apiClient = apiClient;
+        this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
+    }
 
 }

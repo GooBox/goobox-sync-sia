@@ -40,19 +40,19 @@ import java.util.Map;
  *
  * @author junpei
  */
-public class CheckDownloadStatusTask implements Runnable {
+class CheckDownloadStatusTask implements Runnable {
 
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
 
-    public CheckDownloadStatusTask(final Context ctx) {
+    CheckDownloadStatusTask(final Context ctx) {
         this.ctx = ctx;
     }
 
     @Override
     public void run() {
 
-        this.logger.info("Checking download status");
+        logger.info("Checking download status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
@@ -64,7 +64,7 @@ public class CheckDownloadStatusTask implements Runnable {
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(rawFile, this.ctx.pathPrefix);
                 if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    this.logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
                     continue;
                 }
 
@@ -72,7 +72,7 @@ public class CheckDownloadStatusTask implements Runnable {
                 if (err != null && !err.isEmpty()) {
 
                     // TODO: Error handling.
-                    this.logger.error("Failed to download {}: {}", file.getName(), err);
+                    logger.error("Failed to download {}: {}", file.getName(), err);
                     if (DB.contains(file)) {
                         final SyncFile syncFile = DB.get(file);
                         if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
@@ -83,9 +83,12 @@ public class CheckDownloadStatusTask implements Runnable {
                 } else if (file.getFileSize() == file.getReceived()) {
 
                     // This file has been downloaded.
-                    this.logger.debug("File {} has been downloaded", file.getRemotePath());
+                    logger.debug("File {} has been downloaded", file.getRemotePath());
                     if (file.getCreationTime() != 0) {
-                        file.getLocalPath().toFile().setLastModified(file.getCreationTime());
+                        final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
+                        if(!success){
+                            logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
+                        }
                     }
                     if (DB.contains(file)) {
                         final SyncFile syncFile = DB.get(file);
@@ -100,18 +103,18 @@ public class CheckDownloadStatusTask implements Runnable {
 
                 } else {
 
-                    this.logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(),
+                    logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(),
                             file.getFileSize());
                     ++nFiles;
 
                 }
 
             }
-            this.logger.info("Downloading {} files", nFiles);
+            logger.info("Downloading {} files", nFiles);
 
         } catch (ApiException e) {
 
-            this.logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
 
         }
         DB.commit();

@@ -31,7 +31,7 @@ import java.util.Date;
 /**
  * Uploads a given local file to cloud storage with a given remote path.
  */
-public class UploadLocalFileTask implements Runnable {
+class UploadLocalFileTask implements Runnable {
 
     private final Context ctx;
     private final Path localPath;
@@ -40,14 +40,14 @@ public class UploadLocalFileTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public UploadLocalFileTask(final Context ctx, final SiaFile file, final Date creationTime) {
+    UploadLocalFileTask(final Context ctx, final SiaFile file, final Date creationTime) {
         this.ctx = ctx;
         this.localPath = file.getLocalPath();
         this.remotePath = file.getRemotePath();
         this.creationTime = creationTime;
     }
 
-    public UploadLocalFileTask(final Context ctx, final Path localPath, final Date creationTime) {
+    UploadLocalFileTask(final Context ctx, final Path localPath, final Date creationTime) {
         this.ctx = ctx;
         this.localPath = localPath;
         this.remotePath = this.ctx.pathPrefix.resolve(Utils.getSyncDir().relativize(localPath));
