@@ -27,18 +27,35 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 
 class CheckUploadStatusTask implements Runnable {
 
+    @NotNull
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
 
-    CheckUploadStatusTask(final Context ctx) {
+    CheckUploadStatusTask(@NotNull final Context ctx) {
         this.ctx = ctx;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckUploadStatusTask that = (CheckUploadStatusTask) o;
+
+        return ctx.equals(that.ctx);
+    }
+
+    @Override
+    public int hashCode() {
+        return ctx.hashCode();
     }
 
     @Override
@@ -84,6 +101,7 @@ class CheckUploadStatusTask implements Runnable {
                 }
 
             }
+
 
             if (nFiles != 0) {
                 logger.info("Uploading {} files", nFiles);

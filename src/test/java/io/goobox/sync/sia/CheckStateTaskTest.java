@@ -77,7 +77,7 @@ public class CheckStateTaskTest {
     }
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */

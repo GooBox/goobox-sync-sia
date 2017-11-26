@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-public class Utils {
+public class CmdUtils {
 
     /**
      * Default config file name.
@@ -47,7 +47,7 @@ public class Utils {
      *
      * @return an ApiClient object.
      */
-    static ApiClient getApiClient() {
+    public static ApiClient getApiClient() {
 
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath("http://localhost:9980");

@@ -102,27 +102,27 @@ public class WalletTest {
             result = res1;
 
             final InlineResponse20013 res2 = new InlineResponse20013();
-            res2.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(Utils.Hasting).toString());
-            res2.setUnconfirmedincomingsiacoins(new BigDecimal(income).multiply(Utils.Hasting).toString());
-            res2.setUnconfirmedoutgoingsiacoins(new BigDecimal(outcome).multiply(Utils.Hasting).toString());
+            res2.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
+            res2.setUnconfirmedincomingsiacoins(new BigDecimal(income).multiply(CmdUtils.Hasting).toString());
+            res2.setUnconfirmedoutgoingsiacoins(new BigDecimal(outcome).multiply(CmdUtils.Hasting).toString());
             wallet.walletGet();
             result = res2;
 
             final InlineResponse2008 res3 = new InlineResponse2008();
             final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-            spending.setDownloadspending(new BigDecimal(downloadSpending).multiply(Utils.Hasting).toString());
-            spending.setUploadspending(new BigDecimal(uploadSpending).multiply(Utils.Hasting).toString());
-            spending.setStoragespending(new BigDecimal(storageSpending).multiply(Utils.Hasting).toString());
-            spending.setContractspending(new BigDecimal(contractSpending).multiply(Utils.Hasting).toString());
+            spending.setDownloadspending(new BigDecimal(downloadSpending).multiply(CmdUtils.Hasting).toString());
+            spending.setUploadspending(new BigDecimal(uploadSpending).multiply(CmdUtils.Hasting).toString());
+            spending.setStoragespending(new BigDecimal(storageSpending).multiply(CmdUtils.Hasting).toString());
+            spending.setContractspending(new BigDecimal(contractSpending).multiply(CmdUtils.Hasting).toString());
             res3.setFinancialmetrics(spending);
             renter.renterGet();
             result = res3;
 
             final InlineResponse20012 res4 = new InlineResponse20012();
-            res4.setDownloadterabyte(new BigDecimal(downloadPrice).multiply(Utils.Hasting).toString());
-            res4.setUploadterabyte(new BigDecimal(uploadPrice).multiply(Utils.Hasting).toString());
-            res4.setStorageterabytemonth(new BigDecimal(storagePrice).multiply(Utils.Hasting).toString());
-            res4.setFormcontracts(new BigDecimal(contractPrice).multiply(Utils.Hasting).toString());
+            res4.setDownloadterabyte(new BigDecimal(downloadPrice).multiply(CmdUtils.Hasting).toString());
+            res4.setUploadterabyte(new BigDecimal(uploadPrice).multiply(CmdUtils.Hasting).toString());
+            res4.setStorageterabytemonth(new BigDecimal(storagePrice).multiply(CmdUtils.Hasting).toString());
+            res4.setFormcontracts(new BigDecimal(contractPrice).multiply(CmdUtils.Hasting).toString());
             renter.renterPricesGet();
             result = res4;
 
@@ -188,16 +188,16 @@ public class WalletTest {
 
     }
 
+    @SuppressWarnings("unused")
     @Test
     public void testInvalidOption(@Mocked HelpFormatter formatter, @Mocked System system) {
 
         new Expectations() {{
             formatter.printHelp("goobox-sync-sia wallet", withNotNull(), true);
-            system.exit(1);
+            System.exit(1);
         }};
         Wallet.main(new String[]{"-something"});
 
     }
-
 
 }

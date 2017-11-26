@@ -62,7 +62,7 @@ public class UploadLocalFileTaskTest {
     }
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */
@@ -180,7 +180,7 @@ public class UploadLocalFileTaskTest {
 //        cfg.parityPieces = 50;
 //        final Context ctx = new Context(cfg, null);
 //
-//        final Path localPath = Utils.getSyncDir().resolve(Paths.get("subdir","testfile"));
+//        final Path localPath = CmdUtils.getSyncDir().resolve(Paths.get("subdir","testfile"));
 //        final Path remotePath = ctx.pathPrefix.resolve(Paths.get("subdir","testfile"));
 //        localPath.toFile().createNewFile();
 //        DB.addForUpload(localPath);

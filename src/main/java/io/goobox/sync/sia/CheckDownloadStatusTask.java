@@ -26,6 +26,7 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -42,11 +43,27 @@ import java.util.Map;
  */
 class CheckDownloadStatusTask implements Runnable {
 
+    @NotNull
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
 
-    CheckDownloadStatusTask(final Context ctx) {
+    CheckDownloadStatusTask(@NotNull final Context ctx) {
         this.ctx = ctx;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckDownloadStatusTask that = (CheckDownloadStatusTask) o;
+
+        return ctx.equals(that.ctx);
+    }
+
+    @Override
+    public int hashCode() {
+        return ctx.hashCode();
     }
 
     @Override

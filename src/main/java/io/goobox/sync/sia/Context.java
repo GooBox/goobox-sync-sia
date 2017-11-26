@@ -17,6 +17,8 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiClient;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,8 +30,12 @@ import java.nio.file.Paths;
  */
 public class Context {
 
+    @NotNull
     public final Config config;
+
     public final ApiClient apiClient;
+
+    @NotNull
     public final Path pathPrefix;
 
     /**
@@ -38,10 +44,34 @@ public class Context {
      * @param cfg       Config object
      * @param apiClient API client
      */
-    public Context(final Config cfg, final ApiClient apiClient) {
+    public Context(@NotNull final Config cfg,  final ApiClient apiClient) {
         this.config = cfg;
         this.apiClient = apiClient;
         this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Context context = (Context) o;
+
+        return config.equals(context.config) &&
+                (apiClient != null ? apiClient.equals(context.apiClient) : context.apiClient == null) && pathPrefix.equals(context.pathPrefix);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = config.hashCode();
+        result = 31 * result + (apiClient != null ? apiClient.hashCode() : 0);
+        result = 31 * result + pathPrefix.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return new ReflectionToStringBuilder(this).toString();
     }
 
 }

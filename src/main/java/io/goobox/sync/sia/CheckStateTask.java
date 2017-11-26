@@ -28,6 +28,7 @@ import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import io.goobox.sync.storj.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,13 +50,31 @@ import java.util.concurrent.Executor;
  */
 class CheckStateTask implements Runnable {
 
+    @NotNull
     private final Context ctx;
+    @NotNull
     private final Executor executor;
     private static final Logger logger = LogManager.getLogger();
 
-    CheckStateTask(final Context ctx, final Executor executor) {
+    CheckStateTask(@NotNull final Context ctx, @NotNull final Executor executor) {
         this.ctx = ctx;
         this.executor = executor;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckStateTask that = (CheckStateTask) o;
+        return ctx.equals(that.ctx) && executor.equals(that.executor);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = ctx.hashCode();
+        result = 31 * result + executor.hashCode();
+        return result;
     }
 
     @Override
@@ -132,6 +151,7 @@ class CheckStateTask implements Runnable {
                         }
 
                     }
+
 
                 } else {
                     // The file doesn't exist in the local DB.
