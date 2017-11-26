@@ -22,11 +22,12 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
+import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -50,11 +51,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @RunWith(JMockit.class)
 public class CheckDownloadStatusTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -73,7 +76,7 @@ public class CheckDownloadStatusTaskTest {
     }
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */
@@ -131,73 +134,86 @@ public class CheckDownloadStatusTaskTest {
         // - one finished file which has two entries (file1)
         // - one downloading file which also has one old finished entry (file2)
         // - one downloading file (file3)
+        // - one waiting for downloading file (file4)
 
-        {
-            // file 1, old entry.
-            final Path file1RemotePath = ctx.pathPrefix.resolve("file1");
-            final Path file1LocalPath = Utils.getSyncDir().resolve("file1");
-            final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
-            file1.setSiapath(file1RemotePath.toString());
-            file1.setDestination(file1LocalPath.toString());
-            file1.setFilesize(100L);
-            file1.setReceived(100L);
-            file1.setStarttime(RFC3339.format(new Date(10000)));
-            files.add(file1);
+        // file 1, old entry.
+        final Path file1RemotePath = ctx.pathPrefix.resolve("file1");
+        final Path file1LocalPath = Utils.getSyncDir().resolve("file1");
+        final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
+        file1.setSiapath(file1RemotePath.toString());
+        file1.setDestination(file1LocalPath.toString());
+        file1.setFilesize(100L);
+        file1.setReceived(100L);
+        file1.setStarttime(RFC3339.format(new Date(10000)));
+        files.add(file1);
 
-            // file 1, new entry.
-            final InlineResponse20010Downloads file1new = new InlineResponse20010Downloads();
-            file1new.setSiapath(file1RemotePath.toString());
-            file1new.setDestination(file1LocalPath.toString());
-            file1new.setFilesize(100L);
-            file1new.setReceived(100L);
-            file1new.setStarttime(RFC3339.format(new Date()));
-            files.add(file1new);
+        // file 1, new entry.
+        final InlineResponse20010Downloads file1new = new InlineResponse20010Downloads();
+        file1new.setSiapath(file1RemotePath.toString());
+        file1new.setDestination(file1LocalPath.toString());
+        file1new.setFilesize(100L);
+        file1new.setReceived(100L);
+        file1new.setStarttime(RFC3339.format(new Date()));
+        files.add(file1new);
 
-            file1LocalPath.toFile().createNewFile();
-            DB.addForDownload(new SiaFileFromDownloadsAPI(file1new, ctx.pathPrefix));
-        }
+        assertTrue(file1LocalPath.toFile().createNewFile());
+        final SiaFile siaFile1 = new SiaFileFromDownloadsAPI(file1new, ctx.pathPrefix);
+        DB.addForDownload(siaFile1);
+        DB.setDownloading(siaFile1);
 
+        // file 2, old entry.
+        final Path file2RemotePath = ctx.pathPrefix.resolve("file2");
+        final Path file2LocalPath = Utils.getSyncDir().resolve("file2");
+        final InlineResponse20010Downloads file2 = new InlineResponse20010Downloads();
+        file2.setSiapath(file2RemotePath.toString());
+        file2.setDestination(file2LocalPath.toString());
+        file2.setFilesize(100L);
+        file2.setReceived(100L);
+        file2.setStarttime(RFC3339.format(new Date(10000)));
+        files.add(file2);
 
-        {
-            // file 2, old entry.
-            final Path file2RemotePath = ctx.pathPrefix.resolve("file2");
-            final Path file2LocalPath = Utils.getSyncDir().resolve("file2");
-            final InlineResponse20010Downloads file2 = new InlineResponse20010Downloads();
-            file2.setSiapath(file2RemotePath.toString());
-            file2.setDestination(file2LocalPath.toString());
-            file2.setFilesize(100L);
-            file2.setReceived(100L);
-            file2.setStarttime(RFC3339.format(new Date(10000)));
-            files.add(file2);
+        // file 2, new entry.
+        final InlineResponse20010Downloads file2new = new InlineResponse20010Downloads();
+        file2new.setSiapath(file2RemotePath.toString());
+        file2new.setDestination(file2LocalPath.toString());
+        file2new.setFilesize(100L);
+        file2new.setReceived(50L);
+        file2new.setStarttime(RFC3339.format(new Date()));
+        files.add(file2new);
 
-            // file 2, new entry.
-            final InlineResponse20010Downloads file2new = new InlineResponse20010Downloads();
-            file2new.setSiapath(file2RemotePath.toString());
-            file2new.setDestination(file2LocalPath.toString());
-            file2new.setFilesize(100L);
-            file2new.setReceived(50L);
-            file2new.setStarttime(RFC3339.format(new Date()));
-            files.add(file2new);
+        assertTrue(file2LocalPath.toFile().createNewFile());
+        final SiaFile siaFile2 = new SiaFileFromDownloadsAPI(file2new, ctx.pathPrefix);
+        DB.addForDownload(siaFile2);
+        DB.setDownloading(siaFile2);
 
-            file2LocalPath.toFile().createNewFile();
-            DB.addForDownload(new SiaFileFromDownloadsAPI(file2new, ctx.pathPrefix));
-        }
+        // file 3.
+        final Path file3RemotePath = ctx.pathPrefix.resolve("file3");
+        final Path file3LocalPath = Utils.getSyncDir().resolve("file3");
+        final InlineResponse20010Downloads file3 = new InlineResponse20010Downloads();
+        file3.setSiapath(file3RemotePath.toString());
+        file3.setDestination(file3LocalPath.toString());
+        file3.setFilesize(100L);
+        file3.setReceived(50L);
+        file3.setStarttime(RFC3339.format(new Date()));
+        files.add(file3);
 
-        {
-            // file 3.
-            final Path file3RemotePath = ctx.pathPrefix.resolve("file3");
-            final Path file3LocalPath = Utils.getSyncDir().resolve("file3");
-            final InlineResponse20010Downloads file3 = new InlineResponse20010Downloads();
-            file3.setSiapath(file3RemotePath.toString());
-            file3.setDestination(file3LocalPath.toString());
-            file3.setFilesize(100L);
-            file3.setReceived(50L);
-            file3.setStarttime(RFC3339.format(new Date()));
-            files.add(file3);
+        assertTrue(file3LocalPath.toFile().createNewFile());
+        final SiaFile siaFile3 = new SiaFileFromDownloadsAPI(file3, ctx.pathPrefix);
+        DB.addForDownload(siaFile3);
+        DB.setDownloading(siaFile3);
 
-            file3LocalPath.toFile().createNewFile();
-            DB.addForDownload(new SiaFileFromDownloadsAPI(file3, ctx.pathPrefix));
-        }
+        // file 4.
+        final Path file4RemotePath = ctx.pathPrefix.resolve("file4");
+        final Path file4LocalPath = Utils.getSyncDir().resolve("file4");
+        final InlineResponse20010Downloads file4 = new InlineResponse20010Downloads();
+        file4.setSiapath(file4RemotePath.toString());
+        file4.setDestination(file4LocalPath.toString());
+        file4.setFilesize(100L);
+        file4.setReceived(50L);
+        file4.setStarttime(RFC3339.format(new Date()));
+        files.add(file4);
+
+        DB.addForDownload(new SiaFileFromDownloadsAPI(file4, ctx.pathPrefix));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -209,8 +225,10 @@ public class CheckDownloadStatusTaskTest {
         new CheckDownloadStatusTask(ctx).run();
 
         assertEquals(SyncState.SYNCED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file2")).getState());
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file3")).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(Utils.getSyncDir().resolve("file2")).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(Utils.getSyncDir().resolve("file3")).getState());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file4")).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -234,8 +252,10 @@ public class CheckDownloadStatusTaskTest {
         file1.setError("expected error");
         files.add(file1);
 
-        file1LocalPath.toFile().createNewFile();
-        DB.addForDownload(new SiaFileFromDownloadsAPI(file1, ctx.pathPrefix));
+        assertTrue(file1LocalPath.toFile().createNewFile());
+        final SiaFile siaFile = new SiaFileFromDownloadsAPI(file1, ctx.pathPrefix);
+        DB.addForDownload(siaFile);
+        DB.setDownloading(siaFile);
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -246,8 +266,47 @@ public class CheckDownloadStatusTaskTest {
 
         new CheckDownloadStatusTask(ctx).run();
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
+        assertTrue(DBMock.committed);
 
     }
+
+    @Test
+    public void testFailedPendingDownloads() throws IOException, ApiException {
+
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        final Context ctx = new Context(cfg, null);
+
+        final List<InlineResponse20010Downloads> files = new LinkedList<>();
+
+        final Path file1RemotePath = ctx.pathPrefix.resolve("file1");
+        final Path file1LocalPath = Utils.getSyncDir().resolve("file1");
+        final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
+        file1.setSiapath(file1RemotePath.toString());
+        file1.setDestination(file1LocalPath.toString());
+        file1.setFilesize(100L);
+        file1.setReceived(50L);
+        file1.setStarttime(RFC3339.format(new Date()));
+        file1.setError("expected error");
+        files.add(file1);
+
+        assertTrue(file1LocalPath.toFile().createNewFile());
+        final SiaFile siaFile = new SiaFileFromDownloadsAPI(file1, ctx.pathPrefix);
+        DB.addForDownload(siaFile);
+
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+        }};
+
+        new CheckDownloadStatusTask(ctx).run();
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(Utils.getSyncDir().resolve("file1")).getState());
+        assertTrue(DBMock.committed);
+
+    }
+
 
     @Test
     public void testCreationTimeOfDownloadedFile() throws IOException, ApiException {
@@ -270,8 +329,10 @@ public class CheckDownloadStatusTaskTest {
         file1.setStarttime(RFC3339.format(targetDate));
         files.add(file1);
 
-        file1LocalPath.toFile().createNewFile();
-        DB.addForDownload(new SiaFileFromDownloadsAPI(file1, ctx.pathPrefix));
+        assertTrue(file1LocalPath.toFile().createNewFile());
+        final SiaFile siaFile = new SiaFileFromDownloadsAPI(file1, ctx.pathPrefix);
+        DB.addForDownload(siaFile);
+        DB.setDownloading(siaFile);
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -284,13 +345,14 @@ public class CheckDownloadStatusTaskTest {
 
         assertEquals(SyncState.SYNCED, DB.get(Utils.getSyncDir().resolve("file1")).getState());
         assertEquals(targetDate.getTime() / 1000, new Date(file1LocalPath.toFile().lastModified()).getTime() / 1000);
+        assertTrue(DBMock.committed);
 
     }
 
     @Test
     public void testParseDate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final String rfc3339 = new String("2009-11-10T23:00:00Z");
+        final String rfc3339 = "2009-11-10T23:00:00Z";
 
         final Method parseDateTime = CheckDownloadStatusTask.class.getDeclaredMethod("parseDateTime", String.class);
         parseDateTime.setAccessible(true);
@@ -303,7 +365,7 @@ public class CheckDownloadStatusTaskTest {
         assertEquals(0, res1.secondOfMinute().get());
 
 
-        final String rfc3339tz = new String("2017-11-23T14:42:59.864874-05:00");
+        final String rfc3339tz = "2017-11-23T14:42:59.864874-05:00";
         final DateTime res2 = (DateTime) parseDateTime.invoke(null, rfc3339tz);
         assertEquals(2017, res2.year().get());
         assertEquals(11, res2.monthOfYear().get());

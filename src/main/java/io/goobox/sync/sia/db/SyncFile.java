@@ -17,7 +17,6 @@
 package io.goobox.sync.sia.db;
 
 import io.goobox.sync.sia.model.SiaFile;
-import io.goobox.sync.storj.db.SyncState;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.dizitart.no2.objects.Id;
 
@@ -88,7 +87,11 @@ public class SyncFile implements Serializable {
         return this.state;
     }
 
-    public void setState(final SyncState state) {
+    /**
+     * Sets new state. It must be called from DB.
+     * @param state to be set.
+     */
+    void setState(final SyncState state) {
         this.state = state;
     }
 

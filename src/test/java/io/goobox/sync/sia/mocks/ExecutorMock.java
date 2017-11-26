@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.mocks;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -26,7 +28,7 @@ public class ExecutorMock implements Executor {
     public List<Runnable> queue = new ArrayList<>();
 
     @Override
-    public void execute(Runnable command) {
+    public void execute(@NotNull  Runnable command) {
         this.queue.add(command);
     }
 

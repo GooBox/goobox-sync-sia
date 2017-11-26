@@ -31,19 +31,19 @@ public class SiaFileFromFilesAPI implements SiaFile {
     /**
      * SiaPath object.
      */
-    public final SiaPath siaPath;
+    private final SiaPath siaPath;
 
     /**
      * File object returned by /renter/files.
      */
-    public final InlineResponse20011Files rawFile;
+    private final InlineResponse20011Files rawFile;
 
 
     /**
      * Create a new SiaFile object with a path prefix.
      *
-     * @param file
-     * @param prefix
+     * @param file returned by /renter/files API.
+     * @param prefix of remote paths.
      */
     public SiaFileFromFilesAPI(final InlineResponse20011Files file, final Path prefix) {
         this.siaPath = new SiaPath(file.getSiapath(), prefix);

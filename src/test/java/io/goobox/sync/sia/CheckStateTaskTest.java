@@ -22,6 +22,7 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.ExecutorMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
@@ -29,7 +30,6 @@ import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import io.goobox.sync.sia.model.SiaPath;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -60,6 +60,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JMockit.class)
 public class CheckStateTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -76,7 +77,7 @@ public class CheckStateTaskTest {
     }
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */
@@ -111,8 +112,8 @@ public class CheckStateTaskTest {
         final Context ctx = new Context(cfg, null);
 
         // Test files:
-        //   cloud: file1, file2, file3, and file5, file7
-        //   local: file1, file2, and file4, file6, file7, file8
+        //   cloud: file1, file2, file3, file5, file7
+        //   local: file1, file2, file4, file6, file7, file8
         //
         // file1 in cloud is newer than one in local, file2 in local is newer than one in cloud,
         // thus, file1 will be downloaded and file2 will be uploaded.
@@ -134,8 +135,8 @@ public class CheckStateTaskTest {
         file1.setFilesize(0L);
         final SiaFile siaFile1 = new SiaFileFromFilesAPI(file1, ctx.pathPrefix);
         final File localFile1 = siaFile1.getLocalPath().toFile();
-        localFile1.createNewFile();
-        localFile1.setLastModified(oldTimeStamp.getTime());
+        assertTrue(localFile1.createNewFile());
+        assertTrue(localFile1.setLastModified(oldTimeStamp.getTime()));
         DB.setSynced(siaFile1);
         files.add(file1);
 
@@ -154,11 +155,11 @@ public class CheckStateTaskTest {
         file2.setFilesize(0L);
         final SiaFile siaFile2 = new SiaFileFromFilesAPI(file2, ctx.pathPrefix);
         final File localFile2 = siaFile2.getLocalPath().toFile();
-        localFile2.createNewFile();
-        localFile2.setLastModified(oldTimeStamp.getTime());
+        assertTrue(localFile2.createNewFile());
+        assertTrue(localFile2.setLastModified(oldTimeStamp.getTime()));
         files.add(file2);
         DB.setSynced(siaFile2);
-        localFile2.setLastModified(newTimeStamp.getTime());
+        assertTrue(localFile2.setLastModified(newTimeStamp.getTime()));
 
         // file3
         final InlineResponse20011Files file3 = new InlineResponse20011Files();
@@ -171,8 +172,8 @@ public class CheckStateTaskTest {
 
         // file4
         final Path localFile4 = Utils.getSyncDir().resolve("file4");
-        localFile4.toFile().createNewFile();
-        localFile4.toFile().setLastModified(newTimeStamp.getTime());
+        assertTrue(localFile4.toFile().createNewFile());
+        assertTrue(localFile4.toFile().setLastModified(newTimeStamp.getTime()));
 
         // file5
         final InlineResponse20011Files file5 = new InlineResponse20011Files();
@@ -182,10 +183,10 @@ public class CheckStateTaskTest {
         file5.setFilesize(0L);
         final SiaFile siaFile5 = new SiaFileFromFilesAPI(file5, ctx.pathPrefix);
         final File localFile5 = siaFile5.getLocalPath().toFile();
-        localFile5.createNewFile();
-        localFile5.setLastModified(newTimeStamp.getTime());
+        assertTrue(localFile5.createNewFile());
+        assertTrue(localFile5.setLastModified(newTimeStamp.getTime()));
         DB.setSynced(siaFile5);
-        localFile5.delete();
+        assertTrue(localFile5.delete());
         files.add(file5);
 
         // file6
@@ -196,8 +197,8 @@ public class CheckStateTaskTest {
         file6.setFilesize(0L);
         final SiaFile siaFile6 = new SiaFileFromFilesAPI(file6, ctx.pathPrefix);
         final File localFile6 = siaFile6.getLocalPath().toFile();
-        localFile6.createNewFile();
-        localFile6.setLastModified(newTimeStamp.getTime());
+        assertTrue(localFile6.createNewFile());
+        assertTrue(localFile6.setLastModified(newTimeStamp.getTime()));
         DB.setSynced(siaFile6);
 
         // file7
@@ -208,9 +209,9 @@ public class CheckStateTaskTest {
         file7.setFilesize(0L);
         final SiaFile siaFile7 = new SiaFileFromFilesAPI(file7, ctx.pathPrefix);
         final File localFile7 = siaFile7.getLocalPath().toFile();
-        localFile7.createNewFile();
-        localFile7.setLastModified(oldTimeStamp.getTime());
-        DB.addForUpload(siaFile7);
+        assertTrue(localFile7.createNewFile());
+        assertTrue(localFile7.setLastModified(oldTimeStamp.getTime()));
+        DB.addForUpload(siaFile7.getLocalPath());
         files.add(file7);
 
         // file8
@@ -221,11 +222,11 @@ public class CheckStateTaskTest {
         file8.setFilesize(0L);
         final SiaFile siaFile8 = new SiaFileFromFilesAPI(file8, ctx.pathPrefix);
         final File localFile8 = siaFile8.getLocalPath().toFile();
-        localFile8.createNewFile();
-        localFile8.setLastModified(oldTimeStamp.getTime());
-        DB.addForUpload(siaFile8);
+        assertTrue(localFile8.createNewFile());
+        assertTrue(localFile8.setLastModified(oldTimeStamp.getTime()));
+        DB.addForUpload(siaFile8.getLocalPath());
         DB.setUploadFailed(siaFile8.getLocalPath());
-        localFile8.setLastModified(newTimeStamp.getTime());
+        assertTrue(localFile8.setLastModified(newTimeStamp.getTime()));
 
         DB.commit();
         new Expectations() {{
@@ -246,6 +247,7 @@ public class CheckStateTaskTest {
         assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(siaFile6).getState());
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile7).getState());
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile8).getState());
+        assertTrue(DBMock.committed);
 
         for (Runnable cmd : executor.queue) {
             if (cmd instanceof UploadLocalFileTask) {
@@ -272,16 +274,16 @@ public class CheckStateTaskTest {
         // - subdir/file2
         // - hidden1 (hidden file)
         final Path file1 = Utils.getSyncDir().resolve("file1");
-        file1.toFile().createNewFile();
+        assertTrue(file1.toFile().createNewFile());
 
         final Path subdir = Utils.getSyncDir().resolve("subdir");
-        subdir.toFile().mkdir();
+        assertTrue(subdir.toFile().mkdir());
 
         final Path file2 = subdir.resolve("file2");
-        file2.toFile().createNewFile();
+        assertTrue(file2.toFile().createNewFile());
 
         final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
-        hidden1.toFile().createNewFile();
+        assertTrue(hidden1.toFile().createNewFile());
 
         final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
 
@@ -309,16 +311,16 @@ public class CheckStateTaskTest {
         // - file1
         // - subdir/file2
         final Path file1 = Utils.getSyncDir().resolve("file1");
-        file1.toFile().createNewFile();
+        assertTrue(file1.toFile().createNewFile());
 
         final Path subdir = Utils.getSyncDir().resolve("subdir");
-        subdir.toFile().mkdir();
+        assertTrue(subdir.toFile().mkdir());
 
         final Path file2 = subdir.resolve("file2");
-        file2.toFile().createNewFile();
+        assertTrue(file2.toFile().createNewFile());
 
         final Path hidden1 = Utils.getSyncDir().resolve(".hidden1");
-        hidden1.toFile().createNewFile();
+        assertTrue(hidden1.toFile().createNewFile());
 
         final CheckStateTask target = new CheckStateTask(ctx, new ExecutorMock());
 

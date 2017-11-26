@@ -16,49 +16,60 @@
  */
 package io.goobox.sync.sia;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Date;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
-import io.goobox.sync.storj.db.SyncState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * CheckDownloadStatusTask requests current downloading status to siad and prints it.
  *
  * @author junpei
  */
-public class CheckDownloadStatusTask implements Runnable {
+class CheckDownloadStatusTask implements Runnable {
 
+    @NotNull
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
 
-    public CheckDownloadStatusTask(final Context ctx) {
+    CheckDownloadStatusTask(@NotNull final Context ctx) {
         this.ctx = ctx;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckDownloadStatusTask that = (CheckDownloadStatusTask) o;
+
+        return ctx.equals(that.ctx);
+    }
+
+    @Override
+    public int hashCode() {
+        return ctx.hashCode();
     }
 
     @Override
     public void run() {
 
-        this.logger.info("Checking download status");
+        logger.info("Checking download status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
@@ -68,56 +79,58 @@ public class CheckDownloadStatusTask implements Runnable {
             for (InlineResponse20010Downloads rawFile : getRecentDownloads(downloads.getDownloads())) {
 
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(rawFile, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
-                    // This file isn't managed by Goobox.
-                    this.logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
+                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                    continue;
+                }
+
+                final SyncFile syncFile = DB.get(file);
+                if (syncFile.getState() != SyncState.DOWNLOADING) {
+                    logger.debug("Found remote file {} but it's not being downloaded", file.getRemotePath());
                     continue;
                 }
 
                 final String err = file.getError();
                 if (err != null && !err.isEmpty()) {
 
-                    // TODO: Error handling.
-                    this.logger.error("Failed to download {}: {}", file.getName(), err);
-                    if (DB.contains(file)) {
-                        final SyncFile syncFile = DB.get(file);
-                        if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
-                            DB.setDownloadFailed(file);
-                        }
-                    }
+                    logger.error("Failed to download {}: {}", file.getName(), err);
+                    DB.setDownloadFailed(file);
 
                 } else if (file.getFileSize() == file.getReceived()) {
 
                     // This file has been downloaded.
-                    this.logger.debug("File {} has been downloaded", file.getRemotePath());
-                    if(file.getCreationTime() != 0){
-                        file.getLocalPath().toFile().setLastModified(file.getCreationTime());
-                    }
-                    if (DB.contains(file)) {
-                        final SyncFile syncFile = DB.get(file);
-                        if (syncFile.getState() == SyncState.FOR_DOWNLOAD) {
-                            try {
-                                DB.setSynced(file);
-                            } catch (IOException e) {
-                                logger.error("Failed to set status: {}", e.getMessage());
-                            }
+                    logger.info("File {} has been downloaded", file.getRemotePath());
+                    if (file.getCreationTime() != 0) {
+                        final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
+                        if (!success) {
+                            logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
                         }
+                    }
+
+                    try {
+                        DB.setSynced(file);
+                    } catch (IOException e) {
+                        logger.error("Failed to set status: {}", e.getMessage());
+                        DB.setDownloadFailed(file);
                     }
 
                 } else {
 
-                    this.logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(),
-                            file.getFileSize());
+                    logger.debug("Still downloading {} ({} / {})", file.getName(), file.getReceived(), file.getFileSize());
                     ++nFiles;
 
                 }
 
             }
-            this.logger.info("Downloading {} files", nFiles);
+            logger.info("Downloading {} files", nFiles);
 
         } catch (ApiException e) {
 
-            this.logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
+
+        } finally {
+
+            DB.commit();
 
         }
 
@@ -141,7 +154,7 @@ public class CheckDownloadStatusTask implements Runnable {
 
                     final DateTime prev = parseDateTime(map.get(file.getSiapath()).getStarttime());
                     final DateTime curr = parseDateTime(file.getStarttime());
-                    if (prev.isBefore(curr)){
+                    if (prev.isBefore(curr)) {
                         map.put(file.getSiapath(), file);
                     }
 
@@ -165,7 +178,7 @@ public class CheckDownloadStatusTask implements Runnable {
      * @param input string representing a date time in RFC3339 format.
      * @return a date object.
      */
-    private static DateTime parseDateTime(final String input) throws IllegalArgumentException{
+    private static DateTime parseDateTime(final String input) throws IllegalArgumentException {
         return ISODateTimeFormat.dateTimeParser().parseDateTime(input);
     }
 

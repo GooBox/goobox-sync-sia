@@ -70,6 +70,11 @@ public class Config {
      */
     private boolean includeHiddenFiles;
 
+    public Config() {
+        this.userName = "";
+        this.primarySeed = "";
+    }
+
     @NotNull
     public String getUserName() {
         return userName;

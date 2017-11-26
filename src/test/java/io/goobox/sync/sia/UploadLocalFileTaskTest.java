@@ -20,11 +20,11 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -37,14 +37,15 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -61,7 +62,7 @@ public class UploadLocalFileTaskTest {
     }
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */
@@ -99,7 +100,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 
@@ -111,6 +112,8 @@ public class UploadLocalFileTaskTest {
         final SiaFileMock file = new SiaFileMock(localPath);
         file.setRemotePath(remotePath);
         new UploadLocalFileTask(ctx, file, now).run();
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -125,7 +128,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 
@@ -136,6 +139,8 @@ public class UploadLocalFileTaskTest {
 
         // Use a local path instead of a SiaFile instance.
         new UploadLocalFileTask(ctx, localPath, now).run();
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -150,7 +155,7 @@ public class UploadLocalFileTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("testfile");
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        localPath.toFile().createNewFile();
+        assertTrue(localPath.toFile().createNewFile());
         DB.addForUpload(localPath);
         final Date now = new Date();
 
@@ -162,6 +167,7 @@ public class UploadLocalFileTaskTest {
 
         new UploadLocalFileTask(ctx, localPath, now).run();
         assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -174,7 +180,7 @@ public class UploadLocalFileTaskTest {
 //        cfg.parityPieces = 50;
 //        final Context ctx = new Context(cfg, null);
 //
-//        final Path localPath = Utils.getSyncDir().resolve(Paths.get("subdir","testfile"));
+//        final Path localPath = CmdUtils.getSyncDir().resolve(Paths.get("subdir","testfile"));
 //        final Path remotePath = ctx.pathPrefix.resolve(Paths.get("subdir","testfile"));
 //        localPath.toFile().createNewFile();
 //        DB.addForUpload(localPath);

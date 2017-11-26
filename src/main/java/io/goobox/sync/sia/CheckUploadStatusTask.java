@@ -22,27 +22,46 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 
-public class CheckUploadStatusTask implements Runnable {
+class CheckUploadStatusTask implements Runnable {
 
+    @NotNull
     private final Context ctx;
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
 
-    public CheckUploadStatusTask(final Context ctx) {
+    CheckUploadStatusTask(@NotNull final Context ctx) {
         this.ctx = ctx;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckUploadStatusTask that = (CheckUploadStatusTask) o;
+
+        return ctx.equals(that.ctx);
+    }
+
+    @Override
+    public int hashCode() {
+        return ctx.hashCode();
     }
 
     @Override
     public void run() {
 
-        this.logger.info("Checking upload status");
+        logger.info("Checking upload status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
@@ -55,21 +74,27 @@ public class CheckUploadStatusTask implements Runnable {
             for (InlineResponse20011Files item : res.getFiles()) {
 
                 final SiaFileFromFilesAPI file = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
                     continue;
                 }
 
-                logger.debug("Found remote file {}", file.getRemotePath());
+                final SyncFile syncFile = DB.get(file);
+                if (syncFile.getState() != SyncState.UPLOADING) {
+                    logger.debug("Found remote file {} but it's not being uploaded", file.getRemotePath());
+                    continue;
+                }
+
                 if (file.getUploadProgress().compareTo(Completed) >= 0) {
-                    logger.debug("File {} has been uploaded", file.getLocalPath());
+                    logger.info("File {} has been uploaded", file.getLocalPath());
                     try {
                         DB.setSynced(file);
                     } catch (IOException e) {
                         logger.error("Failed to update the sync db: {}", e.getMessage());
+                        DB.setUploadFailed(file.getLocalPath());
                     }
                 } else {
-                    logger.info(
+                    logger.debug(
                             "File {} is now being uploaded ({}%)", file.getName(),
                             file.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
                     ++nFiles;
@@ -77,14 +102,15 @@ public class CheckUploadStatusTask implements Runnable {
 
             }
 
+
             if (nFiles != 0) {
                 logger.info("Uploading {} files", nFiles);
             }
 
-            DB.commit();
-
         } catch (ApiException e) {
             logger.error("Failed to retrieve uploaing status: {}", APIUtils.getErrorMessage(e));
+        } finally {
+            DB.commit();
         }
 
     }

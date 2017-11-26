@@ -30,29 +30,30 @@ import java.nio.file.Path;
  *
  * @author junpei
  */
-public class DeleteLocalFileTask implements Runnable {
+class DeleteLocalFileTask implements Runnable {
 
     private final Path path;
-    private final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
-    public DeleteLocalFileTask(final Path path) {
+    DeleteLocalFileTask(final Path path) {
         this.path = path;
     }
 
     @Override
     public void run() {
 
-        this.logger.info("Deleting local file {}", this.path);
+        logger.info("Deleting local file {}", this.path);
         try {
-            boolean success = Files.deleteIfExists(this.path);
-            if (success) {
-                DB.remove(this.path);
-                DB.commit();
-            } else {
-                this.logger.warn("File {} doesn't exist", this.path);
+
+            final boolean success = Files.deleteIfExists(this.path);
+            if (!success) {
+                logger.warn("File {} doesn't exist", this.path);
             }
+            DB.remove(this.path);
+            DB.commit();
+
         } catch (IOException e) {
-            this.logger.error("Cannot delete local file {}: {}", this.path, e.getMessage());
+            logger.error("Cannot delete local file {}: {}", this.path, e.getMessage());
         }
 
     }

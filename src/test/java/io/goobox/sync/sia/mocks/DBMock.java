@@ -24,9 +24,18 @@ import org.dizitart.no2.Nitrite;
 
 public class DBMock extends MockUp<DB> {
 
+    public static boolean committed;
+
+    @SuppressWarnings("unused")
     @Mock
     private Nitrite open() {
+        committed = false;
         return Nitrite.builder().compressed().openOrCreate();
     }
 
+    @SuppressWarnings("unused")
+    @Mock
+    public synchronized static void commit() {
+        committed = true;
+    }
 }

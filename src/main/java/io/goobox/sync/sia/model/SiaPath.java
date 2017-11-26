@@ -39,7 +39,7 @@ import io.goobox.sync.storj.Utils;
  */
 public class SiaPath {
 
-    private final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * file path identifying a file in SIA's blockchain.
@@ -69,7 +69,7 @@ public class SiaPath {
                 created = Long.parseLong(this.siaPath.getFileName().toString());
                 withoutTimestamp = this.siaPath.getParent();
             } catch (NumberFormatException e) {
-                this.logger.debug("siapath {} doesn't have its creation time", siaPath);
+                logger.debug("siapath {} doesn't have its creation time", siaPath);
             }
         }
         this.created = created;

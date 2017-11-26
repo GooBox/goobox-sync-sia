@@ -1,9 +1,7 @@
 package io.goobox.sync.sia.db;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
+import io.goobox.sync.sia.model.SiaFile;
+import io.goobox.sync.storj.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dizitart.no2.Nitrite;
@@ -11,9 +9,9 @@ import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
 import org.dizitart.no2.objects.filters.ObjectFilters;
 
-import io.goobox.sync.sia.model.SiaFile;
-import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
 public class DB {
 
@@ -60,7 +58,7 @@ public class DB {
         return contains(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    synchronized static boolean contains(String name) {
+    private synchronized static boolean contains(String name) {
         boolean res = (get(name) != null);
         logger.trace("contains({}) = {}", name, res);
         return res;
@@ -74,7 +72,7 @@ public class DB {
         return get(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    synchronized static SyncFile get(String name) {
+    private synchronized static SyncFile get(String name) {
         final SyncFile res = repo().find(withName(name)).firstOrDefault();
         logger.trace("get({}) = {}", name, res);
         return res;
@@ -88,7 +86,7 @@ public class DB {
         return getOrCreate(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    synchronized static SyncFile getOrCreate(String name) {
+    private synchronized static SyncFile getOrCreate(String name) {
         SyncFile syncFile = get(name);
         if (syncFile == null) {
             syncFile = new SyncFile();
@@ -107,7 +105,7 @@ public class DB {
         remove(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    synchronized static void remove(String name) {
+    private synchronized static void remove(String name) {
         logger.trace("remove({})", name);
         repo().remove(withName(name));
     }
@@ -132,10 +130,9 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized static void addForUpload(SiaFile file) throws IOException {
-        SyncFile syncFile = getOrCreate(file);
-        syncFile.setLocalData(file.getLocalPath());
-        syncFile.setState(SyncState.FOR_UPLOAD);
+    public synchronized static void setDownloading(SiaFile file) {
+        final SyncFile syncFile = get(file);
+        syncFile.setState(SyncState.DOWNLOADING);
         repo().update(syncFile);
     }
 
@@ -143,6 +140,12 @@ public class DB {
         SyncFile syncFile = getOrCreate(localPath);
         syncFile.setLocalData(localPath);
         syncFile.setState(SyncState.FOR_UPLOAD);
+        repo().update(syncFile);
+    }
+
+    public synchronized static void setUploading(Path localPath) {
+        final SyncFile syncFile = get(localPath);
+        syncFile.setState(SyncState.UPLOADING);
         repo().update(syncFile);
     }
 

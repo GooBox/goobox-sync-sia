@@ -16,8 +16,9 @@
  */
 package io.goobox.sync.sia;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,85 +27,80 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigTest {
 
-	String userName;
-	String primarySeed;
-	int dataPieces;
-	int parityPieces;
-	Boolean includeHiddenFiles;
-	
-	@Test
-	public void testLoad() throws IOException {
+    private String userName;
+    private String primarySeed;
+    private int dataPieces;
+    private int parityPieces;
+    private Boolean includeHiddenFiles;
 
-		this.userName = "testuser@sample.com";
-		this.primarySeed = "a b c d e f g";
-		this.dataPieces = 5;
-		this.parityPieces = 12;
-		this.includeHiddenFiles = true;
+    private Path tmpPath;
 
-		File tmpFile = null;
-		try {
-		
-			Path tmpPath = Files.createTempFile(null, null);
-			tmpFile = tmpPath.toFile();
-			
-			BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
-			writer.write(this.getPropertiesString());
-			writer.flush();
-			writer.close();
-			
-			Config cfg = Config.load(tmpPath);
-			assertEquals(userName, cfg.getUserName());
-			assertEquals(primarySeed, cfg.getPrimarySeed());
-			assertEquals(dataPieces, cfg.getDataPieces());
-			assertEquals(parityPieces, cfg.getParityPieces());
-			assertEquals(includeHiddenFiles.booleanValue(), cfg.isIncludeHiddenFiles());
+    @Before
+    public void setUp() throws IOException {
+        tmpPath = Files.createTempFile(null, null);
+    }
 
-		} finally {
-			if(tmpFile != null && tmpFile.exists()) {
-				tmpFile.delete();
-			}
-		}
-		
-	}
-	
-	@Test
-	public void testLoadWithInvalidParityPieces() throws IOException {
+    @After
+    public void tearDown() {
+        if (tmpPath != null && tmpPath.toFile().exists()) {
+            assertTrue(tmpPath.toFile().delete());
+        }
+    }
 
-		this.userName = "testuser@sample.com";
-		this.primarySeed = "a b c d e f g";
-		this.dataPieces = 5;
-		this.parityPieces = 1;
+    @Test
+    public void testLoad() throws IOException {
 
-		File tmpFile = null;
-		try {
-		
-			Path tmpPath = Files.createTempFile(null, null);
-			tmpFile = tmpPath.toFile();
-			
-			BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
-			writer.write(this.getPropertiesString());
-			writer.flush();
-			writer.close();
-			
-			Config cfg = Config.load(tmpPath);
-			assertEquals(userName, cfg.getUserName());
-			assertEquals(primarySeed, cfg.getPrimarySeed());
-			assertEquals(dataPieces, cfg.getDataPieces());
-			assertEquals(12, cfg.getParityPieces());
+        this.userName = "testuser@sample.com";
+        this.primarySeed = "a b c d e f g";
+        this.dataPieces = 5;
+        this.parityPieces = 12;
+        this.includeHiddenFiles = true;
 
-		} finally {
-			if(tmpFile != null && tmpFile.exists()) {
-				tmpFile.delete();
-			}
-		}
+        final File tmpFile = tmpPath.toFile();
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
+        writer.write(this.getPropertiesString());
+        writer.flush();
+        writer.close();
 
-	}
+        final Config cfg = Config.load(tmpPath);
+        assertEquals(userName, cfg.getUserName());
+        assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(dataPieces, cfg.getDataPieces());
+        assertEquals(parityPieces, cfg.getParityPieces());
+        assertEquals(includeHiddenFiles, cfg.isIncludeHiddenFiles());
 
-	@Test
+
+    }
+
+    @Test
+    public void testLoadWithInvalidParityPieces() throws IOException {
+
+        this.userName = "testuser@sample.com";
+        this.primarySeed = "a b c d e f g";
+        this.dataPieces = 5;
+        this.parityPieces = 1;
+
+        final File tmpFile = tmpPath.toFile();
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
+        writer.write(this.getPropertiesString());
+        writer.flush();
+        writer.close();
+
+        final Config cfg = Config.load(tmpPath);
+        assertEquals(userName, cfg.getUserName());
+        assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(dataPieces, cfg.getDataPieces());
+        assertEquals(12, cfg.getParityPieces());
+
+    }
+
+    @Test
     public void testLoadWihoutIncludeHiddenFilesOption() throws IOException {
 
         this.userName = "testuser@sample.com";
@@ -113,112 +109,81 @@ public class ConfigTest {
         this.parityPieces = 12;
         this.includeHiddenFiles = null;
 
-        File tmpFile = null;
-        try {
+        final File tmpFile = tmpPath.toFile();
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
+        writer.write(this.getPropertiesString());
+        writer.flush();
+        writer.close();
 
-            Path tmpPath = Files.createTempFile(null, null);
-            tmpFile = tmpPath.toFile();
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
-            writer.write(this.getPropertiesString());
-            writer.flush();
-            writer.close();
-
-            Config cfg = Config.load(tmpPath);
-            assertEquals(userName, cfg.getUserName());
-            assertEquals(primarySeed, cfg.getPrimarySeed());
-            assertEquals(dataPieces, cfg.getDataPieces());
-            assertEquals(parityPieces, cfg.getParityPieces());
-            assertFalse(cfg.isIncludeHiddenFiles());
-
-        } finally {
-            if(tmpFile != null && tmpFile.exists()) {
-                tmpFile.delete();
-            }
-        }
+        final Config cfg = Config.load(tmpPath);
+        assertEquals(userName, cfg.getUserName());
+        assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(dataPieces, cfg.getDataPieces());
+        assertEquals(parityPieces, cfg.getParityPieces());
+        assertFalse(cfg.isIncludeHiddenFiles());
 
     }
 
-	
-	@Test
-	public void testSave() throws IOException {
-		
-		Config cfg = new Config();
-		cfg.setUserName("testuser@sample.com");
-		cfg.setPrimarySeed("a b c d e f g");
-		cfg.setDataPieces(5);
-		cfg.setParityPieces(12);
-		cfg.setIncludeHiddenFiles(true);
 
-		Path tmpPath = null;
-		try {
-		
-			tmpPath = Files.createTempFile(null, null);
-			cfg.save(tmpPath);
-			assertEquals(cfg, Config.load(tmpPath));
+    @Test
+    public void testSave() throws IOException {
 
-		} finally {
-			if(tmpPath != null && tmpPath.toFile().exists()) {
-				tmpPath.toFile().delete();
-			}
-		}
-		
-	}
-	
-	@Test
-	public void testOverwrite() throws IOException {
-		
-		Config cfg = new Config();
-		cfg.setUserName("testuser@sample.com");
-		cfg.setPrimarySeed("a b c d e f g");
-		cfg.setDataPieces(5);
-		cfg.setParityPieces(12);
-		cfg.setIncludeHiddenFiles(true);
-		
-		Path tmpPath = null;
-		try {
-		
-			tmpPath = Files.createTempFile(null, null);
-			BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
-			writer.write("write random dummy data");
-			writer.flush();
-			writer.close();
-			
-			cfg.save(tmpPath);
-			assertEquals(cfg, Config.load(tmpPath));
+        final Config cfg = new Config();
+        cfg.setUserName("testuser@sample.com");
+        cfg.setPrimarySeed("a b c d e f g");
+        cfg.setDataPieces(5);
+        cfg.setParityPieces(12);
+        cfg.setIncludeHiddenFiles(true);
 
-		} finally {
-			if(tmpPath != null && tmpPath.toFile().exists()) {
-				tmpPath.toFile().delete();
-			}
-		}
+        cfg.save(tmpPath);
+        assertEquals(cfg, Config.load(tmpPath));
 
-	}
-	
-	public String getPropertiesString() {
+    }
 
-		StringBuffer buf = new StringBuffer();
-		buf.append("username = ");
-		buf.append(userName);
-		buf.append("\n");
-		
-		buf.append("primary-seed = ");
-		buf.append(primarySeed);
-		buf.append("\n");
-		
-		buf.append("data-pieces = ");
-		buf.append(dataPieces);
-		buf.append("\n");
-		
-		buf.append("parity-pieces = ");
-		buf.append(parityPieces);
+    @Test
+    public void testOverwrite() throws IOException {
 
-		if(this.includeHiddenFiles != null){
-		    buf.append("\ninclude-hidden-files = ");
-		    buf.append(includeHiddenFiles.booleanValue());
+        final Config cfg = new Config();
+        cfg.setUserName("testuser@sample.com");
+        cfg.setPrimarySeed("a b c d e f g");
+        cfg.setDataPieces(5);
+        cfg.setParityPieces(12);
+        cfg.setIncludeHiddenFiles(true);
+
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
+        writer.write("write random dummy data");
+        writer.flush();
+        writer.close();
+
+        cfg.save(tmpPath);
+        assertEquals(cfg, Config.load(tmpPath));
+
+    }
+
+    private String getPropertiesString() {
+
+        final StringBuffer buf = new StringBuffer();
+        buf.append("username = ");
+        buf.append(userName);
+        buf.append("\n");
+
+        buf.append("primary-seed = ");
+        buf.append(primarySeed);
+        buf.append("\n");
+
+        buf.append("data-pieces = ");
+        buf.append(dataPieces);
+        buf.append("\n");
+
+        buf.append("parity-pieces = ");
+        buf.append(parityPieces);
+
+        if (this.includeHiddenFiles != null) {
+            buf.append("\ninclude-hidden-files = ");
+            buf.append(includeHiddenFiles.booleanValue());
         }
-		return buf.toString();
-		
-	}
+        return buf.toString();
+
+    }
 
 }

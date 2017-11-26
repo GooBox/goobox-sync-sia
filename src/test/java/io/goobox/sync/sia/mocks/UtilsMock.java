@@ -33,6 +33,7 @@ public class UtilsMock extends MockUp<Utils> {
         return syncDir;
     }
 
+    @SuppressWarnings("unused")
     @Mock
     public static Path getDataDir() {
         return dataDir;

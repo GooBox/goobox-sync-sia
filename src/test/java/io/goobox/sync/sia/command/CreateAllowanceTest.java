@@ -51,7 +51,7 @@ public class CreateAllowanceTest {
     private Path tempDir;
 
     /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
+     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
      *
      * @throws IOException if failed to create a temporary directory.
      */
@@ -88,13 +88,13 @@ public class CreateAllowanceTest {
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(Utils.Hasting).toString());
+            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
             res1.setUnlocked(true);
             wallet.walletGet();
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());
+            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -103,7 +103,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
-                    multiply(Utils.Hasting).
+                    multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, null, null);
 
@@ -127,7 +127,7 @@ public class CreateAllowanceTest {
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());
+            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -136,13 +136,13 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
-                    multiply(Utils.Hasting).
+                    multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, null, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(Utils.Hasting).toString()});
+        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
 
     }
 
@@ -158,12 +158,12 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
+        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(Utils.Hasting).toString());
+            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
             res1.setUnlocked(false);
             wallet.walletGet();
             result = res1;
@@ -171,7 +171,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());
+            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -180,7 +180,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
-                    multiply(Utils.Hasting).
+                    multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, null, null);
 
@@ -201,7 +201,7 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(Utils.ConfigFileName));
+        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 
@@ -213,7 +213,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(Utils.Hasting).toString());
+            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -222,13 +222,13 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
-                    multiply(Utils.Hasting).
+                    multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, null, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(Utils.Hasting).toString()});
+        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
 
     }
 

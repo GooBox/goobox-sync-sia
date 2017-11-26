@@ -20,31 +20,32 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.storj.Utils;
-import io.goobox.sync.storj.db.SyncState;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class DownloadRemoteFileTaskTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -97,16 +98,19 @@ public class DownloadRemoteFileTaskTest {
 
         final Path remotePath = ctx.pathPrefix.resolve("testfile");
         final Path localPath = Utils.getSyncDir().resolve("testfile");
-        localPath.toFile().delete();
 
         final SiaFileMock file = new SiaFileMock(localPath);
         file.setRemotePath(remotePath);
+
+        DB.addForDownload(file);
 
         new Expectations() {{
             api.renterDownloadasyncSiapathGet(remotePath.toString(), file.getLocalPath().toString());
         }};
 
         new DownloadRemoteFileTask(ctx, file).run();
+        assertEquals(SyncState.DOWNLOADING, DB.get(file).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -125,12 +129,13 @@ public class DownloadRemoteFileTaskTest {
 
         final Path remotePath = ctx.pathPrefix.resolve("subdir/testfile");
 
-        final Path parent = Files.createTempDirectory(null);
         final Path localPath = Utils.getSyncDir().resolve("subdir/testfile");
         assertFalse(localPath.getParent().toFile().exists());
 
         final SiaFileMock file = new SiaFileMock(localPath);
         file.setRemotePath(remotePath);
+
+        DB.addForDownload(file);
 
         new Expectations() {{
             api.renterDownloadasyncSiapathGet(remotePath.toString(), localPath.toString());
@@ -138,6 +143,8 @@ public class DownloadRemoteFileTaskTest {
 
         new DownloadRemoteFileTask(ctx, file).run();
         assertTrue(localPath.getParent().toFile().exists());
+        assertEquals(SyncState.DOWNLOADING, DB.get(file).getState());
+        assertTrue(DBMock.committed);
 
     }
 
@@ -161,10 +168,12 @@ public class DownloadRemoteFileTaskTest {
         }};
 
         new DownloadRemoteFileTask(ctx, file).run();
-        assertEquals(DB.get(file).getState(), SyncState.DOWNLOAD_FAILED);
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(file).getState());
+        assertTrue(DBMock.committed);
 
     }
 
+    @SuppressWarnings("unused")
     @Test
     public void testHandlingOfIOException(@Mocked Files files) throws IOException {
 
@@ -187,6 +196,7 @@ public class DownloadRemoteFileTaskTest {
 
         new DownloadRemoteFileTask(ctx, file).run();
         assertEquals(DB.get(file).getState(), SyncState.DOWNLOAD_FAILED);
+        assertTrue(DBMock.committed);
 
     }
 

@@ -97,7 +97,7 @@ public class Wallet implements Runnable {
     @Override
     public void run() {
 
-        final ApiClient apiClient = Utils.getApiClient();
+        final ApiClient apiClient = CmdUtils.getApiClient();
 
         try {
 
@@ -108,14 +108,12 @@ public class Wallet implements Runnable {
             System.out.println(String.format(
                     "balance: %s SC",
                     new BigDecimal(balances.getConfirmedsiacoinbalance()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "unconfirmed delta: %s SC",
                     new BigDecimal(balances.getUnconfirmedincomingsiacoins()).
                             subtract(new BigDecimal(balances.getUnconfirmedoutgoingsiacoins())).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
 
             final RenterApi renter = new RenterApi(apiClient);
             final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
@@ -123,46 +121,38 @@ public class Wallet implements Runnable {
             System.out.println(String.format(
                     "  download: %s SC",
                     new BigDecimal(spendings.getDownloadspending()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  upload: %s SC",
                     new BigDecimal(spendings.getUploadspending()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  storage: %s SC",
                     new BigDecimal(spendings.getStoragespending()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  fee: %s SC",
                     new BigDecimal(spendings.getContractspending()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
 
             final InlineResponse20012 prices = renter.renterPricesGet();
             System.out.println("current prices:");
             System.out.println(String.format(
                     "  download: %s SC/TB",
                     new BigDecimal(prices.getDownloadterabyte()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  upload: %s SC/TB",
                     new BigDecimal(prices.getUploadterabyte()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  storage: %s SC/TB*Month",
                     new BigDecimal(prices.getStorageterabytemonth()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
             System.out.println(String.format(
                     "  fee: %s SC",
                     new BigDecimal(prices.getFormcontracts()).
-                            divide(Utils.Hasting).
-                            setScale(4, BigDecimal.ROUND_HALF_UP)));
+                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
 
         } catch (ApiException e) {
             logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
