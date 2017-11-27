@@ -52,6 +52,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class App {
 
+    public static final String CommandName = "goobox-sync-sia";
+    public static final String Description = "Sync app for Sia";
+
     /**
      * Version information.
      */
@@ -101,8 +104,7 @@ public class App {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
-                final HelpFormatter help = new HelpFormatter();
-                help.printHelp("goobox-sync-sia", opts, true);
+                App.printHelp(opts);
                 return;
             }
 
@@ -128,9 +130,7 @@ public class App {
 
         } catch (ParseException e) {
             logger.error("Failed to parse command line options: {}", e.getMessage());
-
-            final HelpFormatter help = new HelpFormatter();
-            help.printHelp("goobox-sync-sia", opts, true);
+            App.printHelp(opts);
             System.exit(1);
 
         }
@@ -371,6 +371,26 @@ public class App {
             }
 
         }
+
+    }
+
+    @SuppressWarnings("StringBufferReplaceableByString")
+    private static void printHelp(final Options opts) {
+
+        final StringBuilder builder = new StringBuilder();
+        builder.append("\nSubcommands:\n");
+        builder.append(" ");
+        builder.append(Wallet.CommandName);
+        builder.append("\n  ");
+        builder.append(Wallet.Description);
+        builder.append("\n ");
+        builder.append(CreateAllowance.CommandName);
+        builder.append("\n  ");
+        builder.append(CreateAllowance.Description);
+
+        final HelpFormatter help = new HelpFormatter();
+        help.printHelp(CommandName, Description, opts, builder.toString(), true);
+
 
     }
 

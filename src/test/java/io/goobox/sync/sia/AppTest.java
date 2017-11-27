@@ -42,6 +42,7 @@ import mockit.MockUp;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -142,11 +143,12 @@ public class AppTest {
     }
 
     @Test
-    public void testMainWithHelp(@Mocked HelpFormatter help) {
+    public void testMainWithHelp() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        new Expectations() {{
-            help.printHelp("goobox-sync-sia", withNotNull(), true);
-            times = 2;
+        new Expectations(App.class) {{
+            final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+            printHelp.setAccessible(true);
+            printHelp.invoke(App.class, withAny(new Options()));
         }};
         App.main(new String[]{"-h"});
         App.main(new String[]{"--help"});
@@ -154,9 +156,9 @@ public class AppTest {
     }
 
     @Test
-    public void testMainWithVersion(){
+    public void testMainWithVersion() {
 
-        new Expectations(System.out){{
+        new Expectations(System.out) {{
             System.out.println(String.format("Version %s", App.Version));
             times = 2;
         }};
@@ -167,13 +169,43 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testMainWithIllegalOptions(@Mocked HelpFormatter help, @Mocked System system) {
+    public void testMainWithIllegalOptions()
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        new Expectations() {{
-            help.printHelp("goobox-sync-sia", withNotNull(), true);
+        new Expectations(App.class) {{
+            final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+            printHelp.setAccessible(true);
+            printHelp.invoke(App.class, withAny(new Options()));
+        }};
+        new Expectations(System.class) {{
             System.exit(1);
         }};
         App.main(new String[]{"--aaaaa"});
+
+    }
+
+    @Test
+    public void testPrintHelp(@Mocked HelpFormatter help) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        final StringBuilder builder = new StringBuilder();
+        builder.append("\nSubcommands:\n");
+        builder.append(" ");
+        builder.append(Wallet.CommandName);
+        builder.append("\n  ");
+        builder.append(Wallet.Description);
+        builder.append("\n ");
+        builder.append(CreateAllowance.CommandName);
+        builder.append("\n  ");
+        builder.append(CreateAllowance.Description);
+
+        final Options opt = new Options();
+        new Expectations() {{
+            help.printHelp(App.CommandName, App.Description, opt, builder.toString(), true);
+        }};
+
+        final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+        printHelp.setAccessible(true);
+        printHelp.invoke(App.class, opt);
 
     }
 
@@ -181,7 +213,7 @@ public class AppTest {
     @Test
     public void testMainWithWalletCommand(@Mocked Wallet cmd) {
 
-        final String[] args = new String[]{"wallet", "a", "b", "c"};
+        final String[] args = new String[]{Wallet.CommandName, "a", "b", "c"};
         new Expectations() {{
             Wallet.main(Arrays.copyOfRange(args, 1, args.length));
         }};
@@ -193,7 +225,7 @@ public class AppTest {
     @Test
     public void testMainWithCreateAllowanceCommand(@Mocked CreateAllowance cmd) {
 
-        final String[] args = new String[]{"create-allowance", "x", "y", "z"};
+        final String[] args = new String[]{CreateAllowance.CommandName, "x", "y", "z"};
         new Expectations() {{
             CreateAllowance.main(Arrays.copyOfRange(args, 1, args.length));
         }};
