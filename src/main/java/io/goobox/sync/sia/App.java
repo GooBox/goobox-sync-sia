@@ -16,7 +16,6 @@
  */
 package io.goobox.sync.sia;
 
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
@@ -52,6 +51,11 @@ import java.util.concurrent.TimeUnit;
  * The goobox-sync-sia App.
  */
 public class App {
+
+    /**
+     * Version information.
+     */
+    public static final String Version = "0.0.6";
 
     /**
      * The number of the minimum required contructs.
@@ -92,12 +96,18 @@ public class App {
         final Options opts = new Options();
         opts.addOption(null, "reset-db", false, "reset sync DB");
         opts.addOption("h", "help", false, "show this help");
+        opts.addOption("v", "version", false, "print version");
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
                 final HelpFormatter help = new HelpFormatter();
                 help.printHelp("goobox-sync-sia", opts, true);
+                return;
+            }
+
+            if (cmd.hasOption("v")) {
+                System.out.println(String.format("Version %s", App.Version));
                 return;
             }
 

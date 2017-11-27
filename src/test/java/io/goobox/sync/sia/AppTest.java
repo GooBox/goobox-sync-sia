@@ -146,9 +146,22 @@ public class AppTest {
 
         new Expectations() {{
             help.printHelp("goobox-sync-sia", withNotNull(), true);
+            times = 2;
         }};
         App.main(new String[]{"-h"});
         App.main(new String[]{"--help"});
+
+    }
+
+    @Test
+    public void testMainWithVersion(){
+
+        new Expectations(System.out){{
+            System.out.println(String.format("Version %s", App.Version));
+            times = 2;
+        }};
+        App.main(new String[]{"-v"});
+        App.main(new String[]{"--version"});
 
     }
 
