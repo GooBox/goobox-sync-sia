@@ -18,7 +18,6 @@ package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20010;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
@@ -31,6 +30,8 @@ import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -73,14 +74,12 @@ class CheckDownloadStatusTask implements Runnable {
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
-            final InlineResponse20010 downloads = api.renterDownloadsGet();
             int nFiles = 0;
+            for (final InlineResponse20010Downloads remoteFile : getRecentDownloads(api.renterDownloadsGet().getDownloads())) {
 
-            for (InlineResponse20010Downloads rawFile : getRecentDownloads(downloads.getDownloads())) {
-
-                final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(rawFile, this.ctx.pathPrefix);
+                final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(remoteFile, this.ctx.pathPrefix);
                 if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
-                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                    logger.trace("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
                     continue;
                 }
 
@@ -100,17 +99,27 @@ class CheckDownloadStatusTask implements Runnable {
 
                     // This file has been downloaded.
                     logger.info("File {} has been downloaded", file.getRemotePath());
-                    if (file.getCreationTime() != 0) {
-                        final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
-                        if (!success) {
-                            logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
-                        }
-                    }
 
                     try {
+
+                        // Move the file from the temporary directory to the desired place.
+                        final Path parentDir = file.getLocalPath().getParent();
+                        if (!parentDir.toFile().exists()) {
+                            Files.createDirectories(parentDir);
+                        }
+                        Files.move(syncFile.getTemporaryPath(), file.getLocalPath());
+
+                        if (file.getCreationTime() != 0) {
+                            final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
+                            if (!success) {
+                                logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
+                            }
+                        }
+
                         DB.setSynced(file);
+
                     } catch (IOException e) {
-                        logger.error("Failed to set status: {}", e.getMessage());
+                        logger.error("Failed post process of {}: {}", file.getLocalPath(), e.getMessage());
                         DB.setDownloadFailed(file);
                     }
 

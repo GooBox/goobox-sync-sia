@@ -10,7 +10,9 @@ import org.dizitart.no2.objects.ObjectRepository;
 import org.dizitart.no2.objects.filters.ObjectFilters;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class DB {
@@ -123,9 +125,15 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized static void addForDownload(SiaFile file) {
+    /**
+     * Adds a new SiaFile to this database and marks it will be downloaded.
+     *
+     * @param file representing a remote file.
+     */
+    public synchronized static void addForDownload(SiaFile file) throws IOException {
         SyncFile syncFile = getOrCreate(file);
         syncFile.setCloudData(file);
+        syncFile.setTemporaryPath(Files.createTempFile(null, null));
         syncFile.setState(SyncState.FOR_DOWNLOAD);
         repo().update(syncFile);
     }
@@ -136,6 +144,12 @@ public class DB {
         repo().update(syncFile);
     }
 
+    /**
+     * Add a new SiaFile to this database and marks it will be uploaded.
+     *
+     * @param localPath of the new file.
+     * @throws IOException if retrieving file information is failed.
+     */
     public synchronized static void addForUpload(Path localPath) throws IOException {
         SyncFile syncFile = getOrCreate(localPath);
         syncFile.setLocalData(localPath);
@@ -173,7 +187,7 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public static void setConflict(SiaFile siaFile) throws IOException {
+    public synchronized static void setConflict(SiaFile siaFile) throws IOException {
         SyncFile syncFile = getOrCreate(siaFile);
         syncFile.setCloudData(siaFile);
         syncFile.setLocalData(siaFile.getLocalPath());

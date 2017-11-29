@@ -17,13 +17,16 @@
 package io.goobox.sync.sia.db;
 
 import io.goobox.sync.sia.model.SiaFile;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.dizitart.no2.objects.Id;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class SyncFile implements Serializable {
 
@@ -33,15 +36,48 @@ public class SyncFile implements Serializable {
     @Id
     private String name;
 
+    /**
+     * Creation time of the remote file.
+     */
     private long remoteCreatedTime;
 
+    /**
+     * File size of the remote file.
+     */
     private long remoteSize;
 
+    /**
+     * Last modified time of the local file.
+     */
     private long localModifiedTime;
 
+    /**
+     * File size of the local file.
+     */
     private long localSize;
 
+    /**
+     * Hex string of sha512 digest of the local file body.
+     * <p>
+     * It is used to detect renaming files.
+     */
+    private String localDigest;
+
+    /**
+     * Temporary path to store file during its download.
+     */
+    private String temporaryPath;
+
+    /**
+     * Sync status of this file.
+     */
     private SyncState state;
+
+    /**
+     * Only classes in the same package can instantiation of SyncFile.
+     */
+    SyncFile() {
+    }
 
     public String getName() {
         return this.name;
@@ -55,7 +91,7 @@ public class SyncFile implements Serializable {
         return this.remoteCreatedTime;
     }
 
-    public void setRemoteCreatedTime(final long remoteCreatedTime) {
+    void setRemoteCreatedTime(final long remoteCreatedTime) {
         this.remoteCreatedTime = remoteCreatedTime;
     }
 
@@ -63,7 +99,7 @@ public class SyncFile implements Serializable {
         return this.remoteSize;
     }
 
-    public void setRemoteSize(final long remoteSize) {
+    void setRemoteSize(final long remoteSize) {
         this.remoteSize = remoteSize;
     }
 
@@ -71,7 +107,7 @@ public class SyncFile implements Serializable {
         return this.localModifiedTime;
     }
 
-    public void setLocalModifiedTime(final long localModifiedTime) {
+    void setLocalModifiedTime(final long localModifiedTime) {
         this.localModifiedTime = localModifiedTime;
     }
 
@@ -79,8 +115,26 @@ public class SyncFile implements Serializable {
         return this.localSize;
     }
 
-    public void setLocalSize(final long localSize) {
+    void setLocalSize(final long localSize) {
         this.localSize = localSize;
+    }
+
+    public String getLocalDigest() {
+        return localDigest;
+    }
+
+    public void setLocalDigest(String localDigest) {
+        this.localDigest = localDigest;
+    }
+
+    public Path getTemporaryPath() {
+        return Paths.get(this.temporaryPath);
+    }
+
+    void setTemporaryPath(Path temporaryPath) {
+        if (temporaryPath != null) {
+            this.temporaryPath = temporaryPath.toString();
+        }
     }
 
     public SyncState getState() {
@@ -89,6 +143,7 @@ public class SyncFile implements Serializable {
 
     /**
      * Sets new state. It must be called from DB.
+     *
      * @param state to be set.
      */
     void setState(final SyncState state) {
@@ -102,8 +157,9 @@ public class SyncFile implements Serializable {
     }
 
     public void setLocalData(Path path) throws IOException {
-        setLocalModifiedTime(Files.getLastModifiedTime(path).toMillis());
-        setLocalSize(Files.size(path));
+        this.setLocalModifiedTime(Files.getLastModifiedTime(path).toMillis());
+        this.setLocalSize(Files.size(path));
+        this.setLocalDigest(DigestUtils.sha512Hex(new FileInputStream(path.toFile())));
     }
 
     public String toString() {

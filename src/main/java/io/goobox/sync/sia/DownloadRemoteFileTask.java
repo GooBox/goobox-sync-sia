@@ -20,13 +20,10 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.model.SiaFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * Downloads a remote file to the local directory.
@@ -45,28 +42,31 @@ class DownloadRemoteFileTask implements Runnable {
     @Override
     public void run() {
 
-        logger.info("Downloading {} to {}", this.file.getRemotePath(), this.file.getLocalPath());
-        final Path parent = this.file.getLocalPath().getParent();
+        if (!DB.contains(this.file)) {
+            logger.debug("File {} was specified to be downloaded but removed from the sync DB", this.file.getName());
+            return;
+        }
 
         try {
 
-            if (!parent.toFile().exists()) {
-                logger.trace("Creating directory {}", parent);
-                Files.createDirectories(parent);
-            }
+            final SyncFile syncFile = DB.get(this.file);
+            logger.info("Downloading {} to {}", this.file.getRemotePath(), syncFile.getTemporaryPath());
 
             final RenterApi api = new RenterApi(this.ctx.apiClient);
-            api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), this.file.getLocalPath().toString());
+            api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), syncFile.getTemporaryPath().toString());
             DB.setDownloading(file);
 
-        } catch (IOException e) {
-            logger.error("Cannot create directory {}: {}", parent, e.getMessage());
-            DB.setDownloadFailed(file);
         } catch (ApiException e) {
-            logger.error("Cannot start downloading file {} to {}: {}", this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
+
+            logger.error(
+                    "Cannot start downloading file {} to {}: {}",
+                    this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
             DB.setDownloadFailed(file);
-        }finally {
+
+        } finally {
+
             DB.commit();
+
         }
 
     }

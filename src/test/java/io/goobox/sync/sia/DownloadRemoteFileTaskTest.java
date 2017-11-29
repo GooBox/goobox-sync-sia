@@ -24,6 +24,7 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
+import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.storj.Utils;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -39,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
@@ -51,9 +51,28 @@ public class DownloadRemoteFileTaskTest {
 
     private Path tempDir;
 
+    private Context context;
+    private Path remotePath;
+    private SiaFile file;
+
     @Before
-    public void setUpMockDB() {
+    public void setUpMockDB() throws IOException {
+
         new DBMock();
+
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        this.context = new Context(cfg, null);
+
+        this.remotePath = this.context.pathPrefix.resolve("testfile");
+
+        final Path localPath = Utils.getSyncDir().resolve("testfile");
+        final SiaFileMock file = new SiaFileMock(localPath);
+        file.setRemotePath(this.remotePath);
+        this.file = file;
+
+        DB.addForDownload(file);
+
     }
 
     @After
@@ -89,113 +108,37 @@ public class DownloadRemoteFileTaskTest {
 
     }
 
+    /**
+     * Test it starts downloading a given file from a given URL to a given temporary path.
+     *
+     * @throws ApiException if API calls return errors.
+     */
     @Test
-    public void testDownloadFile() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
-
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(remotePath);
-
-        DB.addForDownload(file);
+    public void testDownloadFile() throws ApiException {
 
         new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), file.getLocalPath().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
         }};
-
-        new DownloadRemoteFileTask(ctx, file).run();
-        assertEquals(SyncState.DOWNLOADING, DB.get(file).getState());
+        new DownloadRemoteFileTask(this.context, this.file).run();
+        assertEquals(SyncState.DOWNLOADING, DB.get(this.file).getState());
         assertTrue(DBMock.committed);
 
     }
 
     /**
-     * This test checks DownloadRemoteFileTask creates not existing parent directories.
+     * Test if API calls return errors, it sets the status of a given file to DOWNLOAD_FAILED.
      *
-     * @throws IOException  if failed file handlings
-     * @throws ApiException if API call raises some error
+     * @throws ApiException if API calls return errors.
      */
     @Test
-    public void testDownloadToNotExistingDir() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
-
-        final Path remotePath = ctx.pathPrefix.resolve("subdir/testfile");
-
-        final Path localPath = Utils.getSyncDir().resolve("subdir/testfile");
-        assertFalse(localPath.getParent().toFile().exists());
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(remotePath);
-
-        DB.addForDownload(file);
+    public void testHandlingOfApiException() throws ApiException {
 
         new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), localPath.toString());
-        }};
-
-        new DownloadRemoteFileTask(ctx, file).run();
-        assertTrue(localPath.getParent().toFile().exists());
-        assertEquals(SyncState.DOWNLOADING, DB.get(file).getState());
-        assertTrue(DBMock.committed);
-
-    }
-
-    @Test
-    public void testHandlingOfApiException() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
-
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(remotePath);
-        DB.addForDownload(file);
-
-        new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), localPath.toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
             result = new ApiException("expected exception");
         }};
-
-        new DownloadRemoteFileTask(ctx, file).run();
-        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(file).getState());
-        assertTrue(DBMock.committed);
-
-    }
-
-    @SuppressWarnings("unused")
-    @Test
-    public void testHandlingOfIOException(@Mocked Files files) throws IOException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
-
-        final Path remotePath = ctx.pathPrefix.resolve("subdir/testfile");
-        final Path localPath = Utils.getSyncDir().resolve("subdir/testfile");
-        assertFalse(localPath.getParent().toFile().exists());
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(remotePath);
-        DB.addForDownload(file);
-
-        new Expectations() {{
-            Files.createDirectories(localPath.getParent());
-            result = new IOException("expected exception");
-        }};
-
-        new DownloadRemoteFileTask(ctx, file).run();
-        assertEquals(DB.get(file).getState(), SyncState.DOWNLOAD_FAILED);
+        new DownloadRemoteFileTask(this.context, this.file).run();
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.file).getState());
         assertTrue(DBMock.committed);
 
     }
