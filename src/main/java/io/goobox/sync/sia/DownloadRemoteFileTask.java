@@ -21,6 +21,7 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,16 +44,20 @@ class DownloadRemoteFileTask implements Runnable {
     public void run() {
 
         if (!DB.contains(this.file)) {
-            logger.debug("File {} was specified to be downloaded but removed from the sync DB", this.file.getName());
+            logger.warn("File {} was specified to be downloaded but removed from the sync DB", this.file.getName());
             return;
         }
 
+        final SyncFile syncFile = DB.get(this.file);
+        if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
+            logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.file);
+            return;
+        }
+
+        final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
-            final SyncFile syncFile = DB.get(this.file);
             logger.info("Downloading {} to {}", this.file.getRemotePath(), syncFile.getTemporaryPath());
-
-            final RenterApi api = new RenterApi(this.ctx.apiClient);
             api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), syncFile.getTemporaryPath().toString());
             DB.setDownloading(file);
 

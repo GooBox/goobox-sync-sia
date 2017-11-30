@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
@@ -140,6 +141,34 @@ public class DownloadRemoteFileTaskTest {
         new DownloadRemoteFileTask(this.context, this.file).run();
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.file).getState());
         assertTrue(DBMock.committed);
+
+    }
+
+    /**
+     * Test a case that a file to be downloaded is also modified. In this case, the download has to be canceled.
+     * CheckStateTask will check this file is uploaded, downloaded, or synced.
+     */
+    @Test
+    public void testToBeDownloadedFileModified() throws ApiException, IOException {
+
+        // Expecting the api won't be called.
+        new Expectations() {{
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
+            times = 0;
+        }};
+
+        // A download remote file task is created (enqueued).
+        final DownloadRemoteFileTask task = new DownloadRemoteFileTask(this.context, this.file);
+
+        // The same file is created/modified.
+        assertTrue(this.file.getLocalPath().toFile().createNewFile());
+        DB.setModified(this.file.getLocalPath());
+
+        // then, the task is executed.
+        task.run();
+
+        assertEquals(SyncState.MODIFIED, DB.get(this.file).getState());
+        assertFalse(DBMock.committed);
 
     }
 
