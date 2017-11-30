@@ -44,27 +44,13 @@ import java.util.Map;
  */
 class CheckDownloadStatusTask implements Runnable {
 
+    private static final Logger logger = LogManager.getLogger();
+
     @NotNull
     private final Context ctx;
-    private static final Logger logger = LogManager.getLogger();
 
     CheckDownloadStatusTask(@NotNull final Context ctx) {
         this.ctx = ctx;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        CheckDownloadStatusTask that = (CheckDownloadStatusTask) o;
-
-        return ctx.equals(that.ctx);
-    }
-
-    @Override
-    public int hashCode() {
-        return ctx.hashCode();
     }
 
     @Override
@@ -84,7 +70,23 @@ class CheckDownloadStatusTask implements Runnable {
                 }
 
                 final SyncFile syncFile = DB.get(file);
-                if (syncFile.getState() != SyncState.DOWNLOADING) {
+                if (syncFile.getState() == SyncState.MODIFIED || syncFile.getState() == SyncState.DELETED) {
+
+                    logger.debug("Found remote file {} is also modified/deleted in the local directory", file.getRemotePath());
+                    final String err = file.getError();
+                    if (err != null && !err.isEmpty()) {
+                        logger.error("Failed to download {}: {}", file.getName(), err);
+                    }
+                    if (file.getFileSize() == file.getReceived()) {
+                        try {
+                            Files.deleteIfExists(syncFile.getTemporaryPath());
+                        } catch (IOException e) {
+                            logger.warn("Failed to delete a temporary file {}: {}", syncFile.getTemporaryPath(), e.getMessage());
+                        }
+                    }
+                    continue;
+
+                } else if (syncFile.getState() != SyncState.DOWNLOADING) {
                     logger.debug("Found remote file {} but it's not being downloaded", file.getRemotePath());
                     continue;
                 }
@@ -179,6 +181,21 @@ class CheckDownloadStatusTask implements Runnable {
         }
         return map.values();
 
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckDownloadStatusTask that = (CheckDownloadStatusTask) o;
+
+        return ctx.equals(that.ctx);
+    }
+
+    @Override
+    public int hashCode() {
+        return ctx.hashCode();
     }
 
     /**
