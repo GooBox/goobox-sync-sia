@@ -135,9 +135,7 @@ class CheckStateTask implements Runnable {
 
                                     // upload
                                     logger.info("Local file {} is going to be uploaded", file.getName());
-                                    DB.addForUpload(file.getLocalPath());
-                                    final Date created = new Date(file.getLocalPath().toFile().lastModified());
-                                    this.executor.execute(new UploadLocalFileTask(this.ctx, file, created));
+                                    this.enqueueForUpload(file.getLocalPath());
 
                                 }
 
@@ -200,19 +198,14 @@ class CheckStateTask implements Runnable {
                             Files.getLastModifiedTime(localPath).toMillis()) {
 
                         logger.info("Local file {} is going to be uploaded", localPath);
-                        DB.addForUpload(localPath);
-                        final Date created = new Date(localPath.toFile().lastModified());
-                        this.executor.execute(new UploadLocalFileTask(this.ctx, localPath, created));
+                        this.enqueueForUpload(localPath);
 
                     }
 
                 } else {
 
                     logger.info("Local file {} is going to be uploaded", localPath);
-                    // TODO:
-                    DB.addForUpload(localPath);
-                    final Date created = new Date(localPath.toFile().lastModified());
-                    this.executor.execute(new UploadLocalFileTask(this.ctx, localPath, created));
+                    this.enqueueForUpload(localPath);
 
                 }
 
@@ -328,6 +321,19 @@ class CheckStateTask implements Runnable {
 
         }
         return paths;
+    }
+
+    /**
+     * Enqueues a file represented by the given local path to the database and marks it to be uploaded.
+     *
+     * @param localPath to the file to be uploaded.
+     * @throws IOException if failed to access the local file.
+     */
+    private void enqueueForUpload(final Path localPath) throws IOException {
+
+        DB.setForUpload(localPath);
+        this.executor.execute(new UploadLocalFileTask(this.ctx, localPath));
+
     }
 
 }

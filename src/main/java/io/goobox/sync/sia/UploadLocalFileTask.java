@@ -20,13 +20,12 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.sia.model.SiaFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.storj.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
-import java.util.Date;
 
 /**
  * Uploads a given local file to cloud storage with a given remote path.
@@ -35,31 +34,32 @@ class UploadLocalFileTask implements Runnable {
 
     private final Context ctx;
     private final Path localPath;
-    private final Path remotePath;
-    private final Date creationTime;
 
     private static final Logger logger = LogManager.getLogger();
 
-    UploadLocalFileTask(final Context ctx, final SiaFile file, final Date creationTime) {
-        this.ctx = ctx;
-        this.localPath = file.getLocalPath();
-        this.remotePath = file.getRemotePath();
-        this.creationTime = creationTime;
-    }
-
-    UploadLocalFileTask(final Context ctx, final Path localPath, final Date creationTime) {
+    UploadLocalFileTask(final Context ctx, final Path localPath) {
         this.ctx = ctx;
         this.localPath = localPath;
-        this.remotePath = this.ctx.pathPrefix.resolve(Utils.getSyncDir().relativize(localPath));
-        this.creationTime = creationTime;
     }
 
     @Override
     public void run() {
 
+        if (!DB.contains(localPath)) {
+            logger.warn("File {} was deleted from SyncDB", this.localPath);
+            return;
+        }
+
+        if (DB.get(localPath).getState() != SyncState.FOR_UPLOAD) {
+            logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
+            return;
+        }
+
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
-            final Path siaPath = this.remotePath.resolve(String.valueOf(this.creationTime.getTime()));
+            final Path remotePath = this.ctx.pathPrefix.resolve(Utils.getSyncDir().relativize(localPath));
+            final long creationTime = this.localPath.toFile().lastModified();
+            final Path siaPath = remotePath.resolve(String.valueOf(creationTime));
             api.renterUploadSiapathPost(
                     siaPath.toString(),
                     this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),

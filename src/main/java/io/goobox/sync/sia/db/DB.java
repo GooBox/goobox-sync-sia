@@ -205,6 +205,13 @@ public class DB {
         repo().update(syncFile);
     }
 
+    public synchronized  static void setModified(final Path localPath) throws IOException {
+        final SyncFile syncFile = getOrCreate(localPath);
+        syncFile.setLocalData(localPath);
+        syncFile.setState(SyncState.MODIFIED);
+        repo().update(syncFile);
+    }
+
     public synchronized static void setDeleted(final Path localPath){
         final SyncFile syncFile = get(localPath);
         syncFile.setState(SyncState.DELETED);
