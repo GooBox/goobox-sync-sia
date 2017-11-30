@@ -107,7 +107,7 @@ public class SyncFile implements Serializable {
         return this.localModifiedTime;
     }
 
-    void setLocalModifiedTime(final long localModifiedTime) {
+    private void setLocalModifiedTime(final long localModifiedTime) {
         this.localModifiedTime = localModifiedTime;
     }
 
@@ -115,7 +115,7 @@ public class SyncFile implements Serializable {
         return this.localSize;
     }
 
-    void setLocalSize(final long localSize) {
+    private void setLocalSize(final long localSize) {
         this.localSize = localSize;
     }
 
@@ -123,7 +123,7 @@ public class SyncFile implements Serializable {
         return localDigest;
     }
 
-    public void setLocalDigest(String localDigest) {
+    private void setLocalDigest(String localDigest) {
         this.localDigest = localDigest;
     }
 

@@ -12,7 +12,6 @@ import org.dizitart.no2.objects.filters.ObjectFilters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class DB {
@@ -157,6 +156,17 @@ public class DB {
         repo().update(syncFile);
     }
 
+    /**
+     * Add a new found file to this database; the status of the file is MODIFIED.
+     * @param localPath of the new file.
+     */
+    public synchronized  static void addNewFoundFile(final Path localPath) throws IOException {
+        final SyncFile syncFile = getOrCreate(localPath);
+        syncFile.setLocalData(localPath);
+        syncFile.setState(SyncState.MODIFIED);
+        repo().update(syncFile);
+    }
+
     public synchronized static void setUploading(Path localPath) {
         final SyncFile syncFile = get(localPath);
         syncFile.setState(SyncState.UPLOADING);
@@ -192,6 +202,12 @@ public class DB {
         syncFile.setCloudData(siaFile);
         syncFile.setLocalData(siaFile.getLocalPath());
         syncFile.setState(SyncState.CONFLICT);
+        repo().update(syncFile);
+    }
+
+    public synchronized static void setDeleted(final Path localPath){
+        final SyncFile syncFile = get(localPath);
+        syncFile.setState(SyncState.DELETED);
         repo().update(syncFile);
     }
 

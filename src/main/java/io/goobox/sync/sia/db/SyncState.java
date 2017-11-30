@@ -20,15 +20,35 @@ package io.goobox.sync.sia.db;
 public enum SyncState {
 
     SYNCED,
+    /**
+     * Set by CheckStateTask to mark this file will be downloaded by DownloadRemoteFileTask.
+     */
     FOR_DOWNLOAD,
+    /**
+     * Set by DownloadRemoteFileTask to mark this file is now being downloaded.
+     */
     DOWNLOADING,
+    /**
+     * Set by CheckStateTask to mark this file will be uploaded by UploadLocalFileTask.
+     */
     FOR_UPLOAD,
+    /**
+     * Set by UploadLocalFileTask to mark this file is now being uploaded.
+     */
     UPLOADING,
     FOR_LOCAL_DELETE,
     FOR_CLOUD_DELETE,
     DOWNLOAD_FAILED,
     UPLOAD_FAILED,
-    CONFLICT;
+    CONFLICT,
+    /**
+     * Set by FileWatcher to mark this file is a found new file or modified.
+     */
+    MODIFIED,
+    /**
+     * Set by FileWatcher to mark this file was deleted.
+     */
+    DELETED;
 
     public boolean isSynced() {
         return this == SYNCED;
