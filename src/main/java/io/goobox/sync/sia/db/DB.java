@@ -5,14 +5,16 @@ import io.goobox.sync.storj.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dizitart.no2.Nitrite;
+import org.dizitart.no2.objects.Cursor;
 import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
-import org.dizitart.no2.objects.filters.ObjectFilters;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
 
 public class DB {
 
@@ -32,7 +34,7 @@ public class DB {
     }
 
     private static ObjectFilter withName(String name) {
-        return ObjectFilters.eq("name", name);
+        return eq("name", name);
     }
 
     private static Nitrite open() {
@@ -137,33 +139,32 @@ public class DB {
         repo().update(syncFile);
     }
 
+    /**
+     * Add a new file to this database; the status of the file is MODIFIED.
+     *
+     * @param localPath of the new file.
+     */
+    public synchronized static void addNewFile(final Path localPath) throws IOException {
+        final SyncFile syncFile = getOrCreate(localPath);
+        syncFile.setLocalData(localPath);
+        syncFile.setState(SyncState.MODIFIED);
+        repo().update(syncFile);
+    }
+
+    public synchronized static void setModified(final Path localPath) throws IOException {
+        DB.addNewFile(localPath);
+    }
+
     public synchronized static void setDownloading(SiaFile file) {
         final SyncFile syncFile = get(file);
         syncFile.setState(SyncState.DOWNLOADING);
         repo().update(syncFile);
     }
 
-    /**
-     * Add a new SiaFile to this database and marks it will be uploaded.
-     *
-     * @param localPath of the new file.
-     * @throws IOException if retrieving file information is failed.
-     */
-    public synchronized static void addForUpload(Path localPath) throws IOException {
-        SyncFile syncFile = getOrCreate(localPath);
+    public synchronized static void setForUpload(Path localPath) throws IOException {
+        SyncFile syncFile = get(localPath);
         syncFile.setLocalData(localPath);
         syncFile.setState(SyncState.FOR_UPLOAD);
-        repo().update(syncFile);
-    }
-
-    /**
-     * Add a new found file to this database; the status of the file is MODIFIED.
-     * @param localPath of the new file.
-     */
-    public synchronized  static void addNewFoundFile(final Path localPath) throws IOException {
-        final SyncFile syncFile = getOrCreate(localPath);
-        syncFile.setLocalData(localPath);
-        syncFile.setState(SyncState.MODIFIED);
         repo().update(syncFile);
     }
 
@@ -205,17 +206,26 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized  static void setModified(final Path localPath) throws IOException {
-        final SyncFile syncFile = getOrCreate(localPath);
-        syncFile.setLocalData(localPath);
-        syncFile.setState(SyncState.MODIFIED);
-        repo().update(syncFile);
-    }
-
-    public synchronized static void setDeleted(final Path localPath){
+    public synchronized static void setDeleted(final Path localPath) {
         final SyncFile syncFile = get(localPath);
         syncFile.setState(SyncState.DELETED);
         repo().update(syncFile);
+    }
+
+    public synchronized static Cursor<SyncFile> getModifiedFiles() {
+        return getFiles(SyncState.MODIFIED);
+    }
+
+    public synchronized static Cursor<SyncFile> getDeletedFiles() {
+        return getFiles(SyncState.DELETED);
+    }
+
+    public synchronized static Cursor<SyncFile> getSyncedFiles() {
+        return getFiles(SyncState.SYNCED);
+    }
+
+    private synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
+        return repo().find(eq("state", state));
     }
 
     public static void main(String[] args) {
