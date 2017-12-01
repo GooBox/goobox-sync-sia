@@ -57,7 +57,7 @@ class DownloadCloudFileTask implements Runnable {
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
-            logger.info("Downloading {} to {}", this.file.getRemotePath(), syncFile.getTemporaryPath());
+            logger.info("Downloading {} to {}", this.file.getRemotePath(), this.file.getLocalPath());
             api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), syncFile.getTemporaryPath().toString());
             DB.setDownloading(file);
 

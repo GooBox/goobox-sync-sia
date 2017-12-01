@@ -122,7 +122,10 @@ class CheckStateTask implements Runnable {
                                 break;
 
                             case DOWNLOAD_FAILED:
+                            default:
+                                logger.debug("File {} ({}) is skipped", file.getName(), syncFile.getState());
                                 break;
+
                         }
 
 
@@ -152,6 +155,8 @@ class CheckStateTask implements Runnable {
                     logger.error("Failed to handle file {}: {}", file.getName(), e.getMessage());
                 }
 
+                processedFiles.add(file.getName());
+
             }
 
             logger.trace("Processing files stored only in the local directory and modified");
@@ -162,6 +167,7 @@ class CheckStateTask implements Runnable {
                 // This file is not stored in the cloud network and modified from the local directory.
                 // It should be uploaded.
                 try {
+                    logger.info("Local file {} is going to be uploaded", syncFile.getName());
                     this.enqueueForUpload(Utils.getSyncDir().resolve(syncFile.getName()));
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
@@ -176,6 +182,7 @@ class CheckStateTask implements Runnable {
                 }
                 // This file exist in neither the cloud network nor the local directory, but in the sync DB.
                 // It should be deleted from the DB.
+                logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
                 DB.remove(Utils.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             }
@@ -188,6 +195,7 @@ class CheckStateTask implements Runnable {
                 // This file has been synced but now exists only in the local directory.
                 // It means this file was deleted from the cloud network by another client.
                 // This file should be deleted from the local directory, too.
+                logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
                 this.enqueueForLocalDelete(Utils.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             }

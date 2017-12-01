@@ -100,7 +100,7 @@ class CheckDownloadStatusTask implements Runnable {
                 } else if (file.getFileSize() == file.getReceived()) {
 
                     // This file has been downloaded.
-                    logger.info("File {} has been downloaded", file.getRemotePath());
+                    logger.info("File {} has been downloaded", file.getName());
 
                     try {
 
