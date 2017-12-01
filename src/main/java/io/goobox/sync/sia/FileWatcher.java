@@ -67,6 +67,11 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
         logger.traceEntry(new ReflectionToStringBuilder(event).toString());
         final long now = System.currentTimeMillis();
 
+        if (event.path().toFile().isDirectory()) {
+            logger.trace("{} is a directory and will be ignored", event.path());
+            return;
+        }
+
         switch (event.eventType()) {
             case CREATE:
                 logger.trace("{} is created at {}", event.path(), now);

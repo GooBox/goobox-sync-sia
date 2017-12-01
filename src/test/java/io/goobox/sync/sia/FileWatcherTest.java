@@ -127,6 +127,62 @@ public class FileWatcherTest {
     }
 
     /**
+     * Create event occurs if a directory is created but such event should be ignored because directories are not
+     * maintained in this app.
+     */
+    @Test
+    public void testIgnoreDirectoryCreated() throws IOException {
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+
+        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final Path target = Utils.getSyncDir().resolve("test-dir");
+        Files.createDirectory(target);
+
+        new SystemMock();
+
+        SystemMock.currentTime = now;
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 0));
+
+        final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+        assertFalse(trackingFiles.containsKey(target));
+
+    }
+
+    /**
+     * Delete event occurs if a directory was deleted but such event should be ignored.
+     */
+    @Test
+    public void testIgnoreDirectoryDeleted() throws IOException {
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+
+        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final Path target = Utils.getSyncDir().resolve("test-dir");
+        Files.createDirectory(target);
+
+        new SystemMock();
+
+        SystemMock.currentTime = now;
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 0));
+
+        assertFalse(DB.contains(target));
+
+    }
+
+    /**
      * Test FileWatcher adds files not modified in the last MinElapsedTime seconds to the sync DB and marks it MODIFIED.
      */
     @Test
