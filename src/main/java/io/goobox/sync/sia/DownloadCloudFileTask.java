@@ -27,15 +27,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Downloads a remote file to the local directory.
+ * Downloads a cloud file to the local directory.
  */
-class DownloadRemoteFileTask implements Runnable {
+class DownloadCloudFileTask implements Runnable {
 
     private final Context ctx;
     private final SiaFile file;
     private static final Logger logger = LogManager.getLogger();
 
-    DownloadRemoteFileTask(final Context ctx, final SiaFile file) {
+    DownloadCloudFileTask(final Context ctx, final SiaFile file) {
         this.ctx = ctx;
         this.file = file;
     }

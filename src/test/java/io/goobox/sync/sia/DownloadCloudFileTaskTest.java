@@ -44,7 +44,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
-public class DownloadRemoteFileTaskTest {
+public class DownloadCloudFileTaskTest {
 
     @SuppressWarnings("unused")
     @Mocked
@@ -120,9 +120,9 @@ public class DownloadRemoteFileTaskTest {
         new Expectations() {{
             api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
         }};
-        new DownloadRemoteFileTask(this.context, this.file).run();
-        assertEquals(SyncState.DOWNLOADING, DB.get(this.file).getState());
+        new DownloadCloudFileTask(this.context, this.file).run();
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.DOWNLOADING, DB.get(this.file).getState());
 
     }
 
@@ -138,9 +138,9 @@ public class DownloadRemoteFileTaskTest {
             api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
             result = new ApiException("expected exception");
         }};
-        new DownloadRemoteFileTask(this.context, this.file).run();
-        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.file).getState());
+        new DownloadCloudFileTask(this.context, this.file).run();
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.file).getState());
 
     }
 
@@ -158,7 +158,7 @@ public class DownloadRemoteFileTaskTest {
         }};
 
         // A download remote file task is created (enqueued).
-        final DownloadRemoteFileTask task = new DownloadRemoteFileTask(this.context, this.file);
+        final DownloadCloudFileTask task = new DownloadCloudFileTask(this.context, this.file);
 
         // The same file is created/modified.
         assertTrue(this.file.getLocalPath().toFile().createNewFile());
@@ -167,8 +167,8 @@ public class DownloadRemoteFileTaskTest {
         // then, the task is executed.
         task.run();
 
-        assertEquals(SyncState.MODIFIED, DB.get(this.file).getState());
         assertFalse(DBMock.committed);
+        assertEquals(SyncState.MODIFIED, DB.get(this.file).getState());
 
     }
 

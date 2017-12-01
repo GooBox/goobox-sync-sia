@@ -74,11 +74,17 @@ public class UploadLocalFileTaskTest {
      * @throws IOException if failed to create a temporary directory.
      */
     @Before
-    public void setUpTempSyncDir() throws IOException {
+    public void setUp() throws IOException {
 
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
+
+        this.config = new Config();
+        this.config.setUserName("testuser");
+        this.config.setDataPieces(120);
+        this.config.setParityPieces(50);
+        this.context = new Context(this.config, null);
 
     }
 
@@ -88,22 +94,11 @@ public class UploadLocalFileTaskTest {
      * @throws IOException if failed to delete it.
      */
     @After
-    public void tearDownTempSyncDir() throws IOException {
+    public void tearDown() throws IOException {
 
         if (tempDir != null && tempDir.toFile().exists()) {
             FileUtils.deleteDirectory(tempDir.toFile());
         }
-
-    }
-
-    @Before
-    public void setUp() {
-
-        this.config = new Config();
-        this.config.setUserName("testuser");
-        this.config.setDataPieces(120);
-        this.config.setParityPieces(50);
-        this.context = new Context(this.config, null);
 
     }
 
@@ -122,8 +117,8 @@ public class UploadLocalFileTaskTest {
 
         // Use a local path instead of a SiaFile instance.
         new UploadLocalFileTask(this.context, localPath).run();
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
 
     }
 
@@ -142,8 +137,8 @@ public class UploadLocalFileTaskTest {
         }};
 
         new UploadLocalFileTask(this.context, localPath).run();
-        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
 
     }
 
@@ -175,8 +170,8 @@ public class UploadLocalFileTaskTest {
         // and, the task is executed.
         task.run();
 
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
         assertFalse(DBMock.committed);
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
 
     }
 
@@ -208,8 +203,8 @@ public class UploadLocalFileTaskTest {
         // and, the task is executed.
         task.run();
 
-        assertEquals(SyncState.DELETED, DB.get(localPath).getState());
         assertFalse(DBMock.committed);
+        assertEquals(SyncState.DELETED, DB.get(localPath).getState());
 
     }
 
@@ -223,7 +218,7 @@ public class UploadLocalFileTaskTest {
         if (!localPath.toFile().exists()) {
             assertTrue(localPath.toFile().createNewFile());
         }
-        DB.addNewFoundFile(localPath);
+        DB.addNewFile(localPath);
         final SyncFile syncFile = DB.get(localPath);
         Deencapsulation.setField(syncFile, "state", state);
 

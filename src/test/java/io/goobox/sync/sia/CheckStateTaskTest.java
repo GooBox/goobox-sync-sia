@@ -158,7 +158,7 @@ public class CheckStateTaskTest {
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
-        assertTrue(task instanceof DownloadRemoteFileTask);
+        assertTrue(task instanceof DownloadCloudFileTask);
         final SiaFile enqueuedFile = Deencapsulation.getField(task, "file");
         assertEquals(siaFile.getName(), enqueuedFile.getName());
 
@@ -245,7 +245,7 @@ public class CheckStateTaskTest {
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
-        assertTrue(task instanceof DownloadRemoteFileTask);
+        assertTrue(task instanceof DownloadCloudFileTask);
         assertEquals(siaFile, Deencapsulation.getField(task, "file"));
 
     }
@@ -325,7 +325,7 @@ public class CheckStateTaskTest {
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
-        assertTrue(task instanceof DeleteRemoteFileTask);
+        assertTrue(task instanceof DeleteCloudFileTask);
         assertEquals(siaFile, Deencapsulation.getField(task, "target"));
 
     }

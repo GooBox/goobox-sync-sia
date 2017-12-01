@@ -47,7 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
-public class DeleteRemoteFileTaskTest {
+public class DeleteCloudFileTaskTest {
 
     @SuppressWarnings("unused")
     @Mocked
@@ -140,7 +140,7 @@ public class DeleteRemoteFileTaskTest {
             api.renterDeleteSiapathPost(remotePath.resolve(String.valueOf(new Date(30000).getTime())).toString());
         }};
 
-        new DeleteRemoteFileTask(ctx, file).run();
+        new DeleteCloudFileTask(ctx, file).run();
         assertFalse(DB.contains(file));
         assertTrue(DBMock.committed);
 
@@ -169,7 +169,7 @@ public class DeleteRemoteFileTaskTest {
             result = list;
         }};
 
-        new DeleteRemoteFileTask(ctx, file).run();
+        new DeleteCloudFileTask(ctx, file).run();
 
     }
 

@@ -273,7 +273,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForDownload(final SiaFile file) throws IOException {
 
         DB.addForDownload(file);
-        this.executor.execute(new DownloadRemoteFileTask(this.ctx, file));
+        this.executor.execute(new DownloadCloudFileTask(this.ctx, file));
 
     }
 
@@ -285,7 +285,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForCloudDelete(final SiaFile file) {
 
         DB.setForCloudDelete(file);
-        this.executor.execute(new DeleteRemoteFileTask(this.ctx, file));
+        this.executor.execute(new DeleteCloudFileTask(this.ctx, file));
 
     }
 

@@ -28,16 +28,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Deletes a given file from the cloud storage and sync DB.
+ * Deletes a given file from the cloud network and sync DB.
  */
-class DeleteRemoteFileTask implements Runnable {
+class DeleteCloudFileTask implements Runnable {
 
     private final Context ctx;
     private final SiaFile target;
 
     private static final Logger logger = LogManager.getLogger();
 
-    DeleteRemoteFileTask(final Context ctx, final SiaFile file) {
+    DeleteCloudFileTask(final Context ctx, final SiaFile file) {
         this.ctx = ctx;
         this.target = file;
     }

@@ -206,11 +206,11 @@ public class FileWatcherTest {
      * Since the upload would be failed, delete the target file from the sync DB and add it as a new file.
      */
     @Test
-    public void testFoundFileUploading() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void testUploadingFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.UPLOADING, SyncState.MODIFIED);
     }
 
-    public void checkStatusAfterModifyEvent(final SyncState before, final SyncState expected)
+    private void checkStatusAfterModifyEvent(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -225,7 +225,7 @@ public class FileWatcherTest {
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
             final Path target = Utils.getSyncDir().resolve("test-file1");
             assertTrue(target.toFile().createNewFile());
-            DB.addNewFoundFile(target);
+            DB.addNewFile(target);
             this.updateStatus(target, before);
 
             new SystemMock();
@@ -253,7 +253,7 @@ public class FileWatcherTest {
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
             final Path target = Utils.getSyncDir().resolve("test-file2");
             assertTrue(target.toFile().createNewFile());
-            DB.addNewFoundFile(target);
+            DB.addNewFile(target);
             this.updateStatus(target, before);
 
             new SystemMock();
@@ -323,14 +323,13 @@ public class FileWatcherTest {
      * When a file in FOR_UPLOAD status is deleted, the file should be marked as DELETED.
      */
     @Test
-    public void testForUploadFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void testToBeUploadFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         this.checkStatusAfterDeleteEvent(SyncState.FOR_UPLOAD, SyncState.DELETED);
     }
 
     /**
      * When a file is deleted while it is being uploaded, the file should be marked as DELETED.
-     * In this case, CheckUploadStatus would report an upload failed error but it will be ignored since the target file
-     * is not in the DB anymore.
+     * In this case, CheckUploadStatus would report an upload failed error but it is not problem to ignore the error.
      */
     @Test
     public void testUploadingFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
@@ -342,7 +341,7 @@ public class FileWatcherTest {
      * deletes the file while the download is waiting. In this case, the download has to be continued.
      */
     @Test
-    public void testForDownloadFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void testToBeDownloadFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         this.checkStatusAfterDeleteEvent(SyncState.FOR_DOWNLOAD, SyncState.FOR_DOWNLOAD);
     }
 
@@ -354,7 +353,7 @@ public class FileWatcherTest {
         this.checkStatusAfterDeleteEvent(SyncState.DOWNLOADING, SyncState.DOWNLOADING);
     }
 
-    public void checkStatusAfterDeleteEvent(final SyncState before, final SyncState expected)
+    private void checkStatusAfterDeleteEvent(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -369,7 +368,7 @@ public class FileWatcherTest {
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
             final Path target = Utils.getSyncDir().resolve("test-file1");
             assertTrue(target.toFile().createNewFile());
-            DB.addNewFoundFile(target);
+            DB.addNewFile(target);
             this.updateStatus(target, before);
 
             watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
@@ -386,7 +385,7 @@ public class FileWatcherTest {
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
             final Path target = Utils.getSyncDir().resolve("test-file2");
             assertTrue(target.toFile().createNewFile());
-            DB.addNewFoundFile(target);
+            DB.addNewFile(target);
             this.updateStatus(target, before);
 
             new SystemMock();
@@ -407,7 +406,7 @@ public class FileWatcherTest {
     }
 
     @SuppressWarnings("unchecked")
-    public void updateStatus(final Path localPath, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private void updateStatus(final Path localPath, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         final SyncFile syncFile = DB.get(localPath);
         Deencapsulation.setField(syncFile, "state", newState);
