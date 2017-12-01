@@ -235,8 +235,8 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testInit(@Mocked ScheduledThreadPoolExecutor executor, @Mocked CmdUtils utils)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public void testInit(@Mocked ScheduledThreadPoolExecutor executor, @Mocked CmdUtils utils, @Mocked FileWatcher watcher)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
 
         final Config cfg = new Config();
         final ApiClient apiClient = new ApiClient();
@@ -296,10 +296,12 @@ public class AppTest {
 
         }
 
+        // Enqueue basic tasks.
         new Expectations() {{
-            executor.scheduleWithFixedDelay​(withAny(new CheckStateTask(ctx, executor)), 0L, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(withAny(new CheckStateTask(ctx, executor)), 0L, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+            new FileWatcher(Utils.getSyncDir(), withNotNull());
         }};
 
         final AppMock mock = new AppMock();

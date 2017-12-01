@@ -65,12 +65,20 @@ public class App {
      */
     static final int MinContracts = 20;
 
+    /**
+     * Default sleep time to wait synchronization and signing contracts.
+     */
     static final long DefaultSleepTime = 60 * 1000;
 
     /**
      * Default config file name.
      */
     static final String ConfigFileName = "goobox.properties";
+
+    /**
+     * The number of worker threads.
+     */
+    private static final int WorkerThreadSize = 2;
 
     private Path configPath;
     private static final Logger logger = LogManager.getLogger();
@@ -129,8 +137,14 @@ public class App {
             new App().init();
 
         } catch (ParseException e) {
+
             logger.error("Failed to parse command line options: {}", e.getMessage());
             App.printHelp(opts);
+            System.exit(1);
+
+        } catch (IOException e) {
+
+            logger.error("Failed to start this application: {}", e.getMessage());
             System.exit(1);
 
         }
@@ -140,7 +154,7 @@ public class App {
     /**
      * Initialize the app and starts an event loop.
      */
-    private void init() {
+    private void init() throws IOException {
 
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
         final Config cfg = this.loadConfig(this.configPath);
@@ -168,10 +182,11 @@ public class App {
 
         }
 
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleWithFixedDelay​(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
+        executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+        new FileWatcher(Utils.getSyncDir(), executor);
 
     }
 
