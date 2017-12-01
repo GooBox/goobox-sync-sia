@@ -42,6 +42,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -277,58 +278,37 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        // Create event.
-        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-            final Path target = Utils.getSyncDir().resolve("test-file1");
-            assertTrue(target.toFile().createNewFile());
-            DB.addNewFile(target);
-            this.updateStatus(target, before);
+        final String dummyData = "this is a sample file body";
+        for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
 
-            new SystemMock();
+            try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+                final Path target = Utils.getSyncDir().resolve(String.format("test-%s", event));
+                assertTrue(target.toFile().createNewFile());
+                DB.addNewFile(target);
+                this.updateStatus(target, before);
 
-            SystemMock.currentTime = now;
-            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 2));
-            SystemMock.currentTime = now + 100;
-            watcher.run();
+                new SystemMock();
 
-            // in MinElapsedTime, status must not be chanced.
-            assertEquals(before, DB.get(target).getState());
+                Files.write(target, dummyData.getBytes());
 
-            SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
-            watcher.run();
+                SystemMock.currentTime = now;
+                watcher.onEvent(new DirectoryChangeEvent(event, target, 2));
+                SystemMock.currentTime = now + 100;
+                watcher.run();
 
-            assertEquals(expected, DB.get(target).getState());
-            final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-            assertFalse(trackingFiles.containsKey(target));
-            assertTrue(DBMock.committed);
-        }
+                // in MinElapsedTime, status must not be chanced.
+                assertEquals(before, DB.get(target).getState());
 
-        DBMock.committed = false;
+                SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
+                watcher.run();
 
-        // Modify event.
-        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-            final Path target = Utils.getSyncDir().resolve("test-file2");
-            assertTrue(target.toFile().createNewFile());
-            DB.addNewFile(target);
-            this.updateStatus(target, before);
+                assertEquals(expected, DB.get(target).getState());
+                final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+                assertFalse(trackingFiles.containsKey(target));
+                assertTrue(DBMock.committed);
+            }
+            DBMock.committed = false;
 
-            new SystemMock();
-
-            SystemMock.currentTime = now;
-            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 2));
-            SystemMock.currentTime = now + 100;
-            watcher.run();
-
-            // in MinElapsedTime, status must not be chanced.
-            assertEquals(before, DB.get(target).getState());
-
-            SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
-            watcher.run();
-
-            assertEquals(expected, DB.get(target).getState());
-            final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-            assertFalse(trackingFiles.containsKey(target));
-            assertTrue(DBMock.committed);
         }
 
     }
@@ -457,6 +437,54 @@ public class FileWatcherTest {
             final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
             assertFalse(trackingFiles.containsKey(target));
             assertTrue(DBMock.committed);
+        }
+
+    }
+
+    /**
+     * Sometimes, FileWatcher receives modify event for a file but the file is not changed, for example, a user edits
+     * the file accidentally and reverts it. In this case, the file should be ignored.
+     */
+    @Test
+    public void testModifiedButNotChangedFile() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+        final String dummyData = "this is a sample file body";
+
+        for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
+
+            try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+                final Path target = Utils.getSyncDir().resolve(String.format("test-%s", event));
+                Files.write(target, dummyData.getBytes(), StandardOpenOption.CREATE);
+                DB.addNewFile(target);
+                this.updateStatus(target, SyncState.SYNCED);
+
+                new SystemMock();
+
+                SystemMock.currentTime = now;
+                watcher.onEvent(new DirectoryChangeEvent(event, target, 2));
+                SystemMock.currentTime = now + 100;
+                watcher.run();
+
+                // in MinElapsedTime, status must not be chanced.
+                assertEquals(SyncState.SYNCED, DB.get(target).getState());
+
+                SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
+                watcher.run();
+
+                assertEquals(SyncState.SYNCED, DB.get(target).getState());
+                final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+                assertFalse(trackingFiles.containsKey(target));
+                assertTrue(DBMock.committed);
+            }
+            DBMock.committed = false;
+
         }
 
     }

@@ -22,11 +22,13 @@ import io.goobox.sync.sia.db.SyncFile;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
 import io.methvin.watcher.DirectoryWatcher;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -133,9 +135,20 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 }
 
                 try {
-                    logger.info("Found New file {}", path);
+
+                    if (DB.contains(path)) {
+                        final String digest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
+                        if (digest.equals(DB.get(path).getLocalDigest())) {
+                            logger.trace("File {} is modified but the contents are not changed", path);
+                            removePaths.add(path);
+                            return;
+                        }
+                    }
+
+                    logger.info("Found modified file {}", path);
                     DB.addNewFile(path);
                     removePaths.add(path);
+
                 } catch (IOException e) {
                     logger.error("Failed to add a new file {} to the sync DB: {}", path, e.getMessage());
                 }
