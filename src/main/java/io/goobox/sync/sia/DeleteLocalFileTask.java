@@ -17,8 +17,11 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,21 +35,33 @@ import java.nio.file.Path;
  */
 class DeleteLocalFileTask implements Runnable {
 
-    private final Path localPath;
     private static final Logger logger = LogManager.getLogger();
 
-    DeleteLocalFileTask(final Path localPath) {
+    @NotNull
+    private final Path localPath;
+
+    DeleteLocalFileTask(@NotNull final Path localPath) {
         this.localPath = localPath;
     }
 
     @Override
     public void run() {
 
+        if (!DB.contains(this.localPath)) {
+            logger.warn("File {} was deleted from SyncDB", this.localPath);
+            return;
+        }
+
+        final SyncFile syncFile = DB.get(this.localPath);
+        if (syncFile.getState() != SyncState.FOR_LOCAL_DELETE) {
+            logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
+            return;
+        }
+
         logger.info("Deleting local file {}", this.localPath);
         try {
 
-            final boolean success = Files.deleteIfExists(this.localPath);
-            if (!success) {
+            if (!Files.deleteIfExists(this.localPath)) {
                 logger.warn("File {} doesn't exist", this.localPath);
             }
             DB.remove(this.localPath);

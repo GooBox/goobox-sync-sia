@@ -267,6 +267,17 @@ public class FileWatcherTest {
         this.checkStatusAfterModifyEvent(SyncState.UPLOADING, SyncState.MODIFIED);
     }
 
+    /**
+     * This case happens when CheckStateTask decided to delete a local file and then a user updates the file.
+     * In this case, the file shouldn't be deleted and its state should be kept to MODIFIED so that CheckStateTask
+     * can handle it.
+     */
+    @Test
+    public void toBeLocalDeleteFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkStatusAfterModifyEvent(SyncState.FOR_LOCAL_DELETE, SyncState.MODIFIED);
+    }
+
+
     private void checkStatusAfterModifyEvent(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
