@@ -19,12 +19,11 @@ package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
+import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.storj.Utils;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -53,56 +52,50 @@ public class DownloadCloudFileTaskTest {
     private Path tempDir;
 
     private Context context;
+    private String name;
     private Path remotePath;
-    private SiaFile file;
+    private Path localPath;
 
     @Before
-    public void setUpMockDB() throws IOException {
+    public void setUp() throws IOException {
 
         new DBMock();
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        this.context = new Context(cfg, null);
-
-        this.remotePath = this.context.pathPrefix.resolve("testfile");
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(this.remotePath);
-        this.file = file;
-
-        DB.addForDownload(file);
-
-    }
-
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
-
-    /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
-     *
-     * @throws IOException if failed to create a temporary directory.
-     */
-    @Before
-    public void setUpTempSyncDir() throws IOException {
 
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
+        final Config cfg = new Config();
+        cfg.setUserName("test-user");
+        this.context = new Context(cfg, null);
+
+        this.name = String.format("test-file-%x", System.currentTimeMillis());
+        this.remotePath = this.context.pathPrefix.resolve(this.name).toAbsolutePath();
+        this.localPath = Utils.getSyncDir().resolve(this.name);
+
+        DB.addForDownload(new CloudFile() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return remotePath;
+            }
+
+            @Override
+            public long getFileSize() {
+                return System.currentTimeMillis();
+            }
+        }, this.localPath);
+
     }
 
-    /**
-     * Deletes the temporary directory.
-     *
-     * @throws IOException if failed to delete it.
-     */
     @After
-    public void tearDownTempSyncDir() throws IOException {
+    public void tearDown() throws IOException {
 
+        DB.close();
         if (tempDir != null && tempDir.toFile().exists()) {
             FileUtils.deleteDirectory(tempDir.toFile());
         }
@@ -112,17 +105,36 @@ public class DownloadCloudFileTaskTest {
     /**
      * Test it starts downloading a given file from a given URL to a given temporary path.
      *
-     * @throws ApiException if API calls return errors.
+     * @throws ApiException if API calls return an error.
      */
     @Test
-    public void testDownloadFile() throws ApiException {
+    public void downloadFile() throws ApiException {
 
         new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
+            //noinspection ConstantConditions
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
         }};
-        new DownloadCloudFileTask(this.context, this.file).run();
+        new DownloadCloudFileTask(this.context, this.name).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOADING, DB.get(this.file).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(this.name).getState());
+
+    }
+
+    /**
+     * If a not exising file name is given, it should be ignored.
+     *
+     * @throws ApiException if API calls return an error.
+     */
+    @Test
+    public void downloadNotExistingFile() throws ApiException {
+
+        new Expectations() {{
+            //noinspection ConstantConditions
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
+            times = 0;
+        }};
+        new DownloadCloudFileTask(this.context, "not-existing-name").run();
+        assertFalse(DBMock.committed);
 
     }
 
@@ -132,15 +144,16 @@ public class DownloadCloudFileTaskTest {
      * @throws ApiException if API calls return errors.
      */
     @Test
-    public void testHandlingOfApiException() throws ApiException {
+    public void handleApiException() throws ApiException {
 
         new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
+            //noinspection ConstantConditions
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
             result = new ApiException("expected exception");
         }};
-        new DownloadCloudFileTask(this.context, this.file).run();
+        new DownloadCloudFileTask(this.context, this.name).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.file).getState());
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.name).getState());
 
     }
 
@@ -149,26 +162,27 @@ public class DownloadCloudFileTaskTest {
      * CheckStateTask will check this file is uploaded, downloaded, or synced.
      */
     @Test
-    public void testToBeDownloadedFileModified() throws ApiException, IOException {
+    public void toBeDownloadedFileModified() throws ApiException, IOException {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(file).getTemporaryPath().toString());
+            //noinspection ConstantConditions
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
             times = 0;
         }};
 
         // A download remote file task is created (enqueued).
-        final DownloadCloudFileTask task = new DownloadCloudFileTask(this.context, this.file);
+        final DownloadCloudFileTask task = new DownloadCloudFileTask(this.context, this.name);
 
         // The same file is created/modified.
-        assertTrue(this.file.getLocalPath().toFile().createNewFile());
-        DB.setModified(this.file.getLocalPath());
+        assertTrue(this.localPath.toFile().createNewFile());
+        DB.setModified(this.localPath);
 
         // then, the task is executed.
         task.run();
 
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.MODIFIED, DB.get(this.file).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(this.name).getState());
 
     }
 
