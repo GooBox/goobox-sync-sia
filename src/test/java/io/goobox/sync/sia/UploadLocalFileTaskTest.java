@@ -20,17 +20,14 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.storj.Utils;
-import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
-import org.dizitart.no2.objects.ObjectRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,10 +35,8 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -57,16 +52,8 @@ public class UploadLocalFileTaskTest {
     private Path tempDir;
     private Config config;
     private Context context;
-
-    @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
-
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
+    private Path localPath;
+    private Path cloudPath;
 
     /**
      * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
@@ -76,15 +63,23 @@ public class UploadLocalFileTaskTest {
     @Before
     public void setUp() throws IOException {
 
+        new DBMock();
+
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
         this.config = new Config();
-        this.config.setUserName("testuser");
+        this.config.setUserName("test-user");
         this.config.setDataPieces(120);
         this.config.setParityPieces(50);
         this.context = new Context(this.config, null);
+
+        this.localPath = Utils.getSyncDir().resolve("test-file");
+        this.cloudPath = this.context.pathPrefix.resolve("test-file").resolve(String.valueOf(System.currentTimeMillis())).toAbsolutePath();
+        assertTrue(localPath.toFile().createNewFile());
+        DB.addNewFile(localPath);
+        DB.setForUpload(this.localPath, this.cloudPath);
 
     }
 
@@ -95,27 +90,16 @@ public class UploadLocalFileTaskTest {
      */
     @After
     public void tearDown() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     @Test
-    public void testUploadFile() throws IOException, ApiException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = this.context.pathPrefix.resolve("testfile");
-        this.addForUpload(localPath);
-        assertTrue(localPath.toFile().setLastModified(new Date().getTime()));
+    public void uploadFile() throws IOException, ApiException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(localPath.toFile().lastModified()));
-            api.renterUploadSiapathPost(siaPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
         }};
-
-        // Use a local path instead of a SiaFile instance.
         new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
@@ -123,19 +107,12 @@ public class UploadLocalFileTaskTest {
     }
 
     @Test
-    public void testFailedToUpload() throws ApiException, IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = this.context.pathPrefix.resolve("testfile");
-        this.addForUpload(localPath);
-        assertTrue(localPath.toFile().setLastModified(new Date().getTime()));
+    public void failedToUpload() throws ApiException, IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(localPath.toFile().lastModified()));
-            api.renterUploadSiapathPost(siaPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
             result = new ApiException();
         }};
-
         new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
@@ -147,17 +124,11 @@ public class UploadLocalFileTaskTest {
      * In this case, upload should be canceled and delegate CheckStateTask to decide uploading the new file or not.
      */
     @Test
-    public void testToBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException, ApiException {
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = this.context.pathPrefix.resolve("testfile");
-        this.addForUpload(localPath);
-        assertTrue(localPath.toFile().setLastModified(new Date().getTime()));
+    public void toBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException, ApiException {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(localPath.toFile().lastModified()));
-            api.renterUploadSiapathPost(siaPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
             times = 0;
         }};
 
@@ -170,6 +141,7 @@ public class UploadLocalFileTaskTest {
         // and, the task is executed.
         task.run();
 
+        // check after conditions.
         assertFalse(DBMock.committed);
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
 
@@ -180,17 +152,11 @@ public class UploadLocalFileTaskTest {
      * In this case, upload must be canceled.
      */
     @Test
-    public void testToBeUploadedFileDeleted() throws NoSuchMethodException, IOException, IllegalAccessException, InvocationTargetException, ApiException {
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = this.context.pathPrefix.resolve("testfile");
-        this.addForUpload(localPath);
-        assertTrue(localPath.toFile().setLastModified(new Date().getTime()));
+    public void toBeUploadedFileDeleted() throws NoSuchMethodException, IOException, IllegalAccessException, InvocationTargetException, ApiException {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(localPath.toFile().lastModified()));
-            api.renterUploadSiapathPost(siaPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
             times = 0;
         }};
 
@@ -203,31 +169,10 @@ public class UploadLocalFileTaskTest {
         // and, the task is executed.
         task.run();
 
+        // check after conditions.
         assertFalse(DBMock.committed);
         assertEquals(SyncState.DELETED, DB.get(localPath).getState());
 
     }
-
-    private void addForUpload(final Path localPath) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
-        this.setState(localPath, SyncState.FOR_UPLOAD);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void setState(final Path localPath, final SyncState state) throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        if (!localPath.toFile().exists()) {
-            assertTrue(localPath.toFile().createNewFile());
-        }
-        DB.addNewFile(localPath);
-        final SyncFile syncFile = DB.get(localPath);
-        Deencapsulation.setField(syncFile, "state", state);
-
-        final Method repo = DB.class.getDeclaredMethod("repo");
-        repo.setAccessible(true);
-        final ObjectRepository<SyncFile> repository = (ObjectRepository<SyncFile>) repo.invoke(DB.class);
-        repository.update(syncFile);
-
-    }
-
 
 }
