@@ -268,6 +268,16 @@ public class FileWatcherTest {
     }
 
     /**
+     * This case happens when CheckStateTask decided to delete a file from the cloud network but then a user updates the
+     * file. In this case, the file shouldn't be deleted from the cloud network. CheckStateTask needs to check the file
+     * and in most case the file should be uploaded.
+     */
+    @Test
+    public void toBeCloudDeleteFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkStatusAfterModifyEvent(SyncState.FOR_CLOUD_DELETE, SyncState.MODIFIED);
+    }
+
+    /**
      * This case happens when CheckStateTask decided to delete a local file and then a user updates the file.
      * In this case, the file shouldn't be deleted and its state should be kept to MODIFIED so that CheckStateTask
      * can handle it.
