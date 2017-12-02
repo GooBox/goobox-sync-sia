@@ -16,12 +16,11 @@
  */
 package io.goobox.sync.sia.model;
 
-import java.math.BigDecimal;
-import java.nio.file.Path;
-
+import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import java.math.BigDecimal;
+import java.nio.file.Path;
 
 /**
  * SiaFileFromDownloadsAPI is a SiaFile which wraps a result of /renter/files.
@@ -42,7 +41,7 @@ public class SiaFileFromFilesAPI implements SiaFile {
     /**
      * Create a new SiaFile object with a path prefix.
      *
-     * @param file returned by /renter/files API.
+     * @param file   returned by /renter/files API.
      * @param prefix of remote paths.
      */
     public SiaFileFromFilesAPI(final InlineResponse20011Files file, final Path prefix) {
@@ -56,7 +55,7 @@ public class SiaFileFromFilesAPI implements SiaFile {
     }
 
     @Override
-    public Path getRemotePath() {
+    public Path getCloudPath() {
         return this.siaPath.siaPath;
     }
 
@@ -75,11 +74,11 @@ public class SiaFileFromFilesAPI implements SiaFile {
         return this.rawFile.getFilesize();
     }
 
-    public boolean getAvailable(){
+    public boolean getAvailable() {
         return this.rawFile.getAvailable();
     }
 
-    public BigDecimal getUploadProgress(){
+    public BigDecimal getUploadProgress() {
         return this.rawFile.getUploadprogress();
     }
 

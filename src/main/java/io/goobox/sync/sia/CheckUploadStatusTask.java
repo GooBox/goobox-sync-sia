@@ -60,14 +60,14 @@ class CheckUploadStatusTask implements Runnable {
             for (final InlineResponse20011Files item : res.getFiles()) {
 
                 final SiaFileFromFilesAPI file = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
-                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
+                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
                     continue;
                 }
 
                 final SyncFile syncFile = DB.get(file);
                 if (syncFile.getState() != SyncState.UPLOADING) {
-                    logger.debug("Found remote file {} but it's not being uploaded", file.getRemotePath());
+                    logger.debug("Found remote file {} but it's not being uploaded", file.getCloudPath());
                     continue;
                 }
 

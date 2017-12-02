@@ -57,13 +57,13 @@ class DeleteCloudFileTask implements Runnable {
             for (InlineResponse20011Files file : files.getFiles()) {
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     continue;
                 }
 
                 if (siaFile.getName().equals(this.target.getName())) {
                     logger.debug("Delete file {}", siaFile.getName());
-                    api.renterDeleteSiapathPost(siaFile.getRemotePath().toString());
+                    api.renterDeleteSiapathPost(siaFile.getCloudPath().toString());
                 }
 
             }

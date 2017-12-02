@@ -8,6 +8,7 @@ import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.objects.Cursor;
 import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ public class DB {
         db().commit();
     }
 
-    public synchronized static boolean contains(SiaFile file) {
+    public synchronized static boolean contains(CloudFile file) {
         return contains(file.getName());
     }
 
@@ -61,7 +62,7 @@ public class DB {
         return contains(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    private synchronized static boolean contains(String name) {
+    public synchronized static boolean contains(String name) {
         boolean res = (get(name) != null);
         logger.trace("contains({}) = {}", name, res);
         return res;
@@ -75,13 +76,13 @@ public class DB {
         return get(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    private synchronized static SyncFile get(String name) {
+    public synchronized static SyncFile get(String name) {
         final SyncFile res = repo().find(withName(name)).firstOrDefault();
         logger.trace("get({}) = {}", name, res);
         return res;
     }
 
-    private synchronized static SyncFile getOrCreate(SiaFile file) {
+    private synchronized static SyncFile getOrCreate(CloudFile file) {
         return getOrCreate(file.getName());
     }
 
@@ -100,7 +101,7 @@ public class DB {
         return syncFile;
     }
 
-    public synchronized static void remove(SiaFile file) {
+    public synchronized static void remove(CloudFile file) {
         remove(file.getName());
     }
 
@@ -108,7 +109,7 @@ public class DB {
         remove(Utils.getSyncDir().relativize(localPath).toString());
     }
 
-    private synchronized static void remove(String name) {
+    public synchronized static void remove(String name) {
         logger.trace("remove({})", name);
         repo().remove(withName(name));
     }
@@ -127,22 +128,10 @@ public class DB {
     }
 
     /**
-     * Adds a new SiaFile to this database and marks it will be downloaded.
-     *
-     * @param file representing a remote file.
-     */
-    public synchronized static void addForDownload(SiaFile file) throws IOException {
-        SyncFile syncFile = getOrCreate(file);
-        syncFile.setCloudData(file);
-        syncFile.setTemporaryPath(Files.createTempFile(null, null));
-        syncFile.setState(SyncState.FOR_DOWNLOAD);
-        repo().update(syncFile);
-    }
-
-    /**
      * Add a new file to this database; the status of the file is MODIFIED.
      *
      * @param localPath of the new file.
+     * @throws IOException if fail to access the file.
      */
     public synchronized static void addNewFile(final Path localPath) throws IOException {
         final SyncFile syncFile = getOrCreate(localPath);
@@ -151,19 +140,48 @@ public class DB {
         repo().update(syncFile);
     }
 
+    /**
+     * Adds a new cloud file to this database and marks it will be downloaded.
+     *
+     * @param file      representing a cloud file.
+     * @param localPath where the file to be downloaded to.
+     */
+    public synchronized static void addForDownload(@NotNull final CloudFile file, @NotNull final Path localPath) throws IOException {
+        SyncFile syncFile = getOrCreate(file);
+        syncFile.setCloudData(file);
+        syncFile.setLocalPath(localPath);
+        syncFile.setTemporaryPath(Files.createTempFile(null, null));
+        syncFile.setState(SyncState.FOR_DOWNLOAD);
+        repo().update(syncFile);
+    }
+
+    /**
+     * Updates information of the given file and marks it as MODIFIED.
+     *
+     * @param localPath to the file.
+     * @throws IOException if fail to access the file.
+     */
     public synchronized static void setModified(final Path localPath) throws IOException {
         DB.addNewFile(localPath);
     }
 
-    public synchronized static void setDownloading(SiaFile file) {
-        final SyncFile syncFile = get(file);
+    public synchronized static void setDownloading(@NotNull final String name) {
+        final SyncFile syncFile = get(name);
         syncFile.setState(SyncState.DOWNLOADING);
         repo().update(syncFile);
     }
 
-    public synchronized static void setForUpload(Path localPath) throws IOException {
+    /**
+     * Marks the given file to be uploaded to the given cloud path.
+     *
+     * @param localPath to the file to be uploaded.
+     * @param cloudPath where the file will be stored.
+     * @throws IOException if fail to access the local file.
+     */
+    public synchronized static void setForUpload(@NotNull final Path localPath, @NotNull final Path cloudPath) throws IOException {
         SyncFile syncFile = get(localPath);
         syncFile.setLocalData(localPath);
+        syncFile.setCloudPath(cloudPath);
         syncFile.setState(SyncState.FOR_UPLOAD);
         repo().update(syncFile);
     }
@@ -174,8 +192,8 @@ public class DB {
         repo().update(syncFile);
     }
 
-    public synchronized static void setDownloadFailed(SiaFile file) {
-        SyncFile syncFile = get(file);
+    public synchronized static void setDownloadFailed(@NotNull final String name) {
+        SyncFile syncFile = get(name);
         syncFile.setState(SyncState.DOWNLOAD_FAILED);
         repo().update(syncFile);
     }
@@ -224,7 +242,7 @@ public class DB {
         return getFiles(SyncState.SYNCED);
     }
 
-    private synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
+    public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
         return repo().find(eq("state", state));
     }
 

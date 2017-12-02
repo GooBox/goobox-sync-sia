@@ -76,7 +76,7 @@ class CheckStateTask implements Runnable {
                             case SYNCED:
 
                                 // This file was synced.
-                                if (file.getCreationTime() > syncFile.getLocalModifiedTime()) {
+                                if (file.getCreationTime() > syncFile.getLocalModificationTime()) {
 
                                     // The cloud file was updated, and it will be downloaded.
                                     logger.info("Cloud file {} is going to be downloaded", file.getName());
@@ -88,7 +88,7 @@ class CheckStateTask implements Runnable {
                             case MODIFIED:
 
                                 // This file has been modified.
-                                if (file.getCreationTime() < syncFile.getLocalModifiedTime()) {
+                                if (file.getCreationTime() < syncFile.getLocalModificationTime()) {
 
                                     // The newer local file will be uploaded.
                                     // Even if the file in cloud was also modified, i.e. there is conflict,
@@ -230,19 +230,19 @@ class CheckStateTask implements Runnable {
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getRemotePath());
+                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
                     continue;
                 }
 
-                if (filemap.containsKey(siaFile.getName())) {
+                if (fileMap.containsKey(siaFile.getName())) {
 
-                    final SiaFile prev = filemap.get(siaFile.getName());
+                    final SiaFile prev = fileMap.get(siaFile.getName());
                     if (siaFile.getCreationTime() > prev.getCreationTime()) {
                         logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
                                 siaFile.getCreationTime());
-                        filemap.put(siaFile.getName(), siaFile);
+                        fileMap.put(siaFile.getName(), siaFile);
                     } else {
                         logger.debug("Found older version of remote file {} created at {} but ignored",
                                 siaFile.getName(), siaFile.getCreationTime());

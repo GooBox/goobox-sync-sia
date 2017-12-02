@@ -16,10 +16,11 @@
  */
 package io.goobox.sync.sia.db;
 
-import io.goobox.sync.sia.model.SiaFile;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.dizitart.no2.objects.Id;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@SuppressWarnings("WeakerAccess")
 public class SyncFile implements Serializable {
 
     /**
@@ -37,36 +39,52 @@ public class SyncFile implements Serializable {
     private String name;
 
     /**
-     * Creation time of the remote file.
+     * Path to the cloud file. It can be null if the cloud file doesn't exist.
+     * <p>
+     * Note: this path must be a relative because it will be used in a request URL. However, serialize algorithm treats
+     * this path as a absolute path with the current directory if this variable's class is Path.
+     * Thus, it must be declared as a string and getter/setter convert.
      */
-    private long remoteCreatedTime;
+    @Nullable
+    private String cloudPath;
 
     /**
-     * File size of the remote file.
+     * File size of the cloud file.
      */
-    private long remoteSize;
+    @Nullable
+    private Long cloudSize;
 
     /**
-     * Last modified time of the local file.
+     * Path to the local file. It can be null if the local file doesn't exist.
      */
-    private long localModifiedTime;
+    @Nullable
+    private Path localPath;
+
+    /**
+     * Last modification time of the local file.
+     */
+    @Nullable
+    private Long localModificationTime;
 
     /**
      * File size of the local file.
      */
-    private long localSize;
+    @Nullable
+    private Long localSize;
 
     /**
      * Hex string of sha512 digest of the local file body.
      * <p>
      * It is used to detect renaming files.
      */
+    @Nullable
     private String localDigest;
 
     /**
      * Temporary path to store file during its download.
      */
-    private String temporaryPath;
+    @Nullable
+    private Path temporaryPath;
 
     /**
      * Sync status of this file.
@@ -79,66 +97,98 @@ public class SyncFile implements Serializable {
     SyncFile() {
     }
 
+    @NotNull
     public String getName() {
         return this.name;
     }
 
-    public void setName(final String name) {
-        this.name = name;
+    @Nullable
+    public Path getCloudPath() {
+        if (this.cloudPath == null) {
+            return null;
+        }
+        return Paths.get(this.cloudPath);
     }
 
-    public long getRemoteCreatedTime() {
-        return this.remoteCreatedTime;
+    @Nullable
+    public Long getCloudCreationTime() {
+        if (this.getCloudPath() == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(this.getCloudPath().getFileName().toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
-    void setRemoteCreatedTime(final long remoteCreatedTime) {
-        this.remoteCreatedTime = remoteCreatedTime;
+    @Nullable
+    public Long getCloudSize() {
+        return this.cloudSize;
     }
 
-    public long getRemoteSize() {
-        return this.remoteSize;
+    @Nullable
+    public Long getLocalModificationTime() {
+        return this.localModificationTime;
     }
 
-    void setRemoteSize(final long remoteSize) {
-        this.remoteSize = remoteSize;
+    @Nullable
+    public Path getLocalPath() {
+        return this.localPath;
     }
 
-    public long getLocalModifiedTime() {
-        return this.localModifiedTime;
-    }
-
-    private void setLocalModifiedTime(final long localModifiedTime) {
-        this.localModifiedTime = localModifiedTime;
-    }
-
-    public long getLocalSize() {
+    @Nullable
+    public Long getLocalSize() {
         return this.localSize;
     }
 
-    private void setLocalSize(final long localSize) {
-        this.localSize = localSize;
-    }
-
+    @Nullable
     public String getLocalDigest() {
         return localDigest;
     }
 
-    private void setLocalDigest(String localDigest) {
-        this.localDigest = localDigest;
-    }
-
+    @Nullable
     public Path getTemporaryPath() {
-        return Paths.get(this.temporaryPath);
+        return this.temporaryPath;
     }
 
-    void setTemporaryPath(Path temporaryPath) {
-        if (temporaryPath != null) {
-            this.temporaryPath = temporaryPath.toString();
+    @NotNull
+    public SyncState getState() {
+        return this.state;
+    }
+
+    void setName(@NotNull final String name) {
+        this.name = name;
+    }
+
+    public void setCloudPath(@Nullable final Path cloudPath) {
+        if (cloudPath != null) {
+            this.cloudPath = cloudPath.toString();
         }
     }
 
-    public SyncState getState() {
-        return this.state;
+    private void setCloudSize(@Nullable final Long cloudSize) {
+        this.cloudSize = cloudSize;
+    }
+
+    public void setLocalPath(@Nullable final Path localPath) {
+        this.localPath = localPath;
+    }
+
+    private void setLocalModificationTime(@Nullable final Long localModificationTime) {
+        this.localModificationTime = localModificationTime;
+    }
+
+    private void setLocalSize(@Nullable final Long localSize) {
+        this.localSize = localSize;
+    }
+
+    private void setLocalDigest(@Nullable String localDigest) {
+        this.localDigest = localDigest;
+    }
+
+    void setTemporaryPath(@Nullable Path temporaryPath) {
+        this.temporaryPath = temporaryPath;
     }
 
     /**
@@ -146,24 +196,60 @@ public class SyncFile implements Serializable {
      *
      * @param state to be set.
      */
-    void setState(final SyncState state) {
+    void setState(@NotNull final SyncState state) {
         this.state = state;
     }
 
-    public void setCloudData(final SiaFile file) {
-        this.setName(file.getName());
-        this.setRemoteCreatedTime(file.getCreationTime());
-        this.setRemoteSize(file.getFileSize());
+    void setCloudData(@NotNull final CloudFile file) {
+        this.setCloudPath(file.getCloudPath());
+        this.setCloudSize(file.getFileSize());
     }
 
-    public void setLocalData(Path path) throws IOException {
-        this.setLocalModifiedTime(Files.getLastModifiedTime(path).toMillis());
-        this.setLocalSize(Files.size(path));
-        this.setLocalDigest(DigestUtils.sha512Hex(new FileInputStream(path.toFile())));
+    void setLocalData(@NotNull final Path localPath) throws IOException {
+        this.setLocalPath(localPath);
+        this.setLocalModificationTime(Files.getLastModifiedTime(localPath).toMillis());
+        this.setLocalSize(Files.size(localPath));
+        this.setLocalDigest(DigestUtils.sha512Hex(new FileInputStream(localPath.toFile())));
     }
 
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();
+    }
+
+    @SuppressWarnings("SimplifiableIfStatement")
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SyncFile syncFile = (SyncFile) o;
+
+        if (!name.equals(syncFile.name)) return false;
+        if (cloudPath != null ? !cloudPath.equals(syncFile.cloudPath) : syncFile.cloudPath != null) return false;
+        if (cloudSize != null ? !cloudSize.equals(syncFile.cloudSize) : syncFile.cloudSize != null) return false;
+        if (localPath != null ? !localPath.equals(syncFile.localPath) : syncFile.localPath != null) return false;
+        if (localModificationTime != null ? !localModificationTime.equals(syncFile.localModificationTime) : syncFile.localModificationTime != null)
+            return false;
+        if (localSize != null ? !localSize.equals(syncFile.localSize) : syncFile.localSize != null) return false;
+        if (localDigest != null ? !localDigest.equals(syncFile.localDigest) : syncFile.localDigest != null)
+            return false;
+        if (temporaryPath != null ? !temporaryPath.equals(syncFile.temporaryPath) : syncFile.temporaryPath != null)
+            return false;
+        return state == syncFile.state;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + (cloudPath != null ? cloudPath.hashCode() : 0);
+        result = 31 * result + (cloudSize != null ? cloudSize.hashCode() : 0);
+        result = 31 * result + (localPath != null ? localPath.hashCode() : 0);
+        result = 31 * result + (localModificationTime != null ? localModificationTime.hashCode() : 0);
+        result = 31 * result + (localSize != null ? localSize.hashCode() : 0);
+        result = 31 * result + (localDigest != null ? localDigest.hashCode() : 0);
+        result = 31 * result + (temporaryPath != null ? temporaryPath.hashCode() : 0);
+        result = 31 * result + state.hashCode();
+        return result;
     }
 
 }

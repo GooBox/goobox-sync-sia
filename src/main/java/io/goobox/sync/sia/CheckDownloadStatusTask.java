@@ -64,15 +64,15 @@ class CheckDownloadStatusTask implements Runnable {
             for (final InlineResponse20010Downloads remoteFile : getRecentDownloads(api.renterDownloadsGet().getDownloads())) {
 
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(remoteFile, this.ctx.pathPrefix);
-                if (!file.getRemotePath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
-                    logger.trace("Found remote file {} but it's not managed by Goobox", file.getRemotePath());
+                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
+                    logger.trace("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
                     continue;
                 }
 
                 final SyncFile syncFile = DB.get(file);
                 if (syncFile.getState() == SyncState.MODIFIED || syncFile.getState() == SyncState.DELETED) {
 
-                    logger.debug("Found remote file {} is also modified/deleted in the local directory", file.getRemotePath());
+                    logger.debug("Found remote file {} is also modified/deleted in the local directory", file.getCloudPath());
                     final String err = file.getError();
                     if (err != null && !err.isEmpty()) {
                         logger.error("Failed to download {}: {}", file.getName(), err);
@@ -87,7 +87,7 @@ class CheckDownloadStatusTask implements Runnable {
                     continue;
 
                 } else if (syncFile.getState() != SyncState.DOWNLOADING) {
-                    logger.debug("Found remote file {} but it's not being downloaded", file.getRemotePath());
+                    logger.debug("Found remote file {} but it's not being downloaded", file.getCloudPath());
                     continue;
                 }
 
