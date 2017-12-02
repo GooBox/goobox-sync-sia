@@ -59,30 +59,30 @@ class CheckUploadStatusTask implements Runnable {
             int nFiles = 0;
             for (final InlineResponse20011Files item : res.getFiles()) {
 
-                final SiaFileFromFilesAPI file = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
-                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
-                    logger.debug("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
+                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
+                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(siaFile)) {
+                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
                     continue;
                 }
 
-                final SyncFile syncFile = DB.get(file);
+                final SyncFile syncFile = DB.get(siaFile);
                 if (syncFile.getState() != SyncState.UPLOADING) {
-                    logger.debug("Found remote file {} but it's not being uploaded", file.getCloudPath());
+                    logger.debug("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
                     continue;
                 }
 
-                if (file.getUploadProgress().compareTo(Completed) >= 0) {
-                    logger.info("File {} has been uploaded", file.getLocalPath());
+                if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
+                    logger.info("File {} has been uploaded", siaFile.getLocalPath());
                     try {
-                        DB.setSynced(file);
-                    } catch (IOException e) {
+                        DB.setSynced(siaFile, siaFile.getLocalPath());
+                    } catch (final IOException e) {
                         logger.error("Failed to update the sync db: {}", e.getMessage());
-                        DB.setUploadFailed(file.getLocalPath());
+                        DB.setUploadFailed(siaFile.getLocalPath());
                     }
                 } else {
                     logger.debug(
-                            "File {} is now being uploaded ({}%)", file.getName(),
-                            file.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
+                            "File {} is now being uploaded ({}%)", siaFile.getName(),
+                            siaFile.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
                     ++nFiles;
                 }
 
