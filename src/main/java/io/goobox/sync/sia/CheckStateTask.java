@@ -102,7 +102,7 @@ class CheckStateTask implements Runnable {
                                     // The cloud file should be downloaded and the local file should be renamed and kept it
                                     // too.
                                     logger.warn("Conflict detected: file {} is modified in both cloud and local", file.getName());
-                                    DB.setConflict(file);
+                                    DB.setConflict(file, file.getLocalPath());
 
                                 }
                                 break;
@@ -219,7 +219,7 @@ class CheckStateTask implements Runnable {
     private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
 
         // Key: file name, Value: file object.
-        final Map<String, SiaFile> filemap = new HashMap<>();
+        final Map<String, SiaFile> fileMap = new HashMap<>();
         if (files != null) {
             for (InlineResponse20011Files file : files) {
 
@@ -251,12 +251,12 @@ class CheckStateTask implements Runnable {
                 } else {
                     logger.debug("Found remote file {} created at {}", siaFile.getName(),
                             siaFile.getCreationTime());
-                    filemap.put(siaFile.getName(), siaFile);
+                    fileMap.put(siaFile.getName(), siaFile);
                 }
 
             }
         }
-        return filemap.values();
+        return fileMap.values();
 
     }
 
@@ -268,7 +268,9 @@ class CheckStateTask implements Runnable {
      */
     private void enqueueForUpload(final Path localPath) throws IOException {
 
-        DB.setForUpload(localPath);
+        final Path name = Utils.getSyncDir().relativize(localPath);
+        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
+        DB.setForUpload(localPath, cloudPath);
         this.executor.execute(new UploadLocalFileTask(this.ctx, localPath));
 
     }
@@ -280,8 +282,8 @@ class CheckStateTask implements Runnable {
      */
     private void enqueueForDownload(final SiaFile file) throws IOException {
 
-        DB.addForDownload(file);
-        this.executor.execute(new DownloadCloudFileTask(this.ctx, file));
+        DB.addForDownload(file, file.getLocalPath());
+        this.executor.execute(new DownloadCloudFileTask(this.ctx, file.getName()));
 
     }
 
@@ -293,7 +295,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForCloudDelete(final SiaFile file) {
 
         DB.setForCloudDelete(file);
-        this.executor.execute(new DeleteCloudFileTask(this.ctx, file));
+        this.executor.execute(new DeleteCloudFileTask(this.ctx, file.getName()));
 
     }
 

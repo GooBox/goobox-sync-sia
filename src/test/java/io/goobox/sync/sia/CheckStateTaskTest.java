@@ -21,11 +21,11 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.ExecutorMock;
-import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
@@ -63,53 +63,33 @@ public class CheckStateTaskTest {
 
     private Path tempDir;
     private Context context;
+    private String name;
     private Date oldTimeStamp;
     private Date newTimeStamp;
 
     @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
-
-    @After
-    public void tearDownMockDB() {
-        DB.close();
-    }
-
-    /**
-     * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
-     *
-     * @throws IOException if failed to create a temporary directory.
-     */
-    @Before
     public void setUp() throws IOException {
+
+        new DBMock();
 
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
         final Config cfg = new Config();
-        cfg.setUserName("testuser");
+        cfg.setUserName("test-user");
         this.context = new Context(cfg, null);
 
+        this.name = String.format("file-%x", System.currentTimeMillis());
         this.oldTimeStamp = new Date(100000);
         this.newTimeStamp = new Date();
 
-
     }
 
-    /**
-     * Deletes the temporary directory.
-     *
-     * @throws IOException if failed to delete it.
-     */
     @After
     public void tearDown() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     /**
@@ -117,13 +97,14 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condiion: cloud yes, local yes, db yes.
      */
+    @SuppressWarnings("ConstantConditions")
     @Test
-    public void testCloudFileModified() throws IOException, ApiException {
+    public void cloudFileModified() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -132,11 +113,11 @@ public class CheckStateTaskTest {
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
-        DB.setSynced(siaFile);
+        DB.setSynced(siaFile, siaFile.getLocalPath());
         files.add(file);
 
         final InlineResponse20011Files newerFile = new InlineResponse20011Files();
-        final Path newerRemotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(newTimeStamp.getTime())));
+        final Path newerRemotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         newerFile.setSiapath(newerRemotePath.toString());
         newerFile.setAvailable(true);
         newerFile.setFilesize(10L);
@@ -159,34 +140,36 @@ public class CheckStateTaskTest {
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
         assertTrue(task instanceof DownloadCloudFileTask);
-        final SiaFile enqueuedFile = Deencapsulation.getField(task, "file");
-        assertEquals(siaFile.getName(), enqueuedFile.getName());
+        final String enqueuedName = Deencapsulation.getField(task, "name");
+        assertEquals(siaFile.getName(), enqueuedName);
 
     }
 
     /**
      * A file already synced but modified in the local directory will be uploaded.
      * <p>
-     * Target file condifion: cloud yes, local yes, db yes (MODIFIED)
+     * Target file condition: cloud yes, local yes, db yes (MODIFIED)
      */
     @Test
-    public void testSyncedFileModified() throws IOException, ApiException {
+    public void syncedFileModified() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
+        files.add(file);
 
         final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
-        files.add(file);
-        DB.setSynced(siaFile);
+        DB.setSynced(siaFile, localPath);
+
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
+        Files.write(localPath, "new data".getBytes());
         DB.setModified(localPath);
 
         DB.commit();
@@ -197,11 +180,13 @@ public class CheckStateTaskTest {
             result = res;
         }};
 
-
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).getState());
+        assertEquals(
+                this.context.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime() / 1000 * 1000)),
+                DB.get(siaFile).getCloudPath());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -215,12 +200,13 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud yes, local no, db no.
      */
+    @SuppressWarnings("ConstantConditions")
     @Test
-    public void testNewCloudFile() throws ApiException {
+    public void newCloudFile() throws ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(10L);
@@ -246,7 +232,7 @@ public class CheckStateTaskTest {
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
         assertTrue(task instanceof DownloadCloudFileTask);
-        assertEquals(siaFile, Deencapsulation.getField(task, "file"));
+        assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
 
     }
 
@@ -256,9 +242,9 @@ public class CheckStateTaskTest {
      * Target file condition: cloud no, local yes, db yes (MODIFIED)
      */
     @Test
-    public void testNewLocalFile() throws IOException, ApiException {
+    public void newLocalFile() throws IOException, ApiException {
 
-        final Path localPath = Utils.getSyncDir().resolve("file4");
+        final Path localPath = Utils.getSyncDir().resolve(name);
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
@@ -291,7 +277,7 @@ public class CheckStateTaskTest {
      * Target file condition: cloud yes, local no, db yes.
      */
     @Test
-    public void testToBeDeletedFromCloudFile() throws IOException, ApiException {
+    public void toBeDeletedFromCloudFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
@@ -326,7 +312,7 @@ public class CheckStateTaskTest {
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
         assertTrue(task instanceof DeleteCloudFileTask);
-        assertEquals(siaFile, Deencapsulation.getField(task, "target"));
+        assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
 
     }
 
@@ -337,15 +323,30 @@ public class CheckStateTaskTest {
      * Target file condition: cloud no, local yes, db yes.
      */
     @Test
-    public void testToBeDeletedFromLocalFile() throws IOException, ApiException {
+    public void toBeDeletedFromLocalFile() throws IOException, ApiException {
 
-        final Path localPath = Utils.getSyncDir().resolve("file");
+        final Path localPath = Utils.getSyncDir().resolve(name);
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
         DB.addNewFile(localPath);
-        DB.setSynced(new SiaFileMock(localPath));
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
 
         DB.commit();
         new Expectations() {{
@@ -375,12 +376,12 @@ public class CheckStateTaskTest {
      * Target file condition: cloud yes (not available), local yes, db yes.
      */
     @Test
-    public void testUploadingFile() throws IOException, ApiException {
+    public void uploadingFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(newTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
+        final Path cloudPath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        file.setSiapath(cloudPath.toString());
         file.setAvailable(false);
         file.setFilesize(0L);
 
@@ -391,7 +392,7 @@ public class CheckStateTaskTest {
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
         DB.addNewFile(localPath);
-        DB.setForUpload(localPath);
+        DB.setForUpload(localPath, cloudPath);
         files.add(file);
 
         DB.commit();
@@ -417,7 +418,7 @@ public class CheckStateTaskTest {
      * In this case the sync DB deletes its entry.
      */
     @Test
-    public void testDeletedLocalFile() throws ApiException, IOException {
+    public void deletedLocalFile() throws ApiException, IOException {
 
         final Path localPath = Utils.getSyncDir().resolve("file");
         assertTrue(localPath.toFile().createNewFile());
@@ -449,7 +450,7 @@ public class CheckStateTaskTest {
      */
     @Ignore
     @Test
-    public void testUploadFailedFile() throws IOException, ApiException {
+    public void uploadFailedFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
