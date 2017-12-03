@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 
 /**
@@ -47,29 +48,32 @@ class DeleteLocalFileTask implements Runnable {
     @Override
     public void run() {
 
-        if (!DB.contains(this.localPath)) {
+        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.localPath);
             return;
         }
+        syncFileOpt.ifPresent(syncFile -> {
 
-        final SyncFile syncFile = DB.get(this.localPath);
-        if (syncFile.getState() != SyncState.FOR_LOCAL_DELETE) {
-            logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
-            return;
-        }
-
-        logger.info("Deleting local file {}", this.localPath);
-        try {
-
-            if (!Files.deleteIfExists(this.localPath)) {
-                logger.warn("File {} doesn't exist", this.localPath);
+            if (syncFile.getState() != SyncState.FOR_LOCAL_DELETE) {
+                logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
+                return;
             }
-            DB.remove(this.localPath);
-            DB.commit();
 
-        } catch (IOException e) {
-            logger.error("Cannot delete local file {}: {}", this.localPath, e.getMessage());
-        }
+            logger.info("Deleting local file {}", this.localPath);
+            try {
+
+                if (!Files.deleteIfExists(this.localPath)) {
+                    logger.warn("File {} doesn't exist", this.localPath);
+                }
+                DB.remove(this.localPath);
+                DB.commit();
+
+            } catch (IOException e) {
+                logger.error("Cannot delete local file {}: {}", this.localPath, e.getMessage());
+            }
+
+        });
 
     }
 

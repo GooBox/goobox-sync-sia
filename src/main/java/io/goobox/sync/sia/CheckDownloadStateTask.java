@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Requests current downloading status to siad and prints it.
@@ -64,12 +65,14 @@ class CheckDownloadStateTask implements Runnable {
             for (final InlineResponse20010Downloads remoteFile : getRecentDownloads(api.renterDownloadsGet().getDownloads())) {
 
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(remoteFile, this.ctx.pathPrefix);
-                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(file)) {
+                final Optional<SyncFile> syncFileOpt = DB.get(file);
+
+                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
                     logger.trace("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
                     continue;
                 }
 
-                final SyncFile syncFile = DB.get(file);
+                final SyncFile syncFile = syncFileOpt.get();
                 if (syncFile.getState() == SyncState.MODIFIED || syncFile.getState() == SyncState.DELETED) {
 
                     logger.debug("Found cloud file {} is also modified/deleted in the local directory", file.getName());

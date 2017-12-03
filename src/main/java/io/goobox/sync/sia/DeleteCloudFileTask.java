@@ -30,6 +30,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 /**
  * Deletes a given file from the cloud network and sync DB.
  */
@@ -51,54 +53,57 @@ class DeleteCloudFileTask implements Runnable {
     @Override
     public void run() {
 
-        if (!DB.contains(this.name)) {
+        final Optional<SyncFile> syncFileOpt = DB.get(this.name);
+        if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.name);
             return;
         }
+        syncFileOpt.ifPresent(syncFile -> {
 
-        final SyncFile syncFile = DB.get(this.name);
-        if (syncFile.getState() != SyncState.FOR_CLOUD_DELETE) {
-            logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
-            return;
-        }
+            if (syncFile.getState() != SyncState.FOR_CLOUD_DELETE) {
+                logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
+                return;
+            }
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        try {
+            final RenterApi api = new RenterApi(this.ctx.apiClient);
+            try {
 
-            final InlineResponse20011 files = api.renterFilesGet();
-            if (files.getFiles() == null) {
+                final InlineResponse20011 files = api.renterFilesGet();
+                if (files.getFiles() == null) {
 
-                logger.warn("No files exist in the cloud storage");
+                    logger.warn("No files exist in the cloud storage");
 
-            } else {
+                } else {
 
-                for (final InlineResponse20011Files file : files.getFiles()) {
+                    for (final InlineResponse20011Files file : files.getFiles()) {
 
-                    final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                    if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
-                        continue;
-                    }
-
-                    if (siaFile.getName().equals(this.name)) {
-                        logger.info("Delete file {}", siaFile.getCloudPath());
-                        try {
-                            api.renterDeleteSiapathPost(siaFile.getCloudPath().toString());
-                        } catch (final ApiException e) {
-                            logger.error(
-                                    "Failed to delete remote file {}: {}",
-                                    siaFile.getCloudPath(), APIUtils.getErrorMessage(e));
+                        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+                        if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
+                            continue;
                         }
+
+                        if (siaFile.getName().equals(this.name)) {
+                            logger.info("Delete file {}", siaFile.getCloudPath());
+                            try {
+                                api.renterDeleteSiapathPost(siaFile.getCloudPath().toString());
+                            } catch (final ApiException e) {
+                                logger.error(
+                                        "Failed to delete remote file {}: {}",
+                                        siaFile.getCloudPath(), APIUtils.getErrorMessage(e));
+                            }
+                        }
+
                     }
 
                 }
+                DB.remove(this.name);
+                DB.commit();
 
+            } catch (final ApiException e) {
+                logger.error("Failed to delete remote file {}: {}", this.name, APIUtils.getErrorMessage(e));
             }
-            DB.remove(this.name);
-            DB.commit();
 
-        } catch (final ApiException e) {
-            logger.error("Failed to delete remote file {}: {}", this.name, APIUtils.getErrorMessage(e));
-        }
+        });
 
     }
 

@@ -143,7 +143,7 @@ public class DeleteCloudFileTaskTest {
 
         new DeleteCloudFileTask(ctx, name).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(name));
+        assertFalse(DB.get(name).isPresent());
 
     }
 
@@ -204,7 +204,7 @@ public class DeleteCloudFileTaskTest {
         task.run();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
 
     }
 

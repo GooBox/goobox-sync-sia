@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -69,9 +70,12 @@ class CheckStateTask implements Runnable {
 
                 try {
 
-                    if (DB.contains(file)) {
+                    final Optional<SyncFile> syncFileOpt = DB.get(file);
 
-                        final SyncFile syncFile = DB.get(file);
+
+                    if (syncFileOpt.isPresent()) {
+
+                        final SyncFile syncFile = syncFileOpt.get();
                         switch (syncFile.getState()) {
                             case SYNCED:
 

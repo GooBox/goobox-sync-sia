@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * Uploads a given local file to cloud storage with a given remote path.
@@ -50,33 +51,36 @@ class UploadLocalFileTask implements Runnable {
     @Override
     public void run() {
 
-        if (!DB.contains(this.localPath)) {
+        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.localPath);
             return;
         }
+        syncFileOpt.ifPresent(syncFile -> {
 
-        final SyncFile syncFile = DB.get(this.localPath);
-        if (syncFile.getState() != SyncState.FOR_UPLOAD) {
-            logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
-            return;
-        }
-        syncFile.getCloudPath().ifPresent(cloudPath -> {
-
-            final RenterApi api = new RenterApi(this.ctx.apiClient);
-            try {
-
-                api.renterUploadSiapathPost(
-                        cloudPath.toString(),
-                        this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                        this.localPath.toString());
-                DB.setUploading(this.localPath);
-
-            } catch (ApiException e) {
-                logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-                DB.setUploadFailed(this.localPath);
-            } finally {
-                DB.commit();
+            if (syncFile.getState() != SyncState.FOR_UPLOAD) {
+                logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
+                return;
             }
+            syncFile.getCloudPath().ifPresent(cloudPath -> {
+
+                final RenterApi api = new RenterApi(this.ctx.apiClient);
+                try {
+
+                    api.renterUploadSiapathPost(
+                            cloudPath.toString(),
+                            this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
+                            this.localPath.toString());
+                    DB.setUploading(this.localPath);
+
+                } catch (ApiException e) {
+                    logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
+                    DB.setUploadFailed(this.localPath);
+                } finally {
+                    DB.commit();
+                }
+
+            });
 
         });
 

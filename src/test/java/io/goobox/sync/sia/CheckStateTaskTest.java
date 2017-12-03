@@ -54,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class CheckStateTaskTest {
 
@@ -97,7 +98,6 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condiion: cloud yes, local yes, db yes.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void cloudFileModified() throws IOException, ApiException {
 
@@ -134,8 +134,8 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).getState());
-        assertTrue(DB.get(siaFile).getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
+        assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -150,7 +150,6 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud yes, local yes, db yes (MODIFIED)
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void syncedFileModified() throws IOException, ApiException {
 
@@ -184,10 +183,14 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).getState());
-        assertEquals(
-                this.context.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime() / 1000 * 1000)),
-                DB.get(siaFile).getCloudPath().get());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
+
+        final Path expected = this.context.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
+        assertEquals(expected.getParent(), DB.get(siaFile).get().getCloudPath().get().getParent());
+
+        final long time1 = Long.valueOf(expected.getFileName().toString());
+        final long time2 = Long.valueOf(DB.get(siaFile).get().getCloudPath().get().getFileName().toString());
+        assertTrue(Math.abs(time1 - time2) < 1000);
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -201,7 +204,6 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud yes, local no, db no.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void newCloudFile() throws ApiException {
 
@@ -227,8 +229,8 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).getState());
-        assertTrue(DB.get(siaFile).getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
+        assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -263,7 +265,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath).getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -308,7 +310,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_CLOUD_DELETE, DB.get(siaFile).getState());
+        assertEquals(SyncState.FOR_CLOUD_DELETE, DB.get(siaFile).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -361,7 +363,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(localPath).getState());
+        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(localPath).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -409,7 +411,7 @@ public class CheckStateTaskTest {
         assertTrue(DBMock.committed);
 
         // Check enqueued task.
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
         assertEquals(0, executor.queue.size());
 
     }
@@ -439,7 +441,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
         assertEquals(0, executor.queue.size());
 
     }
@@ -482,7 +484,7 @@ public class CheckStateTaskTest {
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
 
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);

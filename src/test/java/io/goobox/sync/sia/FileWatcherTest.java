@@ -52,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class FileWatcherTest {
 
@@ -123,7 +124,7 @@ public class FileWatcherTest {
         SystemMock.currentTime = now + 500;
         watcher.run();
 
-        assertFalse(DB.contains(target));
+        assertFalse(DB.get(target).isPresent());
 
     }
 
@@ -179,7 +180,7 @@ public class FileWatcherTest {
         SystemMock.currentTime = now;
         watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 0));
 
-        assertFalse(DB.contains(target));
+        assertFalse(DB.get(target).isPresent());
 
     }
 
@@ -215,7 +216,7 @@ public class FileWatcherTest {
         SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
         watcher.run();
 
-        assertEquals(SyncState.MODIFIED, DB.get(target).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(target).get().getState());
         assertTrue(DBMock.committed);
         final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
         assertFalse(trackingFiles.containsKey(target));
@@ -318,12 +319,12 @@ public class FileWatcherTest {
                 watcher.run();
 
                 // in MinElapsedTime, status must not be chanced.
-                assertEquals(before, DB.get(target).getState());
+                assertEquals(before, DB.get(target).get().getState());
 
                 SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
                 watcher.run();
 
-                assertEquals(expected, DB.get(target).getState());
+                assertEquals(expected, DB.get(target).get().getState());
                 final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
                 assertFalse(trackingFiles.containsKey(target));
                 assertTrue(DBMock.committed);
@@ -362,7 +363,7 @@ public class FileWatcherTest {
         SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
         watcher.run();
 
-        assertFalse(DB.contains(target));
+        assertFalse(DB.get(target).isPresent());
         final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
         assertFalse(trackingFiles.containsKey(target));
 
@@ -430,7 +431,7 @@ public class FileWatcherTest {
 
             watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
 
-            assertEquals(expected, DB.get(target).getState());
+            assertEquals(expected, DB.get(target).get().getState());
             final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
             assertFalse(trackingFiles.containsKey(target));
             assertTrue(DBMock.committed);
@@ -454,7 +455,7 @@ public class FileWatcherTest {
             SystemMock.currentTime = now + 300;
             watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
 
-            assertEquals(expected, DB.get(target).getState());
+            assertEquals(expected, DB.get(target).get().getState());
             final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
             assertFalse(trackingFiles.containsKey(target));
             assertTrue(DBMock.committed);
@@ -494,12 +495,12 @@ public class FileWatcherTest {
                 watcher.run();
 
                 // in MinElapsedTime, status must not be chanced.
-                assertEquals(SyncState.SYNCED, DB.get(target).getState());
+                assertEquals(SyncState.SYNCED, DB.get(target).get().getState());
 
                 SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
                 watcher.run();
 
-                assertEquals(SyncState.SYNCED, DB.get(target).getState());
+                assertEquals(SyncState.SYNCED, DB.get(target).get().getState());
                 final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
                 assertFalse(trackingFiles.containsKey(target));
                 assertTrue(DBMock.committed);
@@ -513,7 +514,7 @@ public class FileWatcherTest {
     @SuppressWarnings("unchecked")
     private void updateStatus(final Path localPath, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
         Deencapsulation.setField(syncFile, "state", newState);
 
         final Method repo = DB.class.getDeclaredMethod("repo");

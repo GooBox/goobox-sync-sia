@@ -42,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
 
@@ -102,7 +103,7 @@ public class UploadLocalFileTaskTest {
         }};
         new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
     }
 
@@ -115,7 +116,7 @@ public class UploadLocalFileTaskTest {
         }};
         new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
+        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).get().getState());
 
     }
 
@@ -143,7 +144,7 @@ public class UploadLocalFileTaskTest {
 
         // check after conditions.
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
 
     }
 
@@ -171,7 +172,7 @@ public class UploadLocalFileTaskTest {
 
         // check after conditions.
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.DELETED, DB.get(localPath).getState());
+        assertEquals(SyncState.DELETED, DB.get(localPath).get().getState());
 
     }
 

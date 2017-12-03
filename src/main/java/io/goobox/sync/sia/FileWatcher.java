@@ -18,7 +18,6 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.sia.db.SyncFile;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
 import io.methvin.watcher.DirectoryWatcher;
@@ -90,9 +89,8 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 if (this.trackingFiles.containsKey(event.path())) {
                     this.trackingFiles.remove(event.path());
                 }
-                if (DB.contains(event.path())) {
+                DB.get(event.path()).ifPresent(syncFile -> {
 
-                    final SyncFile syncFile = DB.get(event.path());
                     try {
                         switch (syncFile.getState()) {
                             case SYNCED:
@@ -110,7 +108,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                         DB.commit();
                     }
 
-                }
+                });
                 break;
 
             case OVERFLOW:
@@ -136,20 +134,27 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
 
                 try {
 
-                    if (DB.contains(path)) {
+                    final boolean shouldBeAdded = DB.get(path).map(syncFile -> {
 
-                        final String digest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
-                        if (DB.get(path).getLocalDigest().map(digest::equals).orElse(false)) {
-                            logger.trace("File {} is modified but the contents are not changed", path);
-                            removePaths.add(path);
-                            return;
+                        try {
+                            final String digest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
+                            if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
+                                logger.trace("File {} is modified but the contents are not changed", path);
+                                removePaths.add(path);
+                                return false;
+                            }
+                        } catch (IOException e) {
+                            logger.error("Failed to compute digest of {}: {}", path, e.getMessage());
                         }
+                        return true;
 
+                    }).orElse(true);
+
+                    if (shouldBeAdded) {
+                        logger.info("Found modified file {}", path);
+                        DB.addNewFile(path);
+                        removePaths.add(path);
                     }
-
-                    logger.info("Found modified file {}", path);
-                    DB.addNewFile(path);
-                    removePaths.add(path);
 
                 } catch (IOException e) {
                     logger.error("Failed to add a new file {} to the sync DB: {}", path, e.getMessage());

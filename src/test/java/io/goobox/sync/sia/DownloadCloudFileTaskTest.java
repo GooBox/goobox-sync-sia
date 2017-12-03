@@ -42,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class DownloadCloudFileTaskTest {
 
@@ -112,11 +113,11 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
         }};
         new DownloadCloudFileTask(this.context, this.name).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOADING, DB.get(this.name).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(this.name).get().getState());
 
     }
 
@@ -130,7 +131,7 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
             times = 0;
         }};
         new DownloadCloudFileTask(this.context, "not-existing-name").run();
@@ -148,12 +149,12 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
             result = new ApiException("expected exception");
         }};
         new DownloadCloudFileTask(this.context, this.name).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.name).getState());
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.name).get().getState());
 
     }
 
@@ -167,7 +168,7 @@ public class DownloadCloudFileTaskTest {
         // Expecting the api won't be called.
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().toString());
             times = 0;
         }};
 
@@ -182,7 +183,7 @@ public class DownloadCloudFileTaskTest {
         task.run();
 
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.MODIFIED, DB.get(this.name).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
 
     }
 

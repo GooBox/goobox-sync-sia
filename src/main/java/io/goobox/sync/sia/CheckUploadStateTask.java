@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Optional;
 
 class CheckUploadStateTask implements Runnable {
 
@@ -56,40 +57,39 @@ class CheckUploadStateTask implements Runnable {
                 return;
             }
 
-            int nFiles = 0;
             for (final InlineResponse20011Files item : res.getFiles()) {
 
                 final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
-                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !DB.contains(siaFile)) {
+                final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
+
+                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
                     continue;
                 }
 
-                final SyncFile syncFile = DB.get(siaFile);
-                if (syncFile.getState() != SyncState.UPLOADING) {
-                    logger.debug("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
-                    continue;
-                }
+                syncFileOpt.ifPresent(syncFile -> {
 
-                if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
-                    logger.info("File {} has been uploaded", siaFile.getLocalPath());
-                    try {
-                        DB.setSynced(siaFile, siaFile.getLocalPath());
-                    } catch (final IOException e) {
-                        logger.error("Failed to update the sync db: {}", e.getMessage());
-                        DB.setUploadFailed(siaFile.getLocalPath());
+                    if (syncFile.getState() != SyncState.UPLOADING) {
+                        logger.debug("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
+                        return;
                     }
-                } else {
-                    logger.debug(
-                            "File {} is now being uploaded ({}%)", siaFile.getName(),
-                            siaFile.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
-                    ++nFiles;
-                }
 
-            }
+                    if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
+                        logger.info("File {} has been uploaded", siaFile.getLocalPath());
+                        try {
+                            DB.setSynced(siaFile, siaFile.getLocalPath());
+                        } catch (final IOException e) {
+                            logger.error("Failed to update the sync db: {}", e.getMessage());
+                            DB.setUploadFailed(siaFile.getLocalPath());
+                        }
+                    } else {
+                        logger.info(
+                                "File {} is now being uploaded ({}%)", siaFile.getName(),
+                                siaFile.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
+                    }
 
-            if (nFiles != 0) {
-                logger.info("Uploading {} files", nFiles);
+                });
+
             }
 
         } catch (ApiException e) {

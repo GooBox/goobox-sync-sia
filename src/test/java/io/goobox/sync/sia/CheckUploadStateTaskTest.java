@@ -51,6 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class CheckUploadStateTaskTest {
 
@@ -114,7 +115,7 @@ public class CheckUploadStateTaskTest {
 
         new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(localPath).getState());
+        assertEquals(SyncState.SYNCED, DB.get(localPath).get().getState());
 
     }
 
@@ -141,7 +142,7 @@ public class CheckUploadStateTaskTest {
 
         new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
     }
 
@@ -196,7 +197,7 @@ public class CheckUploadStateTaskTest {
         file.setUploadprogress(new BigDecimal(100L));
         DB.addNewFile(localPath);
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
         Deencapsulation.setField(syncFile, "state", before);
 
         final Method repo = DB.class.getDeclaredMethod("repo");
@@ -214,7 +215,7 @@ public class CheckUploadStateTaskTest {
 
         new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(expected, DB.get(localPath).getState());
+        assertEquals(expected, DB.get(localPath).get().getState());
 
     }
 
@@ -240,7 +241,7 @@ public class CheckUploadStateTaskTest {
 
         new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
 
     }
 
@@ -266,7 +267,7 @@ public class CheckUploadStateTaskTest {
 
         new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
 
     }
 

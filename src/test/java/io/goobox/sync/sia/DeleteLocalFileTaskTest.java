@@ -86,7 +86,7 @@ public class DeleteLocalFileTaskTest {
 
         new DeleteLocalFileTask(localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
         assertFalse(localPath.toFile().exists());
 
     }
@@ -100,7 +100,7 @@ public class DeleteLocalFileTaskTest {
 
         new DeleteLocalFileTask(localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
 
     }
 
@@ -121,7 +121,7 @@ public class DeleteLocalFileTaskTest {
         task.run();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
         assertTrue(localPath.toFile().exists());
 
     }

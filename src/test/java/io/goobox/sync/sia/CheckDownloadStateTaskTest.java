@@ -59,6 +59,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class CheckDownloadStateTaskTest {
 
@@ -71,6 +72,7 @@ public class CheckDownloadStateTaskTest {
     private Path tempDir;
     private Context ctx;
     private Path localPath;
+    private SyncFile syncFile;
 
     @Before
     public void setUp() throws IOException {
@@ -104,6 +106,7 @@ public class CheckDownloadStateTaskTest {
                 return 1234L;
             }
         }, localPath);
+        this.syncFile = DB.get(localPath).get();
 
     }
 
@@ -128,12 +131,10 @@ public class CheckDownloadStateTaskTest {
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadedFiles() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         // old entry.
         final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
@@ -166,19 +167,17 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
+        assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
         assertTrue(localPath.toFile().exists());
         assertArrayEquals(data, Files.readAllBytes(localPath));
-        assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).getLocalDigest().get());
+        assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadingNewerFile() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         // old entry.
         final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
@@ -209,17 +208,15 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
         assertFalse(localPath.toFile().exists());
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void stillDownloadingFile() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -240,7 +237,7 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).getState());
+        assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
         assertFalse(localPath.toFile().exists());
 
     }
@@ -249,12 +246,10 @@ public class CheckDownloadStateTaskTest {
      * Since renter/downloads returns files which were downloaded, results may contain a file to be download.
      * This test checks such files are ignored and their state is kept to FOR_DOWNLOAD.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void toBeDownloadedFile() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -273,12 +268,11 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(syncFile.getName()).getState());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(syncFile.getName()).get().getState());
         assertFalse(localPath.toFile().exists());
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadFilesInSubDirectory() throws IOException, ApiException {
 
@@ -304,7 +298,7 @@ public class CheckDownloadStateTaskTest {
         };
         DB.addForDownload(cloudFile, localPath);
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(cloudPath.toString());
         file.setDestination(syncFile.getTemporaryPath().get().toString());
@@ -326,18 +320,16 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
+        assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
         assertTrue(localPath.toFile().exists());
-        assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).getLocalDigest().get());
+        assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void failedDownloads() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
         file1.setSiapath(syncFile.getCloudPath().get().toString());
@@ -359,7 +351,7 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(localPath).getState());
+        assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(localPath).get().getState());
         assertFalse(localPath.toFile().exists());
 
     }
@@ -369,12 +361,10 @@ public class CheckDownloadStateTaskTest {
      * even if the current download doesn't start. This test checks such files are ignored and their state is kept
      * to FOR_DOWNLOAD.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void failedPendingDownloads() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -394,7 +384,7 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(localPath).getState());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(localPath).get().getState());
         assertFalse(localPath.toFile().exists());
 
     }
@@ -428,7 +418,7 @@ public class CheckDownloadStateTaskTest {
         DB.addForDownload(cloudFile, localPath);
         DB.setDownloading(cloudFile.getName());
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(cloudPath.toString());
         //noinspection ConstantConditions
@@ -447,7 +437,7 @@ public class CheckDownloadStateTaskTest {
 
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(localPath).getState());
+        assertEquals(SyncState.SYNCED, DB.get(localPath).get().getState());
         assertEquals(targetDate / 1000, localPath.toFile().lastModified() / 1000);
         assertTrue(localPath.toFile().exists());
 
@@ -458,12 +448,10 @@ public class CheckDownloadStateTaskTest {
      * downloaded file don't have to be copied to the sync dir and should be deleted. CheckStateTask is responsible for
      * solving the conflict between the local and cloud files.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadingFileModified() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -488,7 +476,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
     }
@@ -498,12 +486,10 @@ public class CheckDownloadStateTaskTest {
      * <p>
      * This test is related to issue #18.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadedFileModified() throws IOException, ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
-        final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -529,7 +515,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
         assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
@@ -547,7 +533,6 @@ public class CheckDownloadStateTaskTest {
      * <p>
      * This test is related to issue #18.
      */
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void downloadedFileInSubDirModified() throws IOException, ApiException {
 
@@ -574,7 +559,7 @@ public class CheckDownloadStateTaskTest {
         };
         DB.addForDownload(cloudFile, localPath);
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(syncFile.getCloudPath().get().toString());
@@ -604,7 +589,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
         assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
