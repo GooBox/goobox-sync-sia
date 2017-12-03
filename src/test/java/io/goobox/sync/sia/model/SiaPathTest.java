@@ -16,15 +16,14 @@
  */
 package io.goobox.sync.sia.model;
 
-import static org.junit.Assert.assertEquals;
+import io.goobox.sync.common.Utils;
+import org.junit.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 
-import org.junit.Test;
-
-import io.goobox.sync.storj.Utils;
+import static org.junit.Assert.assertEquals;
 
 public class SiaPathTest {
 

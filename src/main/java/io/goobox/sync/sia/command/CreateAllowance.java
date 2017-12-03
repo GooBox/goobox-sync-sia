@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.command;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -101,7 +102,7 @@ public class CreateAllowance implements Runnable {
 
             // If the wallet is locked, unlock it first.
             if (!walletInfo.getUnlocked()) {
-                final Config cfg = Config.load(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+                final Config cfg = Config.load(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
                 wallet.walletUnlockPost(cfg.getPrimarySeed());
             }
 
@@ -123,7 +124,7 @@ public class CreateAllowance implements Runnable {
         } catch (IOException e) {
             logger.error(
                     "Failed to read config file {}: {}",
-                    io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName),
+                    Utils.getDataDir().resolve(CmdUtils.ConfigFileName),
                     e.getMessage());
         }
 

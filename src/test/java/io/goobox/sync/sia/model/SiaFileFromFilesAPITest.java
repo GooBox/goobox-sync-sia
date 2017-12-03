@@ -16,8 +16,8 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
-import io.goobox.sync.storj.Utils;
 import org.junit.Test;
 
 import java.math.BigDecimal;

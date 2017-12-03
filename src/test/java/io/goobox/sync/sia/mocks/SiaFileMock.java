@@ -17,9 +17,9 @@
 
 package io.goobox.sync.sia.mocks;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaPath;
-import io.goobox.sync.storj.Utils;
 
 import java.nio.file.Path;
 

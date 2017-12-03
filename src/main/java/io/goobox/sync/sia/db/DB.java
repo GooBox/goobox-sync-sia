@@ -1,6 +1,6 @@
 package io.goobox.sync.sia.db;
 
-import io.goobox.sync.storj.Utils;
+import io.goobox.sync.common.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dizitart.no2.Nitrite;

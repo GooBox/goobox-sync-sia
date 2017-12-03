@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.command;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiException;
@@ -161,7 +162,7 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 
@@ -204,7 +205,7 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 

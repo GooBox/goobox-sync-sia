@@ -16,8 +16,8 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
-import io.goobox.sync.storj.Utils;
 import org.junit.Test;
 
 import java.nio.file.Path;

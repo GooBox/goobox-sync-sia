@@ -18,6 +18,7 @@
 package io.goobox.sync.sia;
 
 import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
@@ -34,7 +35,6 @@ import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.storj.Utils;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mock;
