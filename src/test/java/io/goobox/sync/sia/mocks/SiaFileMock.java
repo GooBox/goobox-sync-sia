@@ -22,7 +22,6 @@ import io.goobox.sync.sia.model.SiaPath;
 import io.goobox.sync.storj.Utils;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * SiaFileMock implements SiaFile as a simple structure.
@@ -38,9 +37,6 @@ public class SiaFileMock implements SiaFile {
 
     public SiaFileMock(final Path localPath) {
 
-        System.out.println(Utils.getSyncDir());
-        System.out.println(localPath);
-
         this.name = Utils.getSyncDir().relativize(localPath).toString();
         this.localPath = localPath;
     }
@@ -51,7 +47,7 @@ public class SiaFileMock implements SiaFile {
     }
 
     @Override
-    public Path getRemotePath() {
+    public Path getCloudPath() {
         return this.remotePath;
     }
 

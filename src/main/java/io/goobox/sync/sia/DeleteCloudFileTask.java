@@ -22,57 +22,88 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 /**
  * Deletes a given file from the cloud network and sync DB.
  */
 class DeleteCloudFileTask implements Runnable {
 
-    private final Context ctx;
-    private final SiaFile target;
-
     private static final Logger logger = LogManager.getLogger();
 
-    DeleteCloudFileTask(final Context ctx, final SiaFile file) {
+    @NotNull
+    private final Context ctx;
+
+    @NotNull
+    private final String name;
+
+    DeleteCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
-        this.target = file;
+        this.name = name;
     }
 
     @Override
     public void run() {
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        try {
+        final Optional<SyncFile> syncFileOpt = DB.get(this.name);
+        if (!syncFileOpt.isPresent()) {
+            logger.warn("File {} was deleted from SyncDB", this.name);
+            return;
+        }
+        syncFileOpt.ifPresent(syncFile -> {
 
-            final InlineResponse20011 files = api.renterFilesGet();
-            if (files.getFiles() == null) {
-                logger.warn("No files exist in the cloud storage");
+            if (syncFile.getState() != SyncState.FOR_CLOUD_DELETE) {
+                logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
                 return;
             }
 
-            for (InlineResponse20011Files file : files.getFiles()) {
+            final RenterApi api = new RenterApi(this.ctx.apiClient);
+            try {
 
-                final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
-                    continue;
+                final InlineResponse20011 files = api.renterFilesGet();
+                if (files.getFiles() == null) {
+
+                    logger.warn("No files exist in the cloud storage");
+
+                } else {
+
+                    for (final InlineResponse20011Files file : files.getFiles()) {
+
+                        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+                        if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
+                            continue;
+                        }
+
+                        if (siaFile.getName().equals(this.name)) {
+                            logger.info("Delete file {}", siaFile.getCloudPath());
+                            try {
+                                api.renterDeleteSiapathPost(siaFile.getCloudPath().toString());
+                            } catch (final ApiException e) {
+                                logger.error(
+                                        "Failed to delete remote file {}: {}",
+                                        siaFile.getCloudPath(), APIUtils.getErrorMessage(e));
+                            }
+                        }
+
+                    }
+
                 }
+                DB.remove(this.name);
+                DB.commit();
 
-                if (siaFile.getName().equals(this.target.getName())) {
-                    logger.debug("Delete file {}", siaFile.getName());
-                    api.renterDeleteSiapathPost(siaFile.getRemotePath().toString());
-                }
-
+            } catch (final ApiException e) {
+                logger.error("Failed to delete remote file {}: {}", this.name, APIUtils.getErrorMessage(e));
             }
-            DB.remove(this.target);
-            DB.commit();
 
-        } catch (ApiException e) {
-            logger.error("Failed to delete remote file {}: {}", this.target.getRemotePath(), APIUtils.getErrorMessage(e));
-        }
+        });
 
     }
 

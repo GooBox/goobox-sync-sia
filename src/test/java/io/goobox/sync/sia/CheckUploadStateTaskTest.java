@@ -44,7 +44,6 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +51,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
-public class CheckUploadStatusTaskTest {
+public class CheckUploadStateTaskTest {
 
     @SuppressWarnings("unused")
     @Mocked
@@ -61,66 +61,49 @@ public class CheckUploadStatusTaskTest {
 
     private Path tempDir;
     private Context context;
+    private Path cloudPath;
+    private Path localPath;
 
-    @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
 
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
-
-    /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
-     *
-     * @throws IOException if failed to create a temporary directory.
-     */
     @Before
     public void setUp() throws IOException {
+
+        new DBMock();
 
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
         final Config cfg = new Config();
-        cfg.setUserName("testuser");
+        cfg.setUserName("test-user");
         this.context = new Context(cfg, null);
+
+        final String name = String.format("file-%x", System.currentTimeMillis());
+        this.cloudPath = this.context.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis()));
+        this.localPath = Utils.getSyncDir().resolve(name);
+        assertTrue(this.localPath.toFile().createNewFile());
 
     }
 
-    /**
-     * Deletes the temporary directory.
-     *
-     * @throws IOException if failed to delete it.
-     */
     @After
     public void tearDown() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     @Test
-    public void testUploadFile() throws ApiException, IOException {
+    public void uploadFile() throws ApiException, IOException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
-        final Path remotePath1 = this.context.pathPrefix.resolve("file1");
-        final Path localPath1 = Utils.getSyncDir().resolve("file1");
-        assertTrue(localPath1.toFile().createNewFile());
-
         final InlineResponse20011Files file1 = new InlineResponse20011Files();
-        file1.setSiapath(remotePath1.toString());
-        file1.setLocalpath(localPath1.toString());
+        file1.setSiapath(cloudPath.toString());
+        file1.setLocalpath(localPath.toString());
         file1.setFilesize(1234L);
         file1.setUploadprogress(new BigDecimal(100));
 
-        DB.addNewFile(localPath1);
-        DB.setUploading(localPath1);
+        DB.addNewFile(localPath);
+        DB.setUploading(localPath);
         files.add(file1);
 
         new Expectations() {{
@@ -130,28 +113,24 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(localPath1).getState());
+        assertEquals(SyncState.SYNCED, DB.get(localPath).get().getState());
 
     }
 
     @Test
-    public void testStillUploadingFile() throws IOException, ApiException {
+    public void stillUploadingFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
-        final Path remotePath2 = this.context.pathPrefix.resolve("file2");
-        final Path localPath2 = Utils.getSyncDir().resolve("file2");
-        assertTrue(localPath2.toFile().createNewFile());
-
         final InlineResponse20011Files file2 = new InlineResponse20011Files();
-        file2.setSiapath(remotePath2.toString());
-        file2.setLocalpath(localPath2.toString());
+        file2.setSiapath(cloudPath.toString());
+        file2.setLocalpath(localPath.toString());
         file2.setFilesize(1234L);
         file2.setUploadprogress(new BigDecimal(95.2));
-        DB.addNewFile(localPath2);
-        DB.setUploading(localPath2);
+        DB.addNewFile(localPath);
+        DB.setUploading(localPath);
         files.add(file2);
 
         new Expectations() {{
@@ -161,47 +140,47 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(localPath2).getState());
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
     }
 
     /**
      * Since renter/files API returns files stored and being uploaded in the SIA network,
-     * results contain files already synced. This test checks CheckUploadStatusTask doesn't modified statuses of such
+     * results contain files already synced. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */
     @Test
-    public void testUploadedButSyncedFile() throws InvocationTargetException, NoSuchMethodException, ApiException, IllegalAccessException, IOException {
+    public void uploadedButSyncedFile() throws InvocationTargetException, NoSuchMethodException, ApiException, IllegalAccessException, IOException {
         this.checkStatusAfterExecution(SyncState.SYNCED, SyncState.SYNCED);
     }
 
     /**
      * Since renter/files API returns files stored and being uploaded in the SIA network,
-     * results contain files to be uploaded. This test checks CheckUploadStatusTask doesn't modified statuses of such
+     * results contain files to be uploaded. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */
     @Test
-    public void testToBeUploadedFile() throws IOException, ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void toBeUploadedFile() throws IOException, ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         this.checkStatusAfterExecution(SyncState.FOR_UPLOAD, SyncState.FOR_UPLOAD);
     }
 
     /**
      * Test a case that an uploading file is also modified. In this case, the file is marked as MODIFIED and
-     * CheckUploadStatusTask doesn't handle it.
+     * CheckUploadStateTask doesn't handle it.
      */
     @Test
-    public void testUploadingFileModified() throws IOException, ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void uploadingFileModified() throws IOException, ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         this.checkStatusAfterExecution(SyncState.MODIFIED, SyncState.MODIFIED);
     }
 
     /**
      * Test a case that an uploading file is also deleted. In this case, the file is marked as DELETED and
-     * CheckUploadStatusTask doesn't handle it.
+     * CheckUploadStateTask doesn't handle it.
      */
     @Test
-    public void testUploadingFileDeleted() throws NoSuchMethodException, ApiException, IOException, InvocationTargetException, IllegalAccessException {
+    public void uploadingFileDeleted() throws NoSuchMethodException, ApiException, IOException, InvocationTargetException, IllegalAccessException {
         this.checkStatusAfterExecution(SyncState.DELETED, SyncState.DELETED);
     }
 
@@ -210,19 +189,15 @@ public class CheckUploadStatusTaskTest {
             throws IOException, NoSuchMethodException, ApiException, InvocationTargetException, IllegalAccessException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
-        final String fileName = "test-file";
-        final Path remotePath = this.context.pathPrefix.resolve(fileName);
-        final Path localPath = Utils.getSyncDir().resolve(fileName);
-        assertTrue(localPath.toFile().createNewFile());
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(remotePath.toString());
+        file.setSiapath(cloudPath.toString());
         file.setLocalpath(localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100L));
         DB.addNewFile(localPath);
 
-        final SyncFile syncFile = DB.get(localPath);
+        final SyncFile syncFile = DB.get(localPath).get();
         Deencapsulation.setField(syncFile, "state", before);
 
         final Method repo = DB.class.getDeclaredMethod("repo");
@@ -238,23 +213,19 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertEquals(expected, DB.get(localPath).getState());
+        assertEquals(expected, DB.get(localPath).get().getState());
 
     }
 
     @Test
-    public void testNotManagedFile() throws IOException, ApiException {
+    public void notManagedFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
-        final Path remotePath = Paths.get("file1");
-        final Path localPath = Utils.getSyncDir().resolve("file1");
-        assertTrue(localPath.toFile().createNewFile());
-
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(remotePath.toString());
+        file.setSiapath(cloudPath.toString());
         file.setLocalpath(localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100));
@@ -268,23 +239,19 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
 
     }
 
     @Test
-    public void testDeletedFromDBFile() throws IOException, ApiException {
+    public void deletedFromDBFile() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
-        final Path remotePath = this.context.pathPrefix.resolve("file1");
-        final Path localPath = Utils.getSyncDir().resolve("file1");
-        assertTrue(localPath.toFile().createNewFile());
-
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(remotePath.toString());
+        file.setSiapath(cloudPath.toString());
         file.setLocalpath(localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100));
@@ -298,9 +265,9 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.contains(localPath));
+        assertFalse(DB.get(localPath).isPresent());
 
     }
 

@@ -22,57 +22,66 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
-import io.goobox.sync.sia.model.SiaFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
 
 /**
- * Downloads a cloud file to the local directory.
+ * Downloads a cloud name to the local directory.
  */
 class DownloadCloudFileTask implements Runnable {
 
-    private final Context ctx;
-    private final SiaFile file;
     private static final Logger logger = LogManager.getLogger();
 
-    DownloadCloudFileTask(final Context ctx, final SiaFile file) {
+    @NotNull
+    private final Context ctx;
+
+    @NotNull
+    private final String name;
+
+    DownloadCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
-        this.file = file;
+        this.name = name;
     }
 
     @Override
     public void run() {
 
-        if (!DB.contains(this.file)) {
-            logger.warn("File {} was specified to be downloaded but removed from the sync DB", this.file.getName());
+        final Optional<SyncFile> syncFileOpt = DB.get(this.name);
+        if (!syncFileOpt.isPresent()) {
+            logger.warn("File {} was specified to be downloaded but doesn't exist in the sync DB", this.name);
             return;
         }
 
-        final SyncFile syncFile = DB.get(this.file);
-        if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
-            logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.file);
-            return;
-        }
+        syncFileOpt.ifPresent(syncFile -> {
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        try {
+            if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
+                logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
+                return;
+            }
+            syncFile.getCloudPath().ifPresent(cloudPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
-            logger.info("Downloading {} to {}", this.file.getRemotePath(), this.file.getLocalPath());
-            api.renterDownloadasyncSiapathGet(this.file.getRemotePath().toString(), syncFile.getTemporaryPath().toString());
-            DB.setDownloading(file);
+                final RenterApi api = new RenterApi(this.ctx.apiClient);
+                try {
 
-        } catch (ApiException e) {
+                    logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
+                    api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
+                    DB.setDownloading(this.name);
 
-            logger.error(
-                    "Cannot start downloading file {} to {}: {}",
-                    this.file.getRemotePath(), this.file.getLocalPath(), APIUtils.getErrorMessage(e));
-            DB.setDownloadFailed(file);
+                } catch (final ApiException e) {
+                    logger.error(
+                            "Cannot start downloading name {} to {}: {}",
+                            cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
+                    DB.setDownloadFailed(this.name);
+                } finally {
+                    DB.commit();
+                }
 
-        } finally {
+            }));
 
-            DB.commit();
-
-        }
+        });
 
     }
 

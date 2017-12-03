@@ -17,9 +17,10 @@
 
 package io.goobox.sync.sia;
 
+import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.storj.Utils;
 import mockit.integration.junit4.JMockit;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -40,76 +42,87 @@ import static org.junit.Assert.assertTrue;
 public class DeleteLocalFileTaskTest {
 
     private Path tempDir;
+    private Path localPath;
 
     @Before
-    public void setUpMockDB() {
+    public void setUp() throws IOException {
+
         new DBMock();
-    }
-
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
-
-    /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
-     *
-     * @throws IOException if failed to create a temporary directory.
-     */
-    @Before
-    public void setUpTempSyncDir() throws IOException {
-
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
+        final String name = String.format("file-%x", System.currentTimeMillis());
+        localPath = Utils.getSyncDir().resolve(name);
+        assertTrue(localPath.toFile().createNewFile());
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
+        DB.setForLocalDelete(localPath);
+
     }
 
-    /**
-     * Deletes the temporary directory.
-     *
-     * @throws IOException if failed to delete it.
-     */
     @After
-    public void tearDownTempSyncDir() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+    public void tearDown() throws IOException {
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     @Test
-    public void testDeletingExistingFile() throws IOException {
-
-        final Path localPath = Utils.getSyncDir().resolve("file1");
-        assertTrue(localPath.toFile().createNewFile());
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        DB.setSynced(file);
+    public void deleteExistingFile() throws IOException {
 
         new DeleteLocalFileTask(localPath).run();
-        assertFalse(DB.contains(file));
-        assertFalse(localPath.toFile().exists());
         assertTrue(DBMock.committed);
+        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(localPath.toFile().exists());
 
     }
 
     @Test
-    public void testDeletingNotExistingFile() throws IOException {
+    public void deleteNotExistingFile() throws IOException {
 
-        final Path localPath = Utils.getSyncDir().resolve("file1");
-        assertTrue(localPath.toFile().createNewFile());
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        DB.setSynced(file);
-
+        // Delete the target file in advance.
         assertTrue(localPath.toFile().delete());
         assertFalse(localPath.toFile().exists());
 
         new DeleteLocalFileTask(localPath).run();
-        assertFalse(DB.contains(file));
         assertTrue(DBMock.committed);
+        assertFalse(DB.get(localPath).isPresent());
+
+    }
+
+    /**
+     * A file once marked to be deleted from local directory but it is modified later.
+     * In this case, this file must not be deleted and pass to CheckStateTask.
+     */
+    @Test
+    public void toBeDeletedFileModified() throws IOException {
+
+        // Task is enqueued.
+        final Runnable task = new DeleteLocalFileTask(localPath);
+
+        // then, the file is modified.
+        DB.setModified(localPath);
+
+        // and, the task is executed.
+        task.run();
+
+        // check after conditions.
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+        assertTrue(localPath.toFile().exists());
 
     }
 

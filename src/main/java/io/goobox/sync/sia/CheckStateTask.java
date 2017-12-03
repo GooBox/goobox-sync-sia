@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -69,14 +70,17 @@ class CheckStateTask implements Runnable {
 
                 try {
 
-                    if (DB.contains(file)) {
+                    final Optional<SyncFile> syncFileOpt = DB.get(file);
 
-                        final SyncFile syncFile = DB.get(file);
+
+                    if (syncFileOpt.isPresent()) {
+
+                        final SyncFile syncFile = syncFileOpt.get();
                         switch (syncFile.getState()) {
                             case SYNCED:
 
                                 // This file was synced.
-                                if (file.getCreationTime() > syncFile.getLocalModifiedTime()) {
+                                if (file.getCreationTime() > syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The cloud file was updated, and it will be downloaded.
                                     logger.info("Cloud file {} is going to be downloaded", file.getName());
@@ -88,7 +92,7 @@ class CheckStateTask implements Runnable {
                             case MODIFIED:
 
                                 // This file has been modified.
-                                if (file.getCreationTime() < syncFile.getLocalModifiedTime()) {
+                                if (file.getCreationTime() < syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The newer local file will be uploaded.
                                     // Even if the file in cloud was also modified, i.e. there is conflict,
@@ -102,7 +106,7 @@ class CheckStateTask implements Runnable {
                                     // The cloud file should be downloaded and the local file should be renamed and kept it
                                     // too.
                                     logger.warn("Conflict detected: file {} is modified in both cloud and local", file.getName());
-                                    DB.setConflict(file);
+                                    DB.setConflict(file, file.getLocalPath());
 
                                 }
                                 break;
@@ -219,7 +223,7 @@ class CheckStateTask implements Runnable {
     private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
 
         // Key: file name, Value: file object.
-        final Map<String, SiaFile> filemap = new HashMap<>();
+        final Map<String, SiaFile> fileMap = new HashMap<>();
         if (files != null) {
             for (InlineResponse20011Files file : files) {
 
@@ -230,19 +234,19 @@ class CheckStateTask implements Runnable {
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
-                if (!siaFile.getRemotePath().startsWith(this.ctx.pathPrefix)) {
+                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getRemotePath());
+                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
                     continue;
                 }
 
-                if (filemap.containsKey(siaFile.getName())) {
+                if (fileMap.containsKey(siaFile.getName())) {
 
-                    final SiaFile prev = filemap.get(siaFile.getName());
+                    final SiaFile prev = fileMap.get(siaFile.getName());
                     if (siaFile.getCreationTime() > prev.getCreationTime()) {
                         logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
                                 siaFile.getCreationTime());
-                        filemap.put(siaFile.getName(), siaFile);
+                        fileMap.put(siaFile.getName(), siaFile);
                     } else {
                         logger.debug("Found older version of remote file {} created at {} but ignored",
                                 siaFile.getName(), siaFile.getCreationTime());
@@ -251,12 +255,12 @@ class CheckStateTask implements Runnable {
                 } else {
                     logger.debug("Found remote file {} created at {}", siaFile.getName(),
                             siaFile.getCreationTime());
-                    filemap.put(siaFile.getName(), siaFile);
+                    fileMap.put(siaFile.getName(), siaFile);
                 }
 
             }
         }
-        return filemap.values();
+        return fileMap.values();
 
     }
 
@@ -268,7 +272,9 @@ class CheckStateTask implements Runnable {
      */
     private void enqueueForUpload(final Path localPath) throws IOException {
 
-        DB.setForUpload(localPath);
+        final Path name = Utils.getSyncDir().relativize(localPath);
+        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
+        DB.setForUpload(localPath, cloudPath);
         this.executor.execute(new UploadLocalFileTask(this.ctx, localPath));
 
     }
@@ -280,8 +286,8 @@ class CheckStateTask implements Runnable {
      */
     private void enqueueForDownload(final SiaFile file) throws IOException {
 
-        DB.addForDownload(file);
-        this.executor.execute(new DownloadCloudFileTask(this.ctx, file));
+        DB.addForDownload(file, file.getLocalPath());
+        this.executor.execute(new DownloadCloudFileTask(this.ctx, file.getName()));
 
     }
 
@@ -293,7 +299,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForCloudDelete(final SiaFile file) {
 
         DB.setForCloudDelete(file);
-        this.executor.execute(new DeleteCloudFileTask(this.ctx, file));
+        this.executor.execute(new DeleteCloudFileTask(this.ctx, file.getName()));
 
     }
 

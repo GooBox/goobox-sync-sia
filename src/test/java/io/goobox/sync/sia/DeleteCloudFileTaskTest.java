@@ -21,7 +21,9 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
@@ -39,10 +41,13 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -54,113 +59,105 @@ public class DeleteCloudFileTaskTest {
     private RenterApi api;
 
     private Path tempDir;
+    private Context ctx;
+    private String name;
+    private Path localPath;
+    private Path cloudPath;
 
     @Before
-    public void setUpMockDB() {
+    public void setUp() throws IOException {
+
         new DBMock();
-    }
-
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
-
-    /**
-     * Creates a temporal directory and sets it as the result of Utils.syncDir().
-     *
-     * @throws IOException if failed to create a temporary directory.
-     */
-    @Before
-    public void setUpTempSyncDir() throws IOException {
-
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
+        final Config cfg = new Config();
+        cfg.setUserName("testuser");
+        ctx = new Context(cfg, null);
+
+        name = String.format("test-file-%x", System.currentTimeMillis());
+        localPath = Utils.getSyncDir().resolve(name);
+        assertTrue(localPath.toFile().createNewFile());
+        cloudPath = ctx.pathPrefix.resolve(name);
+
     }
 
-    /**
-     * Deletes the temporary directory.
-     *
-     * @throws IOException if failed to delete it.
-     */
     @After
-    public void tearDownTempSyncDir() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+    public void tearDown() throws IOException {
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     @Test
-    public void test() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
+    public void deleteCloudFiles() throws IOException, ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
+        final List<String> siaPaths = new ArrayList<>();
 
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
+        IntStream.range(1, 3).forEach(i -> {
 
-        final InlineResponse20011Files file1 = new InlineResponse20011Files();
-        file1.setSiapath(remotePath.resolve(String.valueOf(new Date(10000).getTime())).toString());
-        file1.setLocalpath(localPath.toString());
-        file1.setAvailable(true);
-        files.add(file1);
+            final InlineResponse20011Files file = new InlineResponse20011Files();
+            final String siaPath = cloudPath.resolve(String.valueOf(new Date(i * 10000).getTime())).toString();
+            file.setSiapath(siaPath);
+            file.setLocalpath(localPath.toString());
+            file.setAvailable(true);
+            siaPaths.add(siaPath);
+            files.add(file);
 
-        final InlineResponse20011Files file2 = new InlineResponse20011Files();
-        file2.setSiapath(remotePath.resolve(String.valueOf(new Date(20000).getTime())).toString());
-        file2.setLocalpath(localPath.toString());
-        file2.setAvailable(true);
-        files.add(file2);
+        });
 
-        final InlineResponse20011Files file3 = new InlineResponse20011Files();
-        file3.setSiapath(remotePath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file3.setLocalpath(localPath.toString());
-        file3.setAvailable(true);
-        file3.setFilesize(1234L);
-        files.add(file3);
+        final CloudFile cloudFile = new CloudFile() {
+            @Override
+            public String getName() {
+                return name;
+            }
 
-        final SiaFile file = new SiaFileFromFilesAPI(file3, ctx.pathPrefix);
-        assertTrue(localPath.toFile().createNewFile());
-        DB.setSynced(file);
+            @Override
+            public Path getCloudPath() {
+                return Paths.get(siaPaths.get(siaPaths.size() - 1));
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        };
+        DB.setSynced(cloudFile, localPath);
         assertTrue(localPath.toFile().delete());
-
+        DB.setForCloudDelete(cloudFile);
 
         new Expectations() {{
             final InlineResponse20011 list = new InlineResponse20011();
             list.setFiles(files);
             api.renterFilesGet();
             result = list;
-            api.renterDeleteSiapathPost(remotePath.resolve(String.valueOf(new Date(10000).getTime())).toString());
-            api.renterDeleteSiapathPost(remotePath.resolve(String.valueOf(new Date(20000).getTime())).toString());
-            api.renterDeleteSiapathPost(remotePath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+            siaPaths.forEach(siaPath -> {
+                try {
+                    api.renterDeleteSiapathPost(siaPath);
+                } catch (ApiException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }};
 
-        new DeleteCloudFileTask(ctx, file).run();
-        assertFalse(DB.contains(file));
+        new DeleteCloudFileTask(ctx, name).run();
         assertTrue(DBMock.committed);
+        assertFalse(DB.get(name).isPresent());
 
     }
 
     @Test
-    public void testNoFiles() throws IOException, ApiException {
+    public void deleteNotExistingFile() throws IOException, ApiException {
 
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        final Context ctx = new Context(cfg, null);
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        final InlineResponse20011Files file3 = new InlineResponse20011Files();
-        file3.setSiapath(remotePath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file3.setLocalpath(localPath.toString());
-        file3.setAvailable(true);
-        file3.setFilesize(1234L);
-        final SiaFile file = new SiaFileFromFilesAPI(file3, ctx.pathPrefix);
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        file.setSiapath(cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+        file.setLocalpath(localPath.toString());
+        file.setAvailable(true);
+        file.setFilesize(1234L);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(file, ctx.pathPrefix);
+        DB.setSynced(siaFile, localPath);
+        DB.setForCloudDelete(siaFile);
 
         new Expectations() {{
             final InlineResponse20011 list = new InlineResponse20011();
@@ -169,8 +166,47 @@ public class DeleteCloudFileTaskTest {
             result = list;
         }};
 
-        new DeleteCloudFileTask(ctx, file).run();
+        new DeleteCloudFileTask(ctx, siaFile.getName()).run();
 
     }
+
+    @Test
+    public void toBeCloudDeleteFileModified() throws IOException, ApiException {
+
+        final List<InlineResponse20011Files> files = new ArrayList<>();
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        file.setSiapath(cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+        file.setLocalpath(localPath.toString());
+        file.setAvailable(true);
+        file.setFilesize(1234L);
+        files.add(file);
+
+        final SiaFile siaFile = new SiaFileFromFilesAPI(file, ctx.pathPrefix);
+        DB.setSynced(siaFile, localPath);
+        DB.setForCloudDelete(siaFile);
+
+        // expecting the api won't be called.
+        new Expectations() {{
+            final InlineResponse20011 list = new InlineResponse20011();
+            list.setFiles(files);
+            api.renterFilesGet();
+            result = list;
+            times = 0;
+        }};
+
+        // a delete task is enqueued.
+        final Runnable task = new DeleteCloudFileTask(ctx, siaFile.getName());
+
+        // the target is modified.
+        DB.setModified(localPath);
+
+        // the task is executed.
+        task.run();
+
+        // check after conditions.
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+
+    }
+
 
 }

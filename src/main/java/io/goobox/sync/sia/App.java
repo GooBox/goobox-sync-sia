@@ -80,8 +80,9 @@ public class App {
      */
     private static final int WorkerThreadSize = 2;
 
-    private Path configPath;
     private static final Logger logger = LogManager.getLogger();
+
+    private Path configPath;
 
     /**
      * The main function.
@@ -184,8 +185,8 @@ public class App {
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
         new FileWatcher(Utils.getSyncDir(), executor);
 
     }

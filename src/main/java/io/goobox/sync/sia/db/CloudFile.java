@@ -14,52 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia.model;
 
-import io.goobox.sync.sia.db.CloudFile;
-import org.jetbrains.annotations.NotNull;
+package io.goobox.sync.sia.db;
 
 import java.nio.file.Path;
 
 /**
- * SiaFile defines an API representing a file stored in SIA network.
- *
- * @author junpei
+ * Defines information a cloud file has to provide to the sync database.
  */
-public interface SiaFile extends CloudFile {
+public interface CloudFile {
 
     /**
      * Returns the name of this file.
      */
-    @NotNull
     String getName();
 
     /**
-     * Returns the path where this file located in the blockchain.
+     * Returns the path to this file in the cloud network.
      */
-    @NotNull
     Path getCloudPath();
 
     /**
-     * Returns the path where this file located in a local computer.
-     */
-    @NotNull
-    Path getLocalPath();
-
-    /**
-     * Returns the creation time of this file.
-     */
-    long getCreationTime();
-
-    /**
-     * Returns the byte size of this file.
+     * Returns the file size of this file.
      */
     long getFileSize();
-
-    /**
-     * Returns a SiaPath object.
-     */
-    @NotNull
-    SiaPath getSiaPath();
 
 }
