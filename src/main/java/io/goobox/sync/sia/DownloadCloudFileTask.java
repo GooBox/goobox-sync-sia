@@ -57,22 +57,26 @@ class DownloadCloudFileTask implements Runnable {
             logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
             return;
         }
+        syncFile.getCloudPath().ifPresent(cloudPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        try {
+            final RenterApi api = new RenterApi(this.ctx.apiClient);
+            try {
 
-            logger.info("Downloading {} to {}", syncFile.getCloudPath(), syncFile.getLocalPath());
-            api.renterDownloadasyncSiapathGet(syncFile.getCloudPath().toString(), syncFile.getTemporaryPath().toString());
-            DB.setDownloading(this.name);
+                logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
+                api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
+                DB.setDownloading(this.name);
 
-        } catch (final ApiException e) {
-            logger.error(
-                    "Cannot start downloading name {} to {}: {}",
-                    syncFile.getCloudPath(), syncFile.getLocalPath(), APIUtils.getErrorMessage(e));
-            DB.setDownloadFailed(this.name);
-        } finally {
-            DB.commit();
-        }
+            } catch (final ApiException e) {
+                logger.error(
+                        "Cannot start downloading name {} to {}: {}",
+                        cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
+                DB.setDownloadFailed(this.name);
+            } finally {
+                DB.commit();
+            }
+
+        }));
+
 
     }
 

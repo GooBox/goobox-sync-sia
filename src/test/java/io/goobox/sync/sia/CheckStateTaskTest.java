@@ -135,7 +135,7 @@ public class CheckStateTaskTest {
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).getState());
-        assertTrue(DB.get(siaFile).getTemporaryPath().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
+        assertTrue(DB.get(siaFile).getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -150,6 +150,7 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud yes, local yes, db yes (MODIFIED)
      */
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void syncedFileModified() throws IOException, ApiException {
 
@@ -186,7 +187,7 @@ public class CheckStateTaskTest {
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).getState());
         assertEquals(
                 this.context.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime() / 1000 * 1000)),
-                DB.get(siaFile).getCloudPath());
+                DB.get(siaFile).getCloudPath().get());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -227,7 +228,7 @@ public class CheckStateTaskTest {
         new CheckStateTask(this.context, executor).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).getState());
-        assertTrue(DB.get(siaFile).getTemporaryPath().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
+        assertTrue(DB.get(siaFile).getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -454,7 +455,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);

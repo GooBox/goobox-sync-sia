@@ -78,23 +78,28 @@ class CheckDownloadStateTask implements Runnable {
                         logger.error("Failed to download {}: {}", file.getName(), err);
                     }
                     if (file.getFileSize() == file.getReceived()) {
-                        try {
-                            final String conflictedFileName = String.format(
-                                    "%s (%s's conflicted copy %s)",
-                                    syncFile.getLocalPath().getFileName(),
-                                    System.getProperty("user.name"),
-                                    ISODateTimeFormat.date().print(System.currentTimeMillis()));
+                        syncFile.getLocalPath().ifPresent(localPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
-                            final Path parent = syncFile.getLocalPath().getParent();
-                            if (!parent.toFile().exists()) {
-                                Files.createDirectories(parent);
+                            try {
+
+                                final String conflictedFileName = String.format(
+                                        "%s (%s's conflicted copy %s)",
+                                        localPath.getFileName(),
+                                        System.getProperty("user.name"),
+                                        ISODateTimeFormat.date().print(System.currentTimeMillis()));
+
+                                final Path parent = localPath.getParent();
+                                if (!parent.toFile().exists()) {
+                                    Files.createDirectories(parent);
+                                }
+                                logger.info("Save conflicted copy to {}", parent.resolve(conflictedFileName));
+                                Files.move(temporaryPath, parent.resolve(conflictedFileName));
+
+                            } catch (IOException e) {
+                                logger.warn("Failed to delete a temporary file {}: {}", temporaryPath, e.getMessage());
                             }
-                            logger.info("Save conflicted copy to {}", parent.resolve(conflictedFileName));
-                            Files.move(syncFile.getTemporaryPath(), parent.resolve(conflictedFileName));
 
-                        } catch (IOException e) {
-                            logger.warn("Failed to delete a temporary file {}: {}", syncFile.getTemporaryPath(), e.getMessage());
-                        }
+                        }));
                     }
                     continue;
 
@@ -111,31 +116,35 @@ class CheckDownloadStateTask implements Runnable {
 
                 } else if (file.getFileSize() == file.getReceived()) {
 
-                    // This file has been downloaded.
-                    logger.info("File {} has been downloaded", file.getName());
+                    syncFile.getLocalPath().ifPresent(localPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
-                    try {
+                        // This file has been downloaded.
+                        logger.info("File {} has been downloaded", file.getName());
 
-                        // Move the file from the temporary directory to the desired place.
-                        final Path parentDir = syncFile.getLocalPath().getParent();
-                        if (!parentDir.toFile().exists()) {
-                            Files.createDirectories(parentDir);
-                        }
-                        Files.move(syncFile.getTemporaryPath(), syncFile.getLocalPath());
+                        try {
 
-                        if (file.getCreationTime() != 0) {
-                            final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
-                            if (!success) {
-                                logger.debug("Failed to update the time stamp of {}", file.getLocalPath());
+                            // Move the file from the temporary directory to the desired place.
+                            final Path parentDir = localPath.getParent();
+                            if (!parentDir.toFile().exists()) {
+                                Files.createDirectories(parentDir);
                             }
+                            Files.move(temporaryPath, localPath);
+
+                            if (file.getCreationTime() != 0) {
+                                final boolean success = file.getLocalPath().toFile().setLastModified(file.getCreationTime());
+                                if (!success) {
+                                    logger.debug("Failed to update the time stamp of {}", localPath);
+                                }
+                            }
+
+                            DB.setSynced(file, file.getLocalPath());
+
+                        } catch (IOException e) {
+                            logger.error("Failed post process of {}: {}", localPath, e.getMessage());
+                            DB.setDownloadFailed(file.getName());
                         }
 
-                        DB.setSynced(file, file.getLocalPath());
-
-                    } catch (IOException e) {
-                        logger.error("Failed post process of {}: {}", file.getLocalPath(), e.getMessage());
-                        DB.setDownloadFailed(file.getName());
-                    }
+                    }));
 
                 } else {
 

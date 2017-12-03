@@ -33,8 +33,10 @@ import java.nio.file.Paths;
 
 import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 public class SyncFileTest {
 
     private String name;
@@ -119,7 +121,7 @@ public class SyncFileTest {
         final Path cloudPath = Paths.get("cloud", String.valueOf(now));
         final SyncFile syncFile = new SyncFile();
         Deencapsulation.setField(syncFile, "cloudPath", cloudPath.toString());
-        assertEquals(now, syncFile.getCloudCreationTime());
+        assertEquals(now, syncFile.getCloudCreationTime().get());
 
     }
 
@@ -128,7 +130,7 @@ public class SyncFileTest {
 
         final SyncFile syncFile = new SyncFile();
         Deencapsulation.setField(syncFile, "cloudPath", cloudPath.toString());
-        assertEquals(null, syncFile.getCloudCreationTime());
+        assertFalse(syncFile.getCloudCreationTime().isPresent());
 
     }
 
@@ -138,7 +140,7 @@ public class SyncFileTest {
         final Path cloudPath = Paths.get("cloud", "123456X");
         final SyncFile syncFile = new SyncFile();
         Deencapsulation.setField(syncFile, "cloudPath", cloudPath.toString());
-        assertEquals(null, syncFile.getCloudCreationTime());
+        assertFalse(syncFile.getCloudCreationTime().isPresent());
 
     }
 
@@ -166,9 +168,9 @@ public class SyncFileTest {
             }
         });
 
-        assertEquals(cloudPath, syncFile.getCloudPath());
-        assertEquals(now, syncFile.getCloudCreationTime());
-        assertEquals(cloudSize, syncFile.getCloudSize());
+        assertEquals(cloudPath, syncFile.getCloudPath().get());
+        assertEquals(now, syncFile.getCloudCreationTime().get());
+        assertEquals(cloudSize, syncFile.getCloudSize().get());
 
     }
 
@@ -183,11 +185,11 @@ public class SyncFileTest {
             final SyncFile syncFile = new SyncFile();
             syncFile.setLocalData(localPath);
 
-            assertEquals(localPath, syncFile.getLocalPath());
-            assertEquals((Long) Files.getLastModifiedTime(localPath).toMillis(), syncFile.getLocalModificationTime());
-            assertEquals((Long) Files.size(localPath), syncFile.getLocalSize());
+            assertEquals(localPath, syncFile.getLocalPath().get());
+            assertEquals((Long) Files.getLastModifiedTime(localPath).toMillis(), syncFile.getLocalModificationTime().get());
+            assertEquals((Long) Files.size(localPath), syncFile.getLocalSize().get());
             final String digest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
-            assertEquals(digest, syncFile.getLocalDigest());
+            assertEquals(digest, syncFile.getLocalDigest().get());
 
         } finally {
             Files.deleteIfExists(localPath);

@@ -76,7 +76,7 @@ class CheckStateTask implements Runnable {
                             case SYNCED:
 
                                 // This file was synced.
-                                if (file.getCreationTime() > syncFile.getLocalModificationTime()) {
+                                if (file.getCreationTime() > syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The cloud file was updated, and it will be downloaded.
                                     logger.info("Cloud file {} is going to be downloaded", file.getName());
@@ -88,7 +88,7 @@ class CheckStateTask implements Runnable {
                             case MODIFIED:
 
                                 // This file has been modified.
-                                if (file.getCreationTime() < syncFile.getLocalModificationTime()) {
+                                if (file.getCreationTime() < syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The newer local file will be uploaded.
                                     // Even if the file in cloud was also modified, i.e. there is conflict,

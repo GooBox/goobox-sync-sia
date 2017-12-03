@@ -60,22 +60,25 @@ class UploadLocalFileTask implements Runnable {
             logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
             return;
         }
+        syncFile.getCloudPath().ifPresent(cloudPath -> {
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        try {
+            final RenterApi api = new RenterApi(this.ctx.apiClient);
+            try {
 
-            api.renterUploadSiapathPost(
-                    syncFile.getCloudPath().toString(),
-                    this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                    this.localPath.toString());
-            DB.setUploading(this.localPath);
+                api.renterUploadSiapathPost(
+                        cloudPath.toString(),
+                        this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
+                        this.localPath.toString());
+                DB.setUploading(this.localPath);
 
-        } catch (ApiException e) {
-            logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-            DB.setUploadFailed(this.localPath);
-        } finally {
-            DB.commit();
-        }
+            } catch (ApiException e) {
+                logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
+                DB.setUploadFailed(this.localPath);
+            } finally {
+                DB.commit();
+            }
+
+        });
 
     }
 

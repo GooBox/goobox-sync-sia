@@ -112,7 +112,7 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
         }};
         new DownloadCloudFileTask(this.context, this.name).run();
         assertTrue(DBMock.committed);
@@ -130,7 +130,7 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
             times = 0;
         }};
         new DownloadCloudFileTask(this.context, "not-existing-name").run();
@@ -148,7 +148,7 @@ public class DownloadCloudFileTaskTest {
 
         new Expectations() {{
             //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().toString());
+            api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).getTemporaryPath().get().toString());
             result = new ApiException("expected exception");
         }};
         new DownloadCloudFileTask(this.context, this.name).run();

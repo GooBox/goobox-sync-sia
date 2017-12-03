@@ -137,12 +137,14 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 try {
 
                     if (DB.contains(path)) {
+
                         final String digest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
-                        if (digest.equals(DB.get(path).getLocalDigest())) {
+                        if (DB.get(path).getLocalDigest().map(digest::equals).orElse(false)) {
                             logger.trace("File {} is modified but the contents are not changed", path);
                             removePaths.add(path);
                             return;
                         }
+
                     }
 
                     logger.info("Found modified file {}", path);

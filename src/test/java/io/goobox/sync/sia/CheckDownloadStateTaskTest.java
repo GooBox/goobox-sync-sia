@@ -137,24 +137,24 @@ public class CheckDownloadStateTaskTest {
 
         // old entry.
         final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
-        oldFile.setSiapath(syncFile.getCloudPath().toString());
+        oldFile.setSiapath(syncFile.getCloudPath().get().toString());
         oldFile.setDestination("some temporary path");
-        oldFile.setFilesize(syncFile.getCloudSize());
-        oldFile.setReceived(syncFile.getCloudSize());
+        oldFile.setFilesize(syncFile.getCloudSize().get());
+        oldFile.setReceived(syncFile.getCloudSize().get());
         oldFile.setStarttime(RFC3339.format(new Date(10000)));
         files.add(oldFile);
 
         // new entry.
         final InlineResponse20010Downloads newFile = new InlineResponse20010Downloads();
-        newFile.setSiapath(syncFile.getCloudPath().toString());
-        newFile.setDestination(syncFile.getTemporaryPath().toString());
-        newFile.setFilesize(syncFile.getCloudSize());
-        newFile.setReceived(syncFile.getCloudSize());
+        newFile.setSiapath(syncFile.getCloudPath().get().toString());
+        newFile.setDestination(syncFile.getTemporaryPath().get().toString());
+        newFile.setFilesize(syncFile.getCloudSize().get());
+        newFile.setReceived(syncFile.getCloudSize().get());
         newFile.setStarttime(RFC3339.format(new Date()));
         files.add(newFile);
 
         final byte[] data = "test-data".getBytes();
-        Files.write(syncFile.getTemporaryPath(), data);
+        Files.write(syncFile.getTemporaryPath().get(), data);
         DB.setDownloading(syncFile.getName());
 
         new Expectations() {{
@@ -169,7 +169,7 @@ public class CheckDownloadStateTaskTest {
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
         assertTrue(localPath.toFile().exists());
         assertArrayEquals(data, Files.readAllBytes(localPath));
-        assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).getLocalDigest());
+        assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).getLocalDigest().get());
 
     }
 
@@ -182,19 +182,19 @@ public class CheckDownloadStateTaskTest {
 
         // old entry.
         final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
-        oldFile.setSiapath(syncFile.getCloudPath().toString());
+        oldFile.setSiapath(syncFile.getCloudPath().get().toString());
         oldFile.setDestination("some temporary path");
-        oldFile.setFilesize(syncFile.getCloudSize());
-        oldFile.setReceived(syncFile.getCloudSize());
+        oldFile.setFilesize(syncFile.getCloudSize().get());
+        oldFile.setReceived(syncFile.getCloudSize().get());
         oldFile.setStarttime(RFC3339.format(new Date(10000)));
         files.add(oldFile);
 
         // new entry.
         final InlineResponse20010Downloads newFile = new InlineResponse20010Downloads();
-        newFile.setSiapath(syncFile.getCloudPath().toString());
-        newFile.setDestination(syncFile.getTemporaryPath().toString());
-        newFile.setFilesize(syncFile.getCloudSize());
-        newFile.setReceived(syncFile.getCloudSize() / 2);
+        newFile.setSiapath(syncFile.getCloudPath().get().toString());
+        newFile.setDestination(syncFile.getTemporaryPath().get().toString());
+        newFile.setFilesize(syncFile.getCloudSize().get());
+        newFile.setReceived(syncFile.getCloudSize().get() / 2);
         newFile.setStarttime(RFC3339.format(new Date()));
         files.add(newFile);
 
@@ -222,10 +222,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize() / 2);
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get() / 2);
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
 
@@ -257,10 +257,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize() / 2);
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get() / 2);
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
 
@@ -307,14 +307,14 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(cloudPath.toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get());
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
 
         final byte[] fileData = "test-data".getBytes();
-        Files.write(syncFile.getTemporaryPath(), fileData);
+        Files.write(syncFile.getTemporaryPath().get(), fileData);
         DB.setDownloading(syncFile.getName());
 
         new Expectations() {{
@@ -328,7 +328,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
         assertTrue(localPath.toFile().exists());
-        assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).getLocalDigest());
+        assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).getLocalDigest().get());
 
     }
 
@@ -340,10 +340,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
-        file1.setSiapath(syncFile.getCloudPath().toString());
-        file1.setDestination(syncFile.getTemporaryPath().toString());
-        file1.setFilesize(syncFile.getCloudSize());
-        file1.setReceived(syncFile.getCloudSize() / 2);
+        file1.setSiapath(syncFile.getCloudPath().get().toString());
+        file1.setDestination(syncFile.getTemporaryPath().get().toString());
+        file1.setFilesize(syncFile.getCloudSize().get());
+        file1.setReceived(syncFile.getCloudSize().get() / 2);
         file1.setStarttime(RFC3339.format(new Date()));
         file1.setError("expected error");
         files.add(file1);
@@ -377,10 +377,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize() / 2);
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get() / 2);
         file.setStarttime(RFC3339.format(new Date()));
         file.setError("expected error");
         files.add(file);
@@ -432,7 +432,7 @@ public class CheckDownloadStateTaskTest {
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(cloudPath.toString());
         //noinspection ConstantConditions
-        file.setDestination(syncFile.getTemporaryPath().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
         file.setFilesize(100L);
         file.setReceived(100L);
         file.setStarttime(RFC3339.format(targetDate));
@@ -466,10 +466,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize() / 2);
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get() / 2);
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
         DB.setDownloading(syncFile.getName());
@@ -506,10 +506,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize());
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get());
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
 
@@ -530,7 +530,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
-        assertFalse(syncFile.getTemporaryPath().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -577,10 +577,10 @@ public class CheckDownloadStateTaskTest {
         final SyncFile syncFile = DB.get(localPath);
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().toString());
-        file.setDestination(syncFile.getTemporaryPath().toString());
-        file.setFilesize(syncFile.getCloudSize());
-        file.setReceived(syncFile.getCloudSize());
+        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setDestination(syncFile.getTemporaryPath().get().toString());
+        file.setFilesize(syncFile.getCloudSize().get());
+        file.setReceived(syncFile.getCloudSize().get());
         file.setStarttime(RFC3339.format(new Date()));
         files.add(file);
 
@@ -605,7 +605,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
-        assertFalse(syncFile.getTemporaryPath().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(

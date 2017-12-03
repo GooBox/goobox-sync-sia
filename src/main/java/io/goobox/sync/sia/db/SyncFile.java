@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 @SuppressWarnings("WeakerAccess")
 public class SyncFile implements Serializable {
@@ -102,54 +103,43 @@ public class SyncFile implements Serializable {
         return this.name;
     }
 
-    @Nullable
-    public Path getCloudPath() {
+    public Optional<Path> getCloudPath() {
         if (this.cloudPath == null) {
-            return null;
+            return Optional.empty();
         }
-        return Paths.get(this.cloudPath);
+        return Optional.ofNullable(Paths.get(this.cloudPath));
     }
 
-    @Nullable
-    public Long getCloudCreationTime() {
-        if (this.getCloudPath() == null) {
-            return null;
-        }
+    public Optional<Long> getCloudCreationTime() {
         try {
-            return Long.valueOf(this.getCloudPath().getFileName().toString());
+            return this.getCloudPath().map(cloudPath -> Long.valueOf(cloudPath.getFileName().toString()));
         } catch (NumberFormatException e) {
-            return null;
+            return Optional.empty();
         }
     }
 
-    @Nullable
-    public Long getCloudSize() {
-        return this.cloudSize;
+    public Optional<Long> getCloudSize() {
+        return Optional.ofNullable(this.cloudSize);
     }
 
-    @Nullable
-    public Long getLocalModificationTime() {
-        return this.localModificationTime;
+    public Optional<Long> getLocalModificationTime() {
+        return Optional.ofNullable(this.localModificationTime);
     }
 
-    @Nullable
-    public Path getLocalPath() {
-        return this.localPath;
+    public Optional<Path> getLocalPath() {
+        return Optional.ofNullable(this.localPath);
     }
 
-    @Nullable
-    public Long getLocalSize() {
-        return this.localSize;
+    public Optional<Long> getLocalSize() {
+        return Optional.ofNullable(this.localSize);
     }
 
-    @Nullable
-    public String getLocalDigest() {
-        return localDigest;
+    public Optional<String> getLocalDigest() {
+        return Optional.ofNullable(localDigest);
     }
 
-    @Nullable
-    public Path getTemporaryPath() {
-        return this.temporaryPath;
+    public Optional<Path> getTemporaryPath() {
+        return Optional.ofNullable(this.temporaryPath);
     }
 
     @NotNull
@@ -212,6 +202,7 @@ public class SyncFile implements Serializable {
         this.setLocalDigest(DigestUtils.sha512Hex(new FileInputStream(localPath.toFile())));
     }
 
+    @NotNull
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();
     }
