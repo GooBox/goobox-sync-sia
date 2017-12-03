@@ -38,18 +38,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * CheckDownloadStatusTask requests current downloading status to siad and prints it.
+ * Requests current downloading status to siad and prints it.
  *
  * @author junpei
  */
-class CheckDownloadStatusTask implements Runnable {
+class CheckDownloadStateTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger();
 
     @NotNull
     private final Context ctx;
 
-    CheckDownloadStatusTask(@NotNull final Context ctx) {
+    CheckDownloadStateTask(@NotNull final Context ctx) {
         this.ctx = ctx;
     }
 
@@ -200,7 +200,7 @@ class CheckDownloadStatusTask implements Runnable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        CheckDownloadStatusTask that = (CheckDownloadStatusTask) o;
+        CheckDownloadStateTask that = (CheckDownloadStateTask) o;
 
         return ctx.equals(that.ctx);
     }

@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 
 
 @RunWith(JMockit.class)
-public class CheckDownloadStatusTaskTest {
+public class CheckDownloadStateTaskTest {
 
     private static SimpleDateFormat RFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ssZ");
 
@@ -124,7 +124,7 @@ public class CheckDownloadStatusTaskTest {
             result = downloads;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
 
     }
 
@@ -164,7 +164,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
         assertTrue(localPath.toFile().exists());
@@ -207,7 +207,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).getState());
         assertFalse(localPath.toFile().exists());
@@ -238,7 +238,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).getState());
         assertFalse(localPath.toFile().exists());
@@ -271,7 +271,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(syncFile.getName()).getState());
         assertFalse(localPath.toFile().exists());
@@ -324,7 +324,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).getState());
         assertTrue(localPath.toFile().exists());
@@ -357,7 +357,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(localPath).getState());
         assertFalse(localPath.toFile().exists());
@@ -392,7 +392,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(localPath).getState());
         assertFalse(localPath.toFile().exists());
@@ -445,7 +445,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(localPath).getState());
         assertEquals(targetDate / 1000, localPath.toFile().lastModified() / 1000);
@@ -485,7 +485,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
@@ -526,7 +526,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
@@ -601,7 +601,7 @@ public class CheckDownloadStatusTaskTest {
             result = res;
         }};
 
-        new CheckDownloadStatusTask(this.ctx).run();
+        new CheckDownloadStateTask(this.ctx).run();
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(localPath).getState());
@@ -620,7 +620,7 @@ public class CheckDownloadStatusTaskTest {
     @Test
     public void parseDate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final Method parseDateTime = CheckDownloadStatusTask.class.getDeclaredMethod("parseDateTime", String.class);
+        final Method parseDateTime = CheckDownloadStateTask.class.getDeclaredMethod("parseDateTime", String.class);
         parseDateTime.setAccessible(true);
 
         final String rfc3339 = "2009-11-10T23:00:00Z";

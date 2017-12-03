@@ -52,7 +52,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
-public class CheckUploadStatusTaskTest {
+public class CheckUploadStateTaskTest {
 
     @SuppressWarnings("unused")
     @Mocked
@@ -112,7 +112,7 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(localPath).getState());
 
@@ -139,7 +139,7 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
 
@@ -147,7 +147,7 @@ public class CheckUploadStatusTaskTest {
 
     /**
      * Since renter/files API returns files stored and being uploaded in the SIA network,
-     * results contain files already synced. This test checks CheckUploadStatusTask doesn't modified statuses of such
+     * results contain files already synced. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */
     @Test
@@ -157,7 +157,7 @@ public class CheckUploadStatusTaskTest {
 
     /**
      * Since renter/files API returns files stored and being uploaded in the SIA network,
-     * results contain files to be uploaded. This test checks CheckUploadStatusTask doesn't modified statuses of such
+     * results contain files to be uploaded. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */
     @Test
@@ -167,7 +167,7 @@ public class CheckUploadStatusTaskTest {
 
     /**
      * Test a case that an uploading file is also modified. In this case, the file is marked as MODIFIED and
-     * CheckUploadStatusTask doesn't handle it.
+     * CheckUploadStateTask doesn't handle it.
      */
     @Test
     public void uploadingFileModified() throws IOException, ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
@@ -176,7 +176,7 @@ public class CheckUploadStatusTaskTest {
 
     /**
      * Test a case that an uploading file is also deleted. In this case, the file is marked as DELETED and
-     * CheckUploadStatusTask doesn't handle it.
+     * CheckUploadStateTask doesn't handle it.
      */
     @Test
     public void uploadingFileDeleted() throws NoSuchMethodException, ApiException, IOException, InvocationTargetException, IllegalAccessException {
@@ -212,7 +212,7 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
         assertEquals(expected, DB.get(localPath).getState());
 
@@ -238,7 +238,7 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
         assertFalse(DB.contains(localPath));
 
@@ -264,7 +264,7 @@ public class CheckUploadStatusTaskTest {
             result = res;
         }};
 
-        new CheckUploadStatusTask(this.context).run();
+        new CheckUploadStateTask(this.context).run();
         assertTrue(DBMock.committed);
         assertFalse(DB.contains(localPath));
 

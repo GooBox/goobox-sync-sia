@@ -241,7 +241,7 @@ public class FileWatcherTest {
 
     /**
      * When a file of which is now being downloaded is found in the local directory, since the download cannot be
-     * canceled, the status of the file will be updated to MODIFIED. CheckDownloadStatusTask is responsible for deleting
+     * canceled, the status of the file will be updated to MODIFIED. CheckDownloadStateTask is responsible for deleting
      * the downloaded file.
      */
     @Test
