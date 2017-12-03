@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.db.DB;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
@@ -70,6 +71,10 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
 
         if (event.path().toFile().isDirectory()) {
             logger.trace("{} is a directory and will be ignored", event.path());
+            return;
+        }
+        if (Utils.isExcluded(event.path())) {
+            logger.debug("{} is excluded", event.path());
             return;
         }
 

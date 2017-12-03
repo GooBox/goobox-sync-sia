@@ -65,6 +65,7 @@ public class FileWatcherTest {
 
     @Before
     public void setUp() throws IOException {
+        new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = this.tmpDir;
         new UtilsMock();
@@ -73,17 +74,8 @@ public class FileWatcherTest {
 
     @After
     public void tearDown() throws IOException {
-        FileUtils.deleteDirectory(this.tmpDir.toFile());
-    }
-
-    @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
-
-    @After
-    public void tearDownMockDB() {
         DB.close();
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     /**
@@ -507,6 +499,21 @@ public class FileWatcherTest {
             }
             DBMock.committed = false;
 
+        }
+
+    }
+
+    @Test
+    public void onEventChecksExcludedFiles() throws IOException {
+
+        final Path target = Utils.getSyncDir().resolve("some-file");
+        new Expectations(Utils.class) {{
+            Utils.isExcluded(target);
+            result = true;
+        }};
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 2));
         }
 
     }
