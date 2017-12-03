@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiClient;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,6 +34,7 @@ public class Context {
     @NotNull
     public final Config config;
 
+    @Nullable
     public final ApiClient apiClient;
 
     @NotNull
@@ -44,7 +46,7 @@ public class Context {
      * @param cfg       Config object
      * @param apiClient API client
      */
-    public Context(@NotNull final Config cfg,  final ApiClient apiClient) {
+    public Context(@NotNull final Config cfg, @Nullable final ApiClient apiClient) {
         this.config = cfg;
         this.apiClient = apiClient;
         this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
