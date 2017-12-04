@@ -20,7 +20,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -57,14 +56,14 @@ class CheckUploadStateTask implements Runnable {
                 return;
             }
 
-            for (final InlineResponse20011Files item : res.getFiles()) {
+            res.getFiles().forEach(item -> {
 
                 final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
                 final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
 
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
-                    continue;
+                    return;
                 }
 
                 syncFileOpt.ifPresent(syncFile -> {
@@ -90,7 +89,7 @@ class CheckUploadStateTask implements Runnable {
 
                 });
 
-            }
+            });
 
         } catch (ApiException e) {
             logger.error("Failed to retrieve uploading status: {}", APIUtils.getErrorMessage(e));

@@ -38,6 +38,7 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
+import io.goobox.sync.sia.mocks.ExecutorMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
@@ -48,6 +49,7 @@ import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
+import org.dizitart.no2.objects.ObjectRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,6 +65,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -90,17 +93,9 @@ public class AppTest {
     private Context ctx;
 
     @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
-
-    @After
-    public void tearDownMockDB() {
-        DB.close();
-    }
-
-    @Before
     public void setUp() throws IOException {
+
+        new DBMock();
 
         final Config cfg = new Config();
         cfg.setUserName("test-user");
@@ -114,10 +109,9 @@ public class AppTest {
 
     @After
     public void tearDown() throws IOException {
-
+        DB.close();
         FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
         FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
-
     }
 
     @Test
@@ -153,16 +147,14 @@ public class AppTest {
         }
 
         final AppMock mock = new AppMock();
-        UtilsMock.dataDir = Files.createTempDirectory(null);
         try {
 
-            final Path db = UtilsMock.dataDir.resolve(DB.DatabaseFileName);
-            assertTrue(db.toFile().createNewFile());
-            new UtilsMock();
+            final File dbFile = Utils.getDataDir().resolve(DB.DatabaseFileName).toFile();
+            assertTrue(dbFile.createNewFile());
 
             App.main(new String[]{"--reset-db"});
             assertTrue("check app is initialized", mock.initialized);
-            assertFalse("check database files exists", db.toFile().exists());
+            assertFalse("check database files exists", dbFile.exists());
 
         } finally {
 
@@ -218,7 +210,7 @@ public class AppTest {
     public void testPrintHelp(@Mocked HelpFormatter help) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         final StringBuilder builder = new StringBuilder();
-        builder.append("\nSubcommands:\n");
+        builder.append("\nCommands:\n");
         builder.append(" ");
         builder.append(Wallet.CommandName);
         builder.append("\n  ");
@@ -287,6 +279,9 @@ public class AppTest {
             private boolean preparedWallet = false;
             private boolean waitedSynchronization = false;
             private boolean waitedContracts = false;
+            private boolean calledResumeTasks = false;
+            private boolean calledSynchronizeModifiedFiles = false;
+            private boolean calledSynchronizeDeletedFiles = false;
 
             @Mock
             private Config loadConfig(Path path) {
@@ -324,6 +319,22 @@ public class AppTest {
                 this.waitedContracts = true;
             }
 
+            @Mock
+            private void resumeTasks(final Context context, final Executor executor) {
+                assertEquals(ctx, context);
+                this.calledResumeTasks = true;
+            }
+
+            @Mock
+            private void synchronizeModifiedFiles(Path root) {
+                this.calledSynchronizeModifiedFiles = true;
+            }
+
+            @Mock
+            private void synchronizeDeletedFiles() {
+                this.calledSynchronizeDeletedFiles = true;
+            }
+
         }
 
         // Enqueue basic tasks.
@@ -345,6 +356,9 @@ public class AppTest {
         assertTrue(mock.preparedWallet);
         assertTrue(mock.waitedSynchronization);
         assertTrue(mock.waitedContracts);
+        assertTrue(mock.calledSynchronizeModifiedFiles);
+        assertTrue(mock.calledSynchronizeDeletedFiles);
+        assertTrue(mock.calledResumeTasks);
 
     }
 
@@ -680,14 +694,13 @@ public class AppTest {
     public void testWaitContracts(@Mocked Thread thread)
             throws ApiException, InterruptedException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final List<InlineResponse2009Contracts> contracts = new ArrayList<>();
-        for (int i = 0; i != App.MinContracts + 1; ++i) {
+        final List<InlineResponse2009Contracts> contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
             final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
             c.setId(String.valueOf(i));
             c.setNetaddress("aaa-bbb-ccc");
             c.setRenterfunds("1234");
-            contracts.add(c);
-        }
+            return c;
+        }).collect(Collectors.toList());
 
         new Expectations() {{
             // First call: returns not enough contracts.
@@ -714,15 +727,13 @@ public class AppTest {
     @Test
     public void testWaitContractsWithoutSleep() throws ApiException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        final List<InlineResponse2009Contracts> contracts = new ArrayList<>();
-        for (int i = 0; i != App.MinContracts + 1; ++i) {
         final List<InlineResponse2009Contracts> contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
             final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
             c.setId(String.valueOf(i));
             c.setNetaddress("aaa-bbb-ccc");
             c.setRenterfunds("1234");
-            contracts.add(c);
-        }
+            return c;
+        }).collect(Collectors.toList());
 
         new Expectations() {{
             InlineResponse2009 res = new InlineResponse2009();
@@ -861,4 +872,78 @@ public class AppTest {
         assertEquals(SyncState.DELETED, DB.get(localPath).map(SyncFile::getState).orElse(null));
 
     }
+
+    @Test
+    public void resumeToBeUploadedFile() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkResumeTasks(SyncState.FOR_UPLOAD, UploadLocalFileTask.class);
+    }
+
+    @Test
+    public void resumeToBeDownloadedFile() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkResumeTasks(SyncState.FOR_DOWNLOAD, DownloadCloudFileTask.class);
+    }
+
+    @Test
+    public void resumeToBeCloudDeletedFile() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkResumeTasks(SyncState.FOR_CLOUD_DELETE, DeleteCloudFileTask.class);
+    }
+
+    @Test
+    public void resumeToBeLocalDeletedFile() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+        this.checkResumeTasks(SyncState.FOR_LOCAL_DELETE, DeleteLocalFileTask.class);
+    }
+
+    /**
+     * Enqueued tasks might not be executed because this app is closed. The app should check files of which state
+     * starts with FOR_ and re-enqueues related tasks before starting other tasks.
+     */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    private void checkResumeTasks(final SyncState state, final Class<?> cmdClass)
+            throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        final String name = String.format("test-%s", state);
+        final Path localPath = Utils.getSyncDir().resolve(name);
+        assertTrue(localPath.toFile().createNewFile());
+
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
+
+        final SyncFile syncFile = DB.get(localPath).get();
+        final Method setState = SyncFile.class.getDeclaredMethod("setState", SyncState.class);
+        setState.setAccessible(true);
+        setState.invoke(syncFile, state);
+
+        final Method repo = DB.class.getDeclaredMethod("repo");
+        repo.setAccessible(true);
+        final ObjectRepository<SyncFile> repository = (ObjectRepository<SyncFile>) repo.invoke(DB.class);
+        repository.update(syncFile);
+
+        final ExecutorMock executor = new ExecutorMock();
+
+        final App app = new App();
+        final Method resumeTasks = App.class.getDeclaredMethod("resumeTasks", Context.class, Executor.class);
+        resumeTasks.setAccessible(true);
+        resumeTasks.invoke(app, this.ctx, executor);
+
+        final Runnable task = executor.queue.get(0);
+        System.out.println(task);
+
+        assertEquals(cmdClass, task.getClass());
+
+    }
+
 }

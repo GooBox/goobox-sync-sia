@@ -108,6 +108,7 @@ public class DeleteLocalFileTaskTest {
      * A file once marked to be deleted from local directory but it is modified later.
      * In this case, this file must not be deleted and pass to CheckStateTask.
      */
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void toBeDeletedFileModified() throws IOException {
 

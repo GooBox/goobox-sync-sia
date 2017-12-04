@@ -170,6 +170,7 @@ public class DeleteCloudFileTaskTest {
 
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void toBeCloudDeleteFileModified() throws IOException, ApiException {
 

@@ -231,18 +231,6 @@ public class DB {
         setState(localPath, SyncState.DELETED);
     }
 
-    public synchronized static Cursor<SyncFile> getModifiedFiles() {
-        return getFiles(SyncState.MODIFIED);
-    }
-
-    public synchronized static Cursor<SyncFile> getDeletedFiles() {
-        return getFiles(SyncState.DELETED);
-    }
-
-    public synchronized static Cursor<SyncFile> getSyncedFiles() {
-        return getFiles(SyncState.SYNCED);
-    }
-
     public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
         return repo().find(eq("state", state));
     }

@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -186,7 +187,11 @@ public class App {
 
         }
 
+        this.synchronizeModifiedFiles(Utils.getSyncDir());
+        this.synchronizeDeletedFiles();
+
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
+        this.resumeTasks(ctx, executor);
         executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
         executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
         executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
@@ -393,7 +398,36 @@ public class App {
 
     }
 
+    private void resumeTasks(final Context ctx, final Executor executor) {
+
+        logger.info("Resume pending uploads if exist");
+        DB.getFiles(SyncState.FOR_UPLOAD).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+            logger.info("File {} is going to be uploaded", syncFile.getName());
+            executor.execute(new UploadLocalFileTask(ctx, localPath));
+        }));
+
+        logger.info("Resume pending downloads if exist");
+        DB.getFiles(SyncState.FOR_DOWNLOAD).forEach(syncFile -> {
+            logger.info("File {} is going to be downloaded", syncFile.getName());
+            executor.execute(new DownloadCloudFileTask(ctx, syncFile.getName()));
+        });
+
+        logger.info("Resume pending deletes from the cloud network if exist");
+        DB.getFiles(SyncState.FOR_CLOUD_DELETE).forEach(syncFile -> {
+            logger.info("File {} is going to be deleted from the cloud network", syncFile.getName());
+            executor.execute(new DeleteCloudFileTask(ctx, syncFile.getName()));
+        });
+
+        logger.info("Resume pending deletes from the local directory if exist");
+        DB.getFiles(SyncState.FOR_LOCAL_DELETE).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+            logger.info("File {} is going to be deleted from the local directory", syncFile.getName());
+            executor.execute(new DeleteLocalFileTask(localPath));
+        }));
+
+    }
+
     private void synchronizeModifiedFiles(final Path rootDir) {
+        logger.debug("Checking modified files in {}", rootDir);
 
         try {
 
@@ -418,6 +452,7 @@ public class App {
 
                 if (modified) {
                     try {
+                        logger.debug("File {} has been modified", path);
                         DB.setModified(path);
                     } catch (IOException e) {
                         logger.error("Failed to update state of {}: {}", path, e.getMessage());
@@ -433,10 +468,12 @@ public class App {
     }
 
     private void synchronizeDeletedFiles() {
+        logger.debug("Checking deleted files");
 
         DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
 
             if (!localPath.toFile().exists()) {
+                logger.debug("File {} has been deleted", localPath);
                 DB.setDeleted(localPath);
             }
 
@@ -448,7 +485,7 @@ public class App {
     private static void printHelp(final Options opts) {
 
         final StringBuilder builder = new StringBuilder();
-        builder.append("\nSubcommands:\n");
+        builder.append("\nCommands:\n");
         builder.append(" ");
         builder.append(Wallet.CommandName);
         builder.append("\n  ");
@@ -460,7 +497,6 @@ public class App {
 
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(CommandName, Description, opts, builder.toString(), true);
-
 
     }
 

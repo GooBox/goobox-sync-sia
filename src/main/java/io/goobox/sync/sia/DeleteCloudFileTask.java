@@ -20,7 +20,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -75,13 +74,12 @@ class DeleteCloudFileTask implements Runnable {
 
                 } else {
 
-                    for (final InlineResponse20011Files file : files.getFiles()) {
+                    files.getFiles().forEach(file -> {
 
                         final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
                         if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
-                            continue;
+                            return;
                         }
-
                         if (siaFile.getName().equals(this.name)) {
                             logger.info("Delete file {}", siaFile.getCloudPath());
                             try {
@@ -93,7 +91,7 @@ class DeleteCloudFileTask implements Runnable {
                             }
                         }
 
-                    }
+                    });
 
                 }
                 DB.remove(this.name);

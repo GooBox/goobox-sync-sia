@@ -22,6 +22,7 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.apache.logging.log4j.LogManager;
@@ -71,8 +72,6 @@ class CheckStateTask implements Runnable {
                 try {
 
                     final Optional<SyncFile> syncFileOpt = DB.get(file);
-
-
                     if (syncFileOpt.isPresent()) {
 
                         final SyncFile syncFile = syncFileOpt.get();
@@ -132,7 +131,6 @@ class CheckStateTask implements Runnable {
 
                         }
 
-
                     } else {
 
                         // The file is found in the cloud network but doesn't exist in the local DB.
@@ -164,9 +162,9 @@ class CheckStateTask implements Runnable {
             }
 
             logger.trace("Processing files stored only in the local directory and modified");
-            for (final SyncFile syncFile : DB.getModifiedFiles()) {
+            DB.getFiles(SyncState.MODIFIED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
-                    continue;
+                    return;
                 }
                 // This file is not stored in the cloud network and modified from the local directory.
                 // It should be uploaded.
@@ -177,24 +175,24 @@ class CheckStateTask implements Runnable {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
                 }
                 processedFiles.add(syncFile.getName());
-            }
+            });
 
             logger.trace("Processing files stored only in the local directory but deleted");
-            for (final SyncFile syncFile : DB.getDeletedFiles()) {
+            DB.getFiles(SyncState.DELETED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
-                    continue;
+                    return;
                 }
                 // This file exist in neither the cloud network nor the local directory, but in the sync DB.
                 // It should be deleted from the DB.
                 logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
                 DB.remove(Utils.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
-            }
+            });
 
             logger.trace("Processing files stored only in the local directory but marked as synced");
-            for (final SyncFile syncFile : DB.getSyncedFiles()) {
+            DB.getFiles(SyncState.SYNCED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
-                    continue;
+                    return;
                 }
                 // This file has been synced but now exists only in the local directory.
                 // It means this file was deleted from the cloud network by another client.
@@ -202,14 +200,12 @@ class CheckStateTask implements Runnable {
                 logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
                 this.enqueueForLocalDelete(Utils.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
-            }
+            });
 
         } catch (ApiException e) {
             logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
         } finally {
-
             DB.commit();
-
         }
 
     }
@@ -225,19 +221,20 @@ class CheckStateTask implements Runnable {
         // Key: file name, Value: file object.
         final Map<String, SiaFile> fileMap = new HashMap<>();
         if (files != null) {
-            for (InlineResponse20011Files file : files) {
+
+            files.forEach(file -> {
 
                 if (!file.getAvailable()) {
                     // This file is still being uploaded.
                     logger.debug("Found remote file {} but it's not available", file.getSiapath());
-                    continue;
+                    return;
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
-                    continue;
+                    return;
                 }
 
                 if (fileMap.containsKey(siaFile.getName())) {
@@ -258,7 +255,8 @@ class CheckStateTask implements Runnable {
                     fileMap.put(siaFile.getName(), siaFile);
                 }
 
-            }
+            });
+
         }
         return fileMap.values();
 
