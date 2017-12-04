@@ -29,19 +29,20 @@ import static org.junit.Assert.assertEquals;
 
 public class SiaFileFromFilesAPITest {
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void test() {
 
-        final String user = "testuser";
+        final String user = "test-user";
         final String name = "foo/bar.txt";
-        final long created = new Date().getTime();
+        final Long created = new Date().getTime();
         final Path prefix = Paths.get(user, "Goobox");
         final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
 
-        final long filesize = 12345;
+        final long fileSize = 12345;
         final InlineResponse20011Files file = new InlineResponse20011Files();
         file.setSiapath(remotePath.toString());
-        file.setFilesize(filesize);
+        file.setFilesize(fileSize);
         file.setAvailable(false);
         file.setUploadprogress(new BigDecimal(24.5));
         final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(file, prefix);
@@ -49,10 +50,8 @@ public class SiaFileFromFilesAPITest {
         assertEquals(name, siaFile.getName());
         assertEquals(remotePath, siaFile.getCloudPath());
         assertEquals(Paths.get(Utils.getSyncDir().toString(), name), siaFile.getLocalPath());
-        assertEquals(new SiaPath(remotePath.toString(), prefix), siaFile.getSiaPath());
-
-        assertEquals(created, siaFile.getCreationTime());
-        assertEquals(filesize, siaFile.getFileSize());
+        assertEquals(created, siaFile.getCreationTime().get());
+        assertEquals(fileSize, siaFile.getFileSize());
 
         assertEquals(false, siaFile.getAvailable());
         assertEquals(new BigDecimal(24.5), siaFile.getUploadProgress());

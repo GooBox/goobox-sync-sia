@@ -28,28 +28,28 @@ import static org.junit.Assert.assertEquals;
 
 public class SiaFileFromDownloadsAPITest {
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void test() {
 
         final String user = "testuser";
         final String name = "foo/bar.txt";
-        final long created = new Date().getTime();
+        final Long created = new Date().getTime();
         final Path prefix = Paths.get(user, "Goobox");
         final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
 
-        final long filesize = 12345;
+        final long fileSize = 12345;
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(remotePath.toString());
-        file.setFilesize(filesize);
+        file.setFilesize(fileSize);
         final SiaFile siaFile = new SiaFileFromDownloadsAPI(file, prefix);
 
-        assertEquals(siaFile.getName(), name);
-        assertEquals(siaFile.getCloudPath(), remotePath);
-        assertEquals(siaFile.getLocalPath(), Paths.get(Utils.getSyncDir().toString(), name));
-        assertEquals(siaFile.getSiaPath(), new SiaPath(remotePath.toString(), prefix));
+        assertEquals(name, siaFile.getName());
+        assertEquals(remotePath, siaFile.getCloudPath());
+        assertEquals(Paths.get(Utils.getSyncDir().toString(), name), siaFile.getLocalPath());
 
-        assertEquals(siaFile.getCreationTime(), created);
-        assertEquals(siaFile.getFileSize(), filesize);
+        assertEquals(created, siaFile.getCreationTime().get());
+        assertEquals(fileSize, siaFile.getFileSize());
 
     }
 }
