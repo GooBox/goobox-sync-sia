@@ -37,7 +37,7 @@ primary-seed = foo bar baz foo bar baz foo bar baz foo bar baz foo bar baz foo b
 
 ## Usage
 1. Open a Command Prompt / Terminal
-2. Navigate to the extracted goobox-sync-sia folder
+2. Navigate to the extracted `goobox-sync-sia/bin` folder
 3. Run the batch file, i.e. `goobox-sync-sia.bat` (for Windows), `goobox-sync-sia` (for Mac/Linux)
 
 
@@ -52,9 +52,6 @@ The app uses an embedded Nitrine database for storing the current sync state of 
 - `C:\Users\<user-name>\AppData\Local\Goobox` for Windows
 - `~/.local/share/Goobox` for Linux
 - `~/Library/Application Support/Goobox` for macOS
-
-The `list-db.bat` (for Windows) `list-db` (for Max/Linux) scripts can be used to dump the content of the database.
-This might be useful for debugging.
 
 ### Sub commands
 `goobox-sync-sia.bat` and `goobox-sync-sia` have some sub commands.
