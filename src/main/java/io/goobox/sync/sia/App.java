@@ -30,15 +30,18 @@ import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -387,6 +390,57 @@ public class App {
             }
 
         }
+
+    }
+
+    private void synchronizeModifiedFiles(final Path rootDir) {
+
+        try {
+
+            Files.list(rootDir).filter(path -> !Utils.isExcluded(path)).forEach(path -> {
+
+                if (path.toFile().isDirectory()) {
+                    synchronizeModifiedFiles(path);
+                    return;
+                }
+
+                final boolean modified = DB.get(path).flatMap(syncFile -> syncFile.getLocalDigest().map(digest -> {
+
+                    try {
+                        final String currentDigest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
+                        return !digest.equals(currentDigest);
+                    } catch (IOException e) {
+                        logger.error("Failed to read {}: {}", path, e.getMessage());
+                        return false;
+                    }
+
+                })).orElse(true);
+
+                if (modified) {
+                    try {
+                        DB.setModified(path);
+                    } catch (IOException e) {
+                        logger.error("Failed to update state of {}: {}", path, e.getMessage());
+                    }
+                }
+
+            });
+
+        } catch (IOException e) {
+            logger.error("Failed to list files in {}: {}", rootDir, e.getMessage());
+        }
+
+    }
+
+    private void synchronizeDeletedFiles() {
+
+        DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+
+            if (!localPath.toFile().exists()) {
+                DB.setDeleted(localPath);
+            }
+
+        }));
 
     }
 

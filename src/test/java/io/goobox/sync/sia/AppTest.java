@@ -33,7 +33,11 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
+import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
+import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
@@ -44,6 +48,7 @@ import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,11 +59,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -82,11 +90,33 @@ public class AppTest {
     private Context ctx;
 
     @Before
-    public void setUp() {
+    public void setUpMockDB() {
+        new DBMock();
+    }
+
+    @After
+    public void tearDownMockDB() {
+        DB.close();
+    }
+
+    @Before
+    public void setUp() throws IOException {
 
         final Config cfg = new Config();
         cfg.setUserName("test-user");
         this.ctx = new Context(cfg, null);
+
+        UtilsMock.dataDir = Files.createTempDirectory(null);
+        UtilsMock.syncDir = Files.createTempDirectory(null);
+        new UtilsMock();
+
+    }
+
+    @After
+    public void tearDown() throws IOException {
+
+        FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
+        FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
 
     }
 
@@ -686,6 +716,7 @@ public class AppTest {
 
         final List<InlineResponse2009Contracts> contracts = new ArrayList<>();
         for (int i = 0; i != App.MinContracts + 1; ++i) {
+        final List<InlineResponse2009Contracts> contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
             final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
             c.setId(String.valueOf(i));
             c.setNetaddress("aaa-bbb-ccc");
@@ -707,4 +738,127 @@ public class AppTest {
 
     }
 
+    @Test
+    public void synchronizeNewFile() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
+
+        final Path localPath = Utils.getSyncDir().resolve("sub-dir").resolve(String.format("file-%x", System.currentTimeMillis()));
+        Files.createDirectories(localPath.getParent());
+        assertTrue(localPath.toFile().createNewFile());
+
+        invokeSynchronizeModifiedFiles();
+
+        assertTrue(DB.get(localPath).isPresent());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+
+    }
+
+    @Test
+    public void synchronizeNotModifiedFile() throws InvocationTargetException, IllegalAccessException, IOException, NoSuchMethodException {
+
+        final String dummyData = "sample test";
+        final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
+        final Path localPath = Utils.getSyncDir().resolve(name);
+        Files.createDirectories(localPath.getParent());
+        Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name.toString();
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
+
+        invokeSynchronizeModifiedFiles();
+
+        assertTrue(DB.get(localPath).isPresent());
+        assertEquals(SyncState.SYNCED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+
+    }
+
+    @Test
+    public void synchronizeModifiedFile() throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+
+        final String dummyData = "sample test";
+        final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
+        final Path localPath = Utils.getSyncDir().resolve(name);
+        Files.createDirectories(localPath.getParent());
+        Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name.toString();
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
+
+        Files.write(localPath, dummyData.getBytes(), StandardOpenOption.APPEND);
+
+        invokeSynchronizeModifiedFiles();
+
+        assertTrue(DB.get(localPath).isPresent());
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+
+    }
+
+    private void invokeSynchronizeModifiedFiles() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        final App app = new App();
+        final Method synchronizeModifiedFiles = App.class.getDeclaredMethod("synchronizeModifiedFiles", Path.class);
+        synchronizeModifiedFiles.setAccessible(true);
+        synchronizeModifiedFiles.invoke(app, Utils.getSyncDir());
+    }
+
+    @Test
+    public void synchronizeDeletedFile() throws IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+
+        final String dummyData = "sample test";
+        final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
+        final Path localPath = Utils.getSyncDir().resolve(name);
+        Files.createDirectories(localPath.getParent());
+        Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
+        DB.setSynced(new CloudFile() {
+            @Override
+            public String getName() {
+                return name.toString();
+            }
+
+            @Override
+            public Path getCloudPath() {
+                return null;
+            }
+
+            @Override
+            public long getFileSize() {
+                return 0;
+            }
+        }, localPath);
+
+        assertTrue(localPath.toFile().delete());
+
+        final App app = new App();
+        final Method synchronizeDeletedFiles = App.class.getDeclaredMethod("synchronizeDeletedFiles");
+        synchronizeDeletedFiles.setAccessible(true);
+        synchronizeDeletedFiles.invoke(app);
+
+        assertTrue(DB.get(localPath).isPresent());
+        assertEquals(SyncState.DELETED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+
+    }
 }
