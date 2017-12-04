@@ -17,14 +17,13 @@
 
 package io.goobox.sync.sia;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.SiaFileMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.storj.Utils;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -35,13 +34,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
 
@@ -50,16 +51,10 @@ public class UploadLocalFileTaskTest {
     private RenterApi api;
 
     private Path tempDir;
-
-    @Before
-    public void setUpMockDB() {
-        new DBMock();
-    }
-
-    @After
-    public void cleanUp() {
-        DB.close();
-    }
+    private Config config;
+    private Context context;
+    private Path localPath;
+    private Path cloudPath;
 
     /**
      * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
@@ -67,11 +62,25 @@ public class UploadLocalFileTaskTest {
      * @throws IOException if failed to create a temporary directory.
      */
     @Before
-    public void setUpTempSyncDir() throws IOException {
+    public void setUp() throws IOException {
+
+        new DBMock();
 
         tempDir = Files.createTempDirectory(null);
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
+
+        this.config = new Config();
+        this.config.setUserName("test-user");
+        this.config.setDataPieces(120);
+        this.config.setParityPieces(50);
+        this.context = new Context(this.config, null);
+
+        this.localPath = Utils.getSyncDir().resolve("test-file");
+        this.cloudPath = this.context.pathPrefix.resolve("test-file").resolve(String.valueOf(System.currentTimeMillis())).toAbsolutePath();
+        assertTrue(localPath.toFile().createNewFile());
+        DB.addNewFile(localPath);
+        DB.setForUpload(this.localPath, this.cloudPath);
 
     }
 
@@ -81,119 +90,90 @@ public class UploadLocalFileTaskTest {
      * @throws IOException if failed to delete it.
      */
     @After
-    public void tearDownTempSyncDir() throws IOException {
-
-        if (tempDir != null && tempDir.toFile().exists()) {
-            FileUtils.deleteDirectory(tempDir.toFile());
-        }
-
+    public void tearDown() throws IOException {
+        DB.close();
+        FileUtils.deleteDirectory(tempDir.toFile());
     }
 
     @Test
-    public void testUploadFile() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        cfg.setDataPieces(120);
-        cfg.setParityPieces(50);
-        final Context ctx = new Context(cfg, null);
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        assertTrue(localPath.toFile().createNewFile());
-        DB.addForUpload(localPath);
-        final Date now = new Date();
+    public void uploadFile() throws IOException, ApiException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
         }};
-
-        final SiaFileMock file = new SiaFileMock(localPath);
-        file.setRemotePath(remotePath);
-        new UploadLocalFileTask(ctx, file, now).run();
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
+        new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
     }
 
     @Test
-    public void testUploadFileWithLocalPath() throws IOException, ApiException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        cfg.setDataPieces(120);
-        cfg.setParityPieces(50);
-        final Context ctx = new Context(cfg, null);
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        assertTrue(localPath.toFile().createNewFile());
-        DB.addForUpload(localPath);
-        final Date now = new Date();
+    public void failedToUpload() throws ApiException, IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
-        }};
-
-        // Use a local path instead of a SiaFile instance.
-        new UploadLocalFileTask(ctx, localPath, now).run();
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).getState());
-        assertTrue(DBMock.committed);
-
-    }
-
-    @Test
-    public void testFailedToUpload() throws ApiException, IOException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser");
-        cfg.setDataPieces(120);
-        cfg.setParityPieces(50);
-        final Context ctx = new Context(cfg, null);
-
-        final Path localPath = Utils.getSyncDir().resolve("testfile");
-        final Path remotePath = ctx.pathPrefix.resolve("testfile");
-        assertTrue(localPath.toFile().createNewFile());
-        DB.addForUpload(localPath);
-        final Date now = new Date();
-
-        new Expectations() {{
-            final Path siaPath = remotePath.resolve(String.valueOf(now.getTime()));
-            api.renterUploadSiapathPost(siaPath.toString(), cfg.getDataPieces(), cfg.getParityPieces(), localPath.toString());
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
             result = new ApiException();
         }};
-
-        new UploadLocalFileTask(ctx, localPath, now).run();
-        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).getState());
+        new UploadLocalFileTask(this.context, localPath).run();
         assertTrue(DBMock.committed);
+        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).get().getState());
 
     }
 
-//    @Test
-//    public void testUploadToSubDirectory() throws IOException, ApiException {
-//
-//        final Config cfg = new Config();
-//        cfg.userName = "testuser";
-//        cfg.dataPieces = 120;
-//        cfg.parityPieces = 50;
-//        final Context ctx = new Context(cfg, null);
-//
-//        final Path localPath = CmdUtils.getSyncDir().resolve(Paths.get("subdir","testfile"));
-//        final Path remotePath = ctx.pathPrefix.resolve(Paths.get("subdir","testfile"));
-//        localPath.toFile().createNewFile();
-//        DB.addForUpload(localPath);
-//
-//        new Expectations() {{
-//            api.renterUploadSiapathPost(remotePath.toString(), cfg.dataPieces, cfg.parityPieces, localPath.toString());
-//        }};
-//
-//        final SiaFileMock file = new SiaFileMock(localPath);
-//        file.setRemotePath(remotePath);
-//        new UploadLocalFileTask(ctx, file).run();
-//
-//    }
+    /**
+     * Test a case that a file is modified while it is waiting to start uploading.
+     * In this case, upload should be canceled and delegate CheckStateTask to decide uploading the new file or not.
+     */
+    @Test
+    public void toBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException, ApiException {
 
+        // Expecting the api won't be called.
+        new Expectations() {{
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            times = 0;
+        }};
+
+        // Create a upload local file task.
+        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
+
+        // then, the target file is modified.
+        DB.setModified(localPath);
+
+        // and, the task is executed.
+        task.run();
+
+        // check after conditions.
+        assertFalse(DBMock.committed);
+        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+
+    }
+
+    /**
+     * Test a cast that a file is deleted while it is waiting to start uploading.
+     * In this case, upload must be canceled.
+     */
+    @Test
+    public void toBeUploadedFileDeleted() throws NoSuchMethodException, IOException, IllegalAccessException, InvocationTargetException, ApiException {
+
+        // Expecting the api won't be called.
+        new Expectations() {{
+            api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
+            times = 0;
+        }};
+
+        // Create a upload local file task.
+        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
+
+        // then, the target file is modified.
+        DB.setDeleted(localPath);
+
+        // and, the task is executed.
+        task.run();
+
+        // check after conditions.
+        assertFalse(DBMock.committed);
+        assertEquals(SyncState.DELETED, DB.get(localPath).get().getState());
+
+    }
 
 }

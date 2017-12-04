@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.command;
 
+import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
@@ -42,9 +44,11 @@ import java.nio.file.Path;
 
 public class CreateAllowanceTest {
 
+    @SuppressWarnings("unused")
     @Mocked
     private WalletApi wallet;
 
+    @SuppressWarnings("unused")
     @Mocked
     private RenterApi renter;
 
@@ -154,11 +158,11 @@ public class CreateAllowanceTest {
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
-        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g" );
+        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 
@@ -197,11 +201,11 @@ public class CreateAllowanceTest {
         final double fund = 2234.85;
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
-        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g" );
+        Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
         Deencapsulation.setField(cfg, "includeHiddenFiles", true);
-        cfg.save(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
 
@@ -232,12 +236,28 @@ public class CreateAllowanceTest {
 
     }
 
+    @SuppressWarnings("unused")
+    @Test
+    public void testWithHelpOption(@Mocked HelpFormatter formatter, @Mocked System system) {
 
+        new Expectations() {{
+            formatter.printHelp(
+                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    CreateAllowance.Description, withNotNull(), "", true);
+        }};
+        CreateAllowance.main(new String[]{"-h"});
+        CreateAllowance.main(new String[]{"--help"});
+
+    }
+
+    @SuppressWarnings("unused")
     @Test
     public void testWithInvalidOption(@Mocked HelpFormatter formatter, @Mocked System system) {
 
         new Expectations() {{
-            formatter.printHelp(String.format("goobox-sync-sia %s", CreateAllowance.CommandName), withNotNull(), true);
+            formatter.printHelp(
+                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    CreateAllowance.Description, withNotNull(), "", true);
             System.exit(1);
         }};
         CreateAllowance.main(new String[]{"--fund", "abcde"});

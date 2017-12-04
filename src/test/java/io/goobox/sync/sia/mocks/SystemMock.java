@@ -17,19 +17,17 @@
 
 package io.goobox.sync.sia.mocks;
 
-import org.jetbrains.annotations.NotNull;
+import mockit.Mock;
+import mockit.MockUp;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
+public class SystemMock extends MockUp<System> {
 
-public class ExecutorMock implements Executor {
+    public static long currentTime;
 
-    public List<Runnable> queue = new ArrayList<>();
-
-    @Override
-    public void execute(@NotNull Runnable command) {
-        this.queue.add(command);
+    @SuppressWarnings("unused")
+    @Mock
+    public static long currentTimeMillis() {
+        return currentTime;
     }
 
 }

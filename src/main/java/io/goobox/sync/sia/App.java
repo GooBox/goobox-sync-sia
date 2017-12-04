@@ -16,7 +16,7 @@
  */
 package io.goobox.sync.sia;
 
-import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
@@ -30,7 +30,6 @@ import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.storj.Utils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -53,11 +52,22 @@ import java.util.concurrent.TimeUnit;
  */
 public class App {
 
+    public static final String CommandName = "goobox-sync-sia";
+    public static final String Description = "Sync app for Sia";
+
+    /**
+     * Version information.
+     */
+    public static final String Version = "0.0.6";
+
     /**
      * The number of the minimum required contructs.
      */
     static final int MinContracts = 20;
 
+    /**
+     * Default sleep time to wait synchronization and signing contracts.
+     */
     static final long DefaultSleepTime = 60 * 1000;
 
     /**
@@ -65,8 +75,14 @@ public class App {
      */
     static final String ConfigFileName = "goobox.properties";
 
-    private Path configPath;
+    /**
+     * The number of worker threads.
+     */
+    private static final int WorkerThreadSize = 2;
+
     private static final Logger logger = LogManager.getLogger();
+
+    private Path configPath;
 
     /**
      * The main function.
@@ -92,12 +108,17 @@ public class App {
         final Options opts = new Options();
         opts.addOption(null, "reset-db", false, "reset sync DB");
         opts.addOption("h", "help", false, "show this help");
+        opts.addOption("v", "version", false, "print version");
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
-                final HelpFormatter help = new HelpFormatter();
-                help.printHelp("goobox-sync-sia", opts, true);
+                App.printHelp(opts);
+                return;
+            }
+
+            if (cmd.hasOption("v")) {
+                System.out.println(String.format("Version %s", App.Version));
                 return;
             }
 
@@ -117,10 +138,14 @@ public class App {
             new App().init();
 
         } catch (ParseException e) {
-            logger.error("Failed to parse command line options: {}", e.getMessage());
 
-            final HelpFormatter help = new HelpFormatter();
-            help.printHelp("goobox-sync-sia", opts, true);
+            logger.error("Failed to parse command line options: {}", e.getMessage());
+            App.printHelp(opts);
+            System.exit(1);
+
+        } catch (IOException e) {
+
+            logger.error("Failed to start this application: {}", e.getMessage());
             System.exit(1);
 
         }
@@ -130,7 +155,7 @@ public class App {
     /**
      * Initialize the app and starts an event loop.
      */
-    private void init() {
+    private void init() throws IOException {
 
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
         final Config cfg = this.loadConfig(this.configPath);
@@ -158,10 +183,11 @@ public class App {
 
         }
 
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleWithFixedDelay​(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
+        executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
+        new FileWatcher(Utils.getSyncDir(), executor);
 
     }
 
@@ -361,6 +387,26 @@ public class App {
             }
 
         }
+
+    }
+
+    @SuppressWarnings("StringBufferReplaceableByString")
+    private static void printHelp(final Options opts) {
+
+        final StringBuilder builder = new StringBuilder();
+        builder.append("\nSubcommands:\n");
+        builder.append(" ");
+        builder.append(Wallet.CommandName);
+        builder.append("\n  ");
+        builder.append(Wallet.Description);
+        builder.append("\n ");
+        builder.append(CreateAllowance.CommandName);
+        builder.append("\n  ");
+        builder.append(CreateAllowance.Description);
+
+        final HelpFormatter help = new HelpFormatter();
+        help.printHelp(CommandName, Description, opts, builder.toString(), true);
+
 
     }
 

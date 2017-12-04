@@ -26,13 +26,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Uploads a given local file to cloud storage with a given remote path.
+ * Downloads a cloud name to the local directory.
  */
-class UploadLocalFileTask implements Runnable {
+class DownloadCloudFileTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -40,47 +39,47 @@ class UploadLocalFileTask implements Runnable {
     private final Context ctx;
 
     @NotNull
-    private final Path localPath;
+    private final String name;
 
-
-    UploadLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
+    DownloadCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
-        this.localPath = localPath;
+        this.name = name;
     }
 
     @Override
     public void run() {
 
-        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
-            logger.warn("File {} was deleted from SyncDB", this.localPath);
+            logger.warn("File {} was specified to be downloaded but doesn't exist in the sync DB", this.name);
             return;
         }
+
         syncFileOpt.ifPresent(syncFile -> {
 
-            if (syncFile.getState() != SyncState.FOR_UPLOAD) {
-                logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
+            if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
+                logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
                 return;
             }
-            syncFile.getCloudPath().ifPresent(cloudPath -> {
+            syncFile.getCloudPath().ifPresent(cloudPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
                 final RenterApi api = new RenterApi(this.ctx.apiClient);
                 try {
 
-                    api.renterUploadSiapathPost(
-                            cloudPath.toString(),
-                            this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                            this.localPath.toString());
-                    DB.setUploading(this.localPath);
+                    logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
+                    api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
+                    DB.setDownloading(this.name);
 
-                } catch (ApiException e) {
-                    logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-                    DB.setUploadFailed(this.localPath);
+                } catch (final ApiException e) {
+                    logger.error(
+                            "Cannot start downloading name {} to {}: {}",
+                            cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
+                    DB.setDownloadFailed(this.name);
                 } finally {
                     DB.commit();
                 }
 
-            });
+            }));
 
         });
 

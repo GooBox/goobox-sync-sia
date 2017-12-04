@@ -17,7 +17,7 @@
 
 package io.goobox.sync.sia.mocks;
 
-import io.goobox.sync.storj.Utils;
+import io.goobox.sync.common.Utils;
 import mockit.Mock;
 import mockit.MockUp;
 

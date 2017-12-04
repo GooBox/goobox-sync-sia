@@ -172,7 +172,7 @@ public class WalletTest {
     public void testHelpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", withNotNull(), true);
+            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
         }};
         Wallet.main(new String[]{"-h"});
 
@@ -182,7 +182,7 @@ public class WalletTest {
     public void testLongHelpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", withNotNull(), true);
+            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
         }};
         Wallet.main(new String[]{"--help"});
 
@@ -193,7 +193,7 @@ public class WalletTest {
     public void testInvalidOption(@Mocked HelpFormatter formatter, @Mocked System system) {
 
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", withNotNull(), true);
+            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
             System.exit(1);
         }};
         Wallet.main(new String[]{"-something"});

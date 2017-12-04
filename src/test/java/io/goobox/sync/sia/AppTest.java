@@ -18,6 +18,7 @@
 package io.goobox.sync.sia;
 
 import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
@@ -34,7 +35,6 @@ import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.storj.Utils;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mock;
@@ -42,6 +42,7 @@ import mockit.MockUp;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -142,25 +143,69 @@ public class AppTest {
     }
 
     @Test
-    public void testMainWithHelp(@Mocked HelpFormatter help) {
+    public void testMainWithHelp() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        new Expectations() {{
-            help.printHelp("goobox-sync-sia", withNotNull(), true);
+        new Expectations(App.class) {{
+            final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+            printHelp.setAccessible(true);
+            printHelp.invoke(App.class, withAny(new Options()));
         }};
         App.main(new String[]{"-h"});
         App.main(new String[]{"--help"});
 
     }
 
+    @Test
+    public void testMainWithVersion() {
+
+        new Expectations(System.out) {{
+            System.out.println(String.format("Version %s", App.Version));
+            times = 2;
+        }};
+        App.main(new String[]{"-v"});
+        App.main(new String[]{"--version"});
+
+    }
+
     @SuppressWarnings("unused")
     @Test
-    public void testMainWithIllegalOptions(@Mocked HelpFormatter help, @Mocked System system) {
+    public void testMainWithIllegalOptions()
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
-        new Expectations() {{
-            help.printHelp("goobox-sync-sia", withNotNull(), true);
+        new Expectations(App.class) {{
+            final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+            printHelp.setAccessible(true);
+            printHelp.invoke(App.class, withAny(new Options()));
+        }};
+        new Expectations(System.class) {{
             System.exit(1);
         }};
         App.main(new String[]{"--aaaaa"});
+
+    }
+
+    @Test
+    public void testPrintHelp(@Mocked HelpFormatter help) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        final StringBuilder builder = new StringBuilder();
+        builder.append("\nSubcommands:\n");
+        builder.append(" ");
+        builder.append(Wallet.CommandName);
+        builder.append("\n  ");
+        builder.append(Wallet.Description);
+        builder.append("\n ");
+        builder.append(CreateAllowance.CommandName);
+        builder.append("\n  ");
+        builder.append(CreateAllowance.Description);
+
+        final Options opt = new Options();
+        new Expectations() {{
+            help.printHelp(App.CommandName, App.Description, opt, builder.toString(), true);
+        }};
+
+        final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
+        printHelp.setAccessible(true);
+        printHelp.invoke(App.class, opt);
 
     }
 
@@ -168,7 +213,7 @@ public class AppTest {
     @Test
     public void testMainWithWalletCommand(@Mocked Wallet cmd) {
 
-        final String[] args = new String[]{"wallet", "a", "b", "c"};
+        final String[] args = new String[]{Wallet.CommandName, "a", "b", "c"};
         new Expectations() {{
             Wallet.main(Arrays.copyOfRange(args, 1, args.length));
         }};
@@ -180,7 +225,7 @@ public class AppTest {
     @Test
     public void testMainWithCreateAllowanceCommand(@Mocked CreateAllowance cmd) {
 
-        final String[] args = new String[]{"create-allowance", "x", "y", "z"};
+        final String[] args = new String[]{CreateAllowance.CommandName, "x", "y", "z"};
         new Expectations() {{
             CreateAllowance.main(Arrays.copyOfRange(args, 1, args.length));
         }};
@@ -190,8 +235,8 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testInit(@Mocked ScheduledThreadPoolExecutor executor, @Mocked CmdUtils utils)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public void testInit(@Mocked ScheduledThreadPoolExecutor executor, @Mocked CmdUtils utils, @Mocked FileWatcher watcher)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
 
         final Config cfg = new Config();
         final ApiClient apiClient = new ApiClient();
@@ -251,10 +296,12 @@ public class AppTest {
 
         }
 
+        // Enqueue basic tasks.
         new Expectations() {{
-            executor.scheduleWithFixedDelay​(withAny(new CheckStateTask(ctx, executor)), 0L, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay​(new CheckDownloadStatusTask(ctx), 30, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay​(new CheckUploadStatusTask(ctx), 45, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(withAny(new CheckStateTask(ctx, executor)), 0L, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
+            new FileWatcher(Utils.getSyncDir(), withNotNull());
         }};
 
         final AppMock mock = new AppMock();

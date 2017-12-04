@@ -16,23 +16,22 @@
  */
 package io.goobox.sync.sia.model;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
+import io.goobox.sync.common.Utils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.goobox.sync.storj.Utils;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * SiaPath represents a file path in SIA and provides utility methods.
- *
+ * <p>
  * In Goobox, a file path in SIA, i.e. sia path, must follow the format below:
- *
+ * <p>
  * <username>/Goobox/<filepath>/<UNIX time>
- *
+ * <p>
  * where filepath allows any relative path.
  *
  * @author junpei

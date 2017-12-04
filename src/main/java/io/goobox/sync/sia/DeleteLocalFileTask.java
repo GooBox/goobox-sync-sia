@@ -17,12 +17,16 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
+import io.goobox.sync.sia.db.SyncState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 
 /**
@@ -32,29 +36,44 @@ import java.nio.file.Path;
  */
 class DeleteLocalFileTask implements Runnable {
 
-    private final Path path;
     private static final Logger logger = LogManager.getLogger();
 
-    DeleteLocalFileTask(final Path path) {
-        this.path = path;
+    @NotNull
+    private final Path localPath;
+
+    DeleteLocalFileTask(@NotNull final Path localPath) {
+        this.localPath = localPath;
     }
 
     @Override
     public void run() {
 
-        logger.info("Deleting local file {}", this.path);
-        try {
-
-            final boolean success = Files.deleteIfExists(this.path);
-            if (!success) {
-                logger.warn("File {} doesn't exist", this.path);
-            }
-            DB.remove(this.path);
-            DB.commit();
-
-        } catch (IOException e) {
-            logger.error("Cannot delete local file {}: {}", this.path, e.getMessage());
+        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        if (!syncFileOpt.isPresent()) {
+            logger.warn("File {} was deleted from SyncDB", this.localPath);
+            return;
         }
+        syncFileOpt.ifPresent(syncFile -> {
+
+            if (syncFile.getState() != SyncState.FOR_LOCAL_DELETE) {
+                logger.debug("File {} was enqueued to be deleted but its status was changed, skipped", syncFile.getName());
+                return;
+            }
+
+            logger.info("Deleting local file {}", this.localPath);
+            try {
+
+                if (!Files.deleteIfExists(this.localPath)) {
+                    logger.warn("File {} doesn't exist", this.localPath);
+                }
+                DB.remove(this.localPath);
+                DB.commit();
+
+            } catch (IOException e) {
+                logger.error("Cannot delete local file {}: {}", this.localPath, e.getMessage());
+            }
+
+        });
 
     }
 

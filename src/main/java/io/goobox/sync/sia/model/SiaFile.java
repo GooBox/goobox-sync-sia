@@ -16,6 +16,9 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.db.CloudFile;
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 /**
@@ -23,21 +26,24 @@ import java.nio.file.Path;
  *
  * @author junpei
  */
-public interface SiaFile {
+public interface SiaFile extends CloudFile {
 
     /**
      * Returns the name of this file.
      */
+    @NotNull
     String getName();
 
     /**
      * Returns the path where this file located in the blockchain.
      */
-    Path getRemotePath();
+    @NotNull
+    Path getCloudPath();
 
     /**
      * Returns the path where this file located in a local computer.
      */
+    @NotNull
     Path getLocalPath();
 
     /**
@@ -53,6 +59,7 @@ public interface SiaFile {
     /**
      * Returns a SiaPath object.
      */
+    @NotNull
     SiaPath getSiaPath();
 
 }

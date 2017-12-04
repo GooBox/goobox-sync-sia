@@ -17,7 +17,9 @@
 
 package io.goobox.sync.sia.command;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
@@ -41,6 +43,7 @@ import java.math.BigDecimal;
 public class CreateAllowance implements Runnable {
 
     public static final String CommandName = "create-allowance";
+    public static final String Description = "Create allowance";
     private static final Logger logger = LogManager.getLogger();
 
     public static void main(final String[] args) {
@@ -54,9 +57,10 @@ public class CreateAllowance implements Runnable {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
-                System.out.println("here");
                 final HelpFormatter help = new HelpFormatter();
-                help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
+                help.printHelp(
+                        String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                        Description, opts, "", true);
                 return;
             }
 
@@ -69,7 +73,9 @@ public class CreateAllowance implements Runnable {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
-            help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
+            help.printHelp(
+                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    Description, opts, "", true);
             System.exit(1);
             return;
 
@@ -95,8 +101,8 @@ public class CreateAllowance implements Runnable {
             final InlineResponse20013 walletInfo = wallet.walletGet();
 
             // If the wallet is locked, unlock it first.
-            if(!walletInfo.getUnlocked()){
-                final Config cfg = Config.load(io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+            if (!walletInfo.getUnlocked()) {
+                final Config cfg = Config.load(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
                 wallet.walletUnlockPost(cfg.getPrimarySeed());
             }
 
@@ -118,7 +124,7 @@ public class CreateAllowance implements Runnable {
         } catch (IOException e) {
             logger.error(
                     "Failed to read config file {}: {}",
-                    io.goobox.sync.storj.Utils.getDataDir().resolve(CmdUtils.ConfigFileName),
+                    Utils.getDataDir().resolve(CmdUtils.ConfigFileName),
                     e.getMessage());
         }
 

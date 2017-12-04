@@ -16,17 +16,16 @@
  */
 package io.goobox.sync.sia.model;
 
-import static org.junit.Assert.assertEquals;
+import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 
-import org.junit.Test;
-
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
-import io.goobox.sync.storj.Utils;
+import static org.junit.Assert.assertEquals;
 
 public class SiaFileFromFilesAPITest {
 
@@ -48,7 +47,7 @@ public class SiaFileFromFilesAPITest {
         final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(file, prefix);
 
         assertEquals(name, siaFile.getName());
-        assertEquals(remotePath, siaFile.getRemotePath());
+        assertEquals(remotePath, siaFile.getCloudPath());
         assertEquals(Paths.get(Utils.getSyncDir().toString(), name), siaFile.getLocalPath());
         assertEquals(new SiaPath(remotePath.toString(), prefix), siaFile.getSiaPath());
 

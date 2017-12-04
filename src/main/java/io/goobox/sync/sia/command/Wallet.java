@@ -41,6 +41,7 @@ import java.math.BigDecimal;
 public class Wallet implements Runnable {
 
     public static final String CommandName = "wallet";
+    public static final String Description = "Show your wallet information";
     private static final Logger logger = LogManager.getLogger();
 
     public static void main(String[] args) {
@@ -51,9 +52,8 @@ public class Wallet implements Runnable {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
-                System.out.println("here");
                 final HelpFormatter help = new HelpFormatter();
-                help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
+                help.printHelp(String.format("goobox-sync-sia %s", CommandName), Description, opts, "", true);
                 return;
             }
 
@@ -61,7 +61,7 @@ public class Wallet implements Runnable {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
-            help.printHelp(String.format("goobox-sync-sia %s", CommandName), opts, true);
+            help.printHelp(String.format("goobox-sync-sia %s", CommandName), Description, opts, "", true);
             System.exit(1);
             return;
 

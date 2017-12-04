@@ -15,21 +15,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia.mocks;
+package io.goobox.sync.sia.db;
 
-import org.jetbrains.annotations.NotNull;
+import java.nio.file.Path;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
+/**
+ * Defines information a cloud file has to provide to the sync database.
+ */
+public interface CloudFile {
 
-public class ExecutorMock implements Executor {
+    /**
+     * Returns the name of this file.
+     */
+    String getName();
 
-    public List<Runnable> queue = new ArrayList<>();
+    /**
+     * Returns the path to this file in the cloud network.
+     */
+    Path getCloudPath();
 
-    @Override
-    public void execute(@NotNull Runnable command) {
-        this.queue.add(command);
-    }
+    /**
+     * Returns the file size of this file.
+     */
+    long getFileSize();
 
 }
