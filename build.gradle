@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2017 Junpei Kawamoto
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'application'
+
+version = '0.0.6'
+mainClassName = 'io.goobox.sync.sia.App'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'io.swagger:swagger-annotations:1.5.15'
+    compile 'com.squareup.okhttp:okhttp:2.7.5'
+    compile 'com.squareup.okhttp:logging-interceptor:2.7.5'
+    compile 'com.google.code.gson:gson:2.8.1'
+    compile 'joda-time:joda-time:2.9.9'
+    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'commons-cli:commons-cli:1.4'
+    compile 'commons-codec:commons-codec:1.4'
+    compile 'org.dizitart:nitrite:2.0.1'
+    compile 'net.harawata:appdirs:1.0.0'
+    compile 'net.java.dev.jna:jna-platform:4.5.0'
+    compile 'io.methvin:directory-watcher:0.3.1'
+    compile 'org.apache.logging.log4j:log4j-api:2.9.1'
+    compile 'org.apache.logging.log4j:log4j-core:2.9.1'
+    compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.9.1'
+    compile 'com.intellij:annotations:12.0'
+    compile files('../goobox-sync-common/target/goobox-sync-common-0.0.1.jar')
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.jmockit:jmockit:1.36'
+    testCompile 'commons-io:commons-io:2.6'
+}
+
+task packageTests(type: Jar) {
+    from sourceSets.test.output
+    classifier = 'tests'
+}
+artifacts.archives packageTests
+
+task swagger(type: Exec) {
+    description 'Generate a Swagger API client.'
+    group 'build'
+    executable 'sh'
+    args 'codegen.sh'
+}
+
+run {
+    if (project.hasProperty('args')) {
+        args(project.args.split('\\s+'))
+    }
+}
