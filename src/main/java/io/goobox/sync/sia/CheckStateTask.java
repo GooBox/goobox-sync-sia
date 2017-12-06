@@ -79,7 +79,7 @@ class CheckStateTask implements Runnable {
                             case SYNCED:
 
                                 // This file was synced.
-                                if (file.getCreationTime() > syncFile.getLocalModificationTime().orElse(0L)) {
+                                if (file.getCreationTime().orElse(0L) > syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The cloud file was updated, and it will be downloaded.
                                     logger.info("Cloud file {} is going to be downloaded", file.getName());
@@ -91,7 +91,7 @@ class CheckStateTask implements Runnable {
                             case MODIFIED:
 
                                 // This file has been modified.
-                                if (file.getCreationTime() < syncFile.getLocalModificationTime().orElse(0L)) {
+                                if (file.getCreationTime().orElse(0L) < syncFile.getLocalModificationTime().orElse(0L)) {
 
                                     // The newer local file will be uploaded.
                                     // Even if the file in cloud was also modified, i.e. there is conflict,
@@ -104,8 +104,9 @@ class CheckStateTask implements Runnable {
                                     // Both cloud and local files are modified and it is a conflict.
                                     // The cloud file should be downloaded and the local file should be renamed and kept it
                                     // too.
-                                    logger.warn("Conflict detected: file {} is modified in both cloud and local", file.getName());
-                                    DB.setConflict(file, file.getLocalPath());
+                                    logger.debug("Conflict detected: file {} is modified in both cloud and local", file.getName());
+                                    logger.info("Cloud file {} is going to be downloaded", file.getName());
+                                    this.enqueueForDownload(file);
 
                                 }
                                 break;
@@ -240,7 +241,7 @@ class CheckStateTask implements Runnable {
                 if (fileMap.containsKey(siaFile.getName())) {
 
                     final SiaFile prev = fileMap.get(siaFile.getName());
-                    if (siaFile.getCreationTime() > prev.getCreationTime()) {
+                    if (siaFile.getCreationTime().orElse(0L) > prev.getCreationTime().orElse(0L)) {
                         logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
                                 siaFile.getCreationTime());
                         fileMap.put(siaFile.getName(), siaFile);

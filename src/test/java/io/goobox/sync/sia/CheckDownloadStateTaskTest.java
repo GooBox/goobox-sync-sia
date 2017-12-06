@@ -492,7 +492,7 @@ public class CheckDownloadStateTaskTest {
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
+        file.setSiapath(syncFile.getCloudPath().get().resolve(String.valueOf(System.currentTimeMillis())).toString());
         file.setDestination(syncFile.getTemporaryPath().get().toString());
         file.setFilesize(syncFile.getCloudSize().get());
         file.setReceived(syncFile.getCloudSize().get());
@@ -504,6 +504,7 @@ public class CheckDownloadStateTaskTest {
         final String dummyData = "dummy data";
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(localPath);
+        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 10000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
