@@ -113,7 +113,7 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(localPath).get().getState());
 
@@ -140,7 +140,7 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
@@ -213,7 +213,7 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
         assertEquals(expected, DB.get(localPath).get().getState());
 
@@ -239,7 +239,7 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(localPath).isPresent());
 
@@ -265,7 +265,7 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(localPath).isPresent());
 

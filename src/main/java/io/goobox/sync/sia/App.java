@@ -94,10 +94,8 @@ public class App {
     // Static fields.
     private static App app;
 
-
     // Instance fields.
     private Path configPath;
-    private Config cfg;
     private Context ctx;
 
     private SiaDaemon daemon;
@@ -173,7 +171,7 @@ public class App {
 
     public App() {
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        this.cfg = this.loadConfig(this.configPath);
+        final Config cfg = this.loadConfig(this.configPath);
         final ApiClient apiClient = CmdUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
     }
@@ -185,7 +183,7 @@ public class App {
 
     synchronized void startSiaDaemon() {
 
-        if (this.daemon == null) {
+        if (this.daemon == null || this.daemon.isClosed()) {
 
             this.daemon = new SiaDaemon();
             try {
@@ -253,9 +251,15 @@ public class App {
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         this.resumeTasks(ctx, executor);
-        executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckStateTask(ctx, executor), new StartSiaDaemonTask()),
+                0, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckDownloadStateTask(ctx), new StartSiaDaemonTask()),
+                30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
+                45, 60, TimeUnit.SECONDS);
         new FileWatcher(Utils.getSyncDir(), executor);
 
     }
@@ -461,19 +465,19 @@ public class App {
         logger.info("Resume pending uploads if exist");
         DB.getFiles(SyncState.FOR_UPLOAD).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
             logger.info("File {} is going to be uploaded", syncFile.getName());
-            executor.execute(new UploadLocalFileTask(ctx, localPath));
+            executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         }));
 
         logger.info("Resume pending downloads if exist");
         DB.getFiles(SyncState.FOR_DOWNLOAD).forEach(syncFile -> {
             logger.info("File {} is going to be downloaded", syncFile.getName());
-            executor.execute(new DownloadCloudFileTask(ctx, syncFile.getName()));
+            executor.execute(new RetryableTask(new DownloadCloudFileTask(ctx, syncFile.getName()), new StartSiaDaemonTask()));
         });
 
         logger.info("Resume pending deletes from the cloud network if exist");
         DB.getFiles(SyncState.FOR_CLOUD_DELETE).forEach(syncFile -> {
             logger.info("File {} is going to be deleted from the cloud network", syncFile.getName());
-            executor.execute(new DeleteCloudFileTask(ctx, syncFile.getName()));
+            executor.execute(new RetryableTask(new DeleteCloudFileTask(ctx, syncFile.getName()), new StartSiaDaemonTask()));
         });
 
         logger.info("Resume pending deletes from the local directory if exist");

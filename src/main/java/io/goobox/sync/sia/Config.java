@@ -34,6 +34,7 @@ import java.util.Properties;
  *
  * @author junpei
  */
+@SuppressWarnings("WeakerAccess")
 public class Config {
 
     private static final String UserName = "username";
@@ -113,6 +114,7 @@ public class Config {
         return includeHiddenFiles;
     }
 
+    @SuppressWarnings("SameParameterValue")
     void setIncludeHiddenFiles(boolean includeHiddenFiles) {
         this.includeHiddenFiles = includeHiddenFiles;
     }
@@ -122,6 +124,7 @@ public class Config {
         return new ReflectionToStringBuilder(this).toString();
     }
 
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

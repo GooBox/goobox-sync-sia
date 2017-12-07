@@ -250,6 +250,7 @@ public class SiaDaemonTest {
         }};
 
         daemon.run();
+        assertTrue(daemon.isClosed());
 
     }
 

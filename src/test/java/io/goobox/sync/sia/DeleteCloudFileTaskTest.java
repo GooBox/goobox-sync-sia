@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
@@ -141,7 +142,7 @@ public class DeleteCloudFileTaskTest {
             });
         }};
 
-        new DeleteCloudFileTask(ctx, name).run();
+        new DeleteCloudFileTask(ctx, name).call();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(name).isPresent());
 
@@ -166,13 +167,13 @@ public class DeleteCloudFileTaskTest {
             result = list;
         }};
 
-        new DeleteCloudFileTask(ctx, siaFile.getName()).run();
+        new DeleteCloudFileTask(ctx, siaFile.getName()).call();
 
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void toBeCloudDeleteFileModified() throws IOException, ApiException {
+    public void toBeCloudDeleteFileModified() throws Exception {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
@@ -196,13 +197,13 @@ public class DeleteCloudFileTaskTest {
         }};
 
         // a delete task is enqueued.
-        final Runnable task = new DeleteCloudFileTask(ctx, siaFile.getName());
+        final Callable<Void> task = new DeleteCloudFileTask(ctx, siaFile.getName());
 
         // the target is modified.
         DB.setModified(localPath);
 
         // the task is executed.
-        task.run();
+        task.call();
 
         // check after conditions.
         assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());

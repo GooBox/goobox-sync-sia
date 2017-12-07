@@ -101,7 +101,7 @@ public class UploadLocalFileTaskTest {
         new Expectations() {{
             api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
         }};
-        new UploadLocalFileTask(this.context, localPath).run();
+        new UploadLocalFileTask(this.context, localPath).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
 
@@ -114,7 +114,7 @@ public class UploadLocalFileTaskTest {
             api.renterUploadSiapathPost(cloudPath.toString(), config.getDataPieces(), config.getParityPieces(), localPath.toString());
             result = new ApiException();
         }};
-        new UploadLocalFileTask(this.context, localPath).run();
+        new UploadLocalFileTask(this.context, localPath).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).get().getState());
 
@@ -140,7 +140,7 @@ public class UploadLocalFileTaskTest {
         DB.setModified(localPath);
 
         // and, the task is executed.
-        task.run();
+        task.call();
 
         // check after conditions.
         assertFalse(DBMock.committed);
@@ -168,7 +168,7 @@ public class UploadLocalFileTaskTest {
         DB.setDeleted(localPath);
 
         // and, the task is executed.
-        task.run();
+        task.call();
 
         // check after conditions.
         assertFalse(DBMock.committed);

@@ -64,6 +64,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -258,7 +259,7 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testInit(@Mocked ScheduledThreadPoolExecutor executor, @Mocked CmdUtils utils, @Mocked FileWatcher watcher)
+    public void testInit(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
             throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
 
         final Config cfg = new Config();
@@ -335,11 +336,19 @@ public class AppTest {
 
         }
 
+        class ScheduledThreadPoolExecutorMock extends MockUp<ScheduledThreadPoolExecutor> {
+            private List<Runnable> queue = new ArrayList<>();
+
+            @Mock
+            void scheduleWithFixedDelay(Runnable task, long start, long delay, TimeUnit unit) {
+                queue.add(task);
+            }
+        }
+        ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
+
+
         // Enqueue basic tasks.
         new Expectations() {{
-            executor.scheduleWithFixedDelay(withAny(new CheckStateTask(ctx, executor)), 0L, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
             new FileWatcher(Utils.getSyncDir(), withNotNull());
         }};
 
@@ -357,6 +366,10 @@ public class AppTest {
         assertTrue(mock.calledSynchronizeModifiedFiles);
         assertTrue(mock.calledSynchronizeDeletedFiles);
         assertTrue(mock.calledResumeTasks);
+
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
 
     }
 
@@ -1016,7 +1029,61 @@ public class AppTest {
         final Runnable task = executor.queue.get(0);
         System.out.println(task);
 
-        assertEquals(cmdClass, task.getClass());
+        final Class<?> klass;
+        if (task instanceof RetryableTask) {
+            klass = Deencapsulation.getField(task, "task").getClass();
+        } else {
+            klass = task.getClass();
+        }
+        assertEquals(cmdClass, klass);
+
+    }
+
+    @Test
+    public void startSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
+
+        new Expectations() {{
+            daemon.checkAndDownloadConsensusDB();
+            daemon.start();
+        }};
+
+        final App app = new App();
+        assertEquals(null, (SiaDaemon) Deencapsulation.getField(app, "daemon"));
+        app.startSiaDaemon();
+
+    }
+
+    @Test
+    public void restartSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
+
+        new Expectations() {{
+            daemon.isClosed();
+            result = true;
+            daemon.checkAndDownloadConsensusDB();
+            daemon.start();
+        }};
+
+        final App app = new App();
+        Deencapsulation.setField(app, "daemon", daemon);
+        app.startSiaDaemon();
+
+    }
+
+    @Test
+    public void notStartSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
+
+        new Expectations() {{
+            daemon.isClosed();
+            result = false;
+            daemon.checkAndDownloadConsensusDB();
+            times = 0;
+            daemon.start();
+            times = 0;
+        }};
+
+        final App app = new App();
+        Deencapsulation.setField(app, "daemon", daemon);
+        app.startSiaDaemon();
 
     }
 

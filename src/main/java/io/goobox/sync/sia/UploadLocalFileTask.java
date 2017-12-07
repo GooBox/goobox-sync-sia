@@ -26,13 +26,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.ConnectException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * Uploads a given local file to cloud storage with a given remote path.
  */
-class UploadLocalFileTask implements Runnable {
+class UploadLocalFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -49,41 +51,47 @@ class UploadLocalFileTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
         if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.localPath);
-            return;
+            return null;
         }
-        syncFileOpt.ifPresent(syncFile -> {
 
-            if (syncFile.getState() != SyncState.FOR_UPLOAD) {
-                logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", this.localPath);
-                return;
+        final SyncFile syncFile = syncFileOpt.get();
+        if (syncFile.getState() != SyncState.FOR_UPLOAD) {
+            logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", syncFile.getName());
+            return null;
+        }
+
+        if (!syncFile.getCloudPath().isPresent()) {
+            logger.debug("File {} was enqueued but it doesn't cloud path", syncFile.getName());
+            return null;
+        }
+        final Path cloudPath = syncFile.getCloudPath().get();
+        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        try {
+
+            api.renterUploadSiapathPost(
+                    cloudPath.toString(),
+                    this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
+                    this.localPath.toString());
+            DB.setUploading(this.localPath);
+
+        } catch (ApiException e) {
+
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
             }
-            syncFile.getCloudPath().ifPresent(cloudPath -> {
+            logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
+            DB.setUploadFailed(this.localPath);
 
-                final RenterApi api = new RenterApi(this.ctx.apiClient);
-                try {
+        } finally {
+            DB.commit();
+        }
 
-                    api.renterUploadSiapathPost(
-                            cloudPath.toString(),
-                            this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                            this.localPath.toString());
-                    DB.setUploading(this.localPath);
-
-                } catch (ApiException e) {
-                    logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-                    DB.setUploadFailed(this.localPath);
-                } finally {
-                    DB.commit();
-                }
-
-            });
-
-        });
-
+        return null;
     }
 
 }

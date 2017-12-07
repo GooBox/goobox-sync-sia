@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
 /**
@@ -44,7 +46,7 @@ import java.util.concurrent.Executor;
  *
  * @author junpei
  */
-class CheckStateTask implements Runnable {
+class CheckStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -59,7 +61,7 @@ class CheckStateTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         logger.info("Checking for changes");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
@@ -203,11 +205,15 @@ class CheckStateTask implements Runnable {
                 processedFiles.add(syncFile.getName());
             });
 
-        } catch (ApiException e) {
+        } catch (final ApiException e) {
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
+            }
             logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
+        return null;
 
     }
 
@@ -274,7 +280,7 @@ class CheckStateTask implements Runnable {
         final Path name = Utils.getSyncDir().relativize(localPath);
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
         DB.setForUpload(localPath, cloudPath);
-        this.executor.execute(new UploadLocalFileTask(this.ctx, localPath));
+        executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
 
     }
 
@@ -286,7 +292,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForDownload(final SiaFile file) throws IOException {
 
         DB.addForDownload(file, file.getLocalPath());
-        this.executor.execute(new DownloadCloudFileTask(this.ctx, file.getName()));
+        this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
     }
 
@@ -298,7 +304,7 @@ class CheckStateTask implements Runnable {
     private void enqueueForCloudDelete(final SiaFile file) {
 
         DB.setForCloudDelete(file);
-        this.executor.execute(new DeleteCloudFileTask(this.ctx, file.getName()));
+        this.executor.execute(new RetryableTask(new DeleteCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
     }
 

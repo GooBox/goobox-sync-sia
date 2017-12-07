@@ -70,11 +70,14 @@ public class SiaDaemon extends Thread implements Closeable {
         } catch (IOException e) {
             logger.error("Failed to start SIA daemon: {}", e.getMessage());
         }
+        synchronized (this) {
+            this.process = null;
+        }
 
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
 
         if (this.process != null) {
             logger.info("Closing SIA daemon");
@@ -86,6 +89,11 @@ public class SiaDaemon extends Thread implements Closeable {
             }
         }
 
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public boolean isClosed() {
+        return this.process == null;
     }
 
     @NotNull

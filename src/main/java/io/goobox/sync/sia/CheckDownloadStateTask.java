@@ -33,6 +33,7 @@ import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -41,13 +42,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * Requests current downloading status to siad and prints it.
  *
  * @author junpei
  */
-class CheckDownloadStateTask implements Runnable {
+class CheckDownloadStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -59,7 +61,7 @@ class CheckDownloadStateTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         logger.info("Checking download status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
@@ -107,7 +109,7 @@ class CheckDownloadStateTask implements Runnable {
                                 // If local file doesn't exist, it means there are no conflict.
                                 if (!localPath.toFile().exists()) {
 
-                                    logger.info("File {} has been downloaded", file.getName());
+                                    logger.info("New file {} has been downloaded", file.getName());
                                     Files.move(tempPath, localPath, StandardCopyOption.REPLACE_EXISTING);
                                     syncFile.getCloudCreationTime().ifPresent(cloudCreationTime -> {
                                         if (localPath.toFile().setLastModified(cloudCreationTime)) {
@@ -129,7 +131,6 @@ class CheckDownloadStateTask implements Runnable {
                                         final Path conflictedCopy = Utils.conflictedCopyPath(localPath);
                                         Files.move(localPath, conflictedCopy, StandardCopyOption.REPLACE_EXISTING);
                                         logger.debug("Conflicted copy of {} has been created", file.getName());
-
                                     }
                                     Files.move(tempPath, localPath, StandardCopyOption.REPLACE_EXISTING);
                                     if (localPath.toFile().setLastModified(cloudCreationTime)) {
@@ -194,11 +195,15 @@ class CheckDownloadStateTask implements Runnable {
 
             }
 
-        } catch (ApiException e) {
+        } catch (final ApiException e) {
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
+            }
             logger.error("Failed to retrieve downloading files: {}", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
+        return null;
 
     }
 

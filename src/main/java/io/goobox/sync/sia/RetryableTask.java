@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Callable;
 
@@ -27,10 +28,12 @@ public class RetryableTask implements Runnable {
 
     private static Logger logger = LogManager.getLogger();
 
+    @NotNull
     private final Callable<Void> task;
+    @NotNull
     private final RecoveryTask recover;
 
-    RetryableTask(final Callable<Void> task, final RecoveryTask recover) {
+    RetryableTask(@NotNull final Callable<Void> task, @NotNull final RecoveryTask recover) {
         this.task = task;
         this.recover = recover;
     }
@@ -49,9 +52,26 @@ public class RetryableTask implements Runnable {
             }
 
         }
-
         logger.warn("Failed to recover {}", this.task.getClass().getName());
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RetryableTask that = (RetryableTask) o;
+
+        if (!task.equals(that.task)) return false;
+        return recover.equals(that.recover);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = task.hashCode();
+        result = 31 * result + recover.hashCode();
+        return result;
+    }
+    
 }

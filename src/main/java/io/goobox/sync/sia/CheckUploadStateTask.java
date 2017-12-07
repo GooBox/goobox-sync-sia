@@ -30,9 +30,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
-class CheckUploadStateTask implements Runnable {
+class CheckUploadStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
@@ -45,7 +47,7 @@ class CheckUploadStateTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         logger.info("Checking upload status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
@@ -53,7 +55,7 @@ class CheckUploadStateTask implements Runnable {
 
             final InlineResponse20011 res = api.renterFilesGet();
             if (res.getFiles() == null) {
-                return;
+                return null;
             }
 
             res.getFiles().forEach(item -> {
@@ -91,11 +93,15 @@ class CheckUploadStateTask implements Runnable {
 
             });
 
-        } catch (ApiException e) {
+        } catch (final ApiException e) {
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
+            }
             logger.error("Failed to retrieve uploading status: {}", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
+        return null;
 
     }
 
