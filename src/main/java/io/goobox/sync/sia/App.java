@@ -39,6 +39,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,6 +58,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class App {
 
+    // Constants.
     public static final String CommandName = "goobox-sync-sia";
     public static final String Description = "Sync app for Sia";
 
@@ -89,7 +91,14 @@ public class App {
 
     private static final Logger logger = LogManager.getLogger();
 
+    // Static fields.
+    private static App app;
+
+
+    // Instance fields.
     private Path configPath;
+    private Config cfg;
+    private Context ctx;
 
     private SiaDaemon daemon;
 
@@ -144,7 +153,8 @@ public class App {
             }
 
             // Start the app.
-            new App().init();
+            App.app = new App();
+            App.app.init();
 
         } catch (ParseException e) {
 
@@ -161,7 +171,19 @@ public class App {
 
     }
 
-    public synchronized void startSiaDaemon() {
+    public App() {
+        this.configPath = Utils.getDataDir().resolve(ConfigFileName);
+        this.cfg = this.loadConfig(this.configPath);
+        final ApiClient apiClient = CmdUtils.getApiClient();
+        this.ctx = new Context(cfg, apiClient);
+    }
+
+    @Nullable
+    public static App getInstance() {
+        return App.app;
+    }
+
+    synchronized void startSiaDaemon() {
 
         if (this.daemon == null) {
 
@@ -183,9 +205,6 @@ public class App {
      */
     private void init() throws IOException {
 
-        this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        final Config cfg = this.loadConfig(this.configPath);
-
         if (!checkAndCreateSyncDir()) {
             System.exit(1);
             return;
@@ -195,17 +214,15 @@ public class App {
             return;
         }
 
-        final ApiClient apiClient = CmdUtils.getApiClient();
-        final Context ctx = new Context(cfg, apiClient);
 
         int retry = 0;
         while (true) {
 
             try {
 
-                this.prepareWallet(ctx);
-                this.waitSynchronization(ctx);
-                this.waitContracts(ctx);
+                this.prepareWallet();
+                this.waitSynchronization();
+                this.waitContracts();
                 break;
 
             } catch (ApiException e) {
@@ -308,10 +325,9 @@ public class App {
      * <p>
      * If no wallets have been created, it'll initialize a wallet.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Wallet API.
      */
-    private void prepareWallet(final Context ctx) throws ApiException {
+    void prepareWallet() throws ApiException {
 
         final WalletApi api = new WalletApi(ctx.apiClient);
         final InlineResponse20013 wallet = api.walletGet();
@@ -332,7 +348,7 @@ public class App {
 
                         // If a primary seed is given but the corresponding wallet doesn't exist,
                         // initialize a wallet with the seed.
-                        this.waitSynchronization(ctx);
+                        this.waitSynchronization();
 
                         logger.info("Initializing a wallet with the given seed");
                         api.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
@@ -379,10 +395,9 @@ public class App {
     /**
      * Wait until the consensus DB is synced.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Consensus API.
      */
-    private void waitSynchronization(final Context ctx) throws ApiException {
+    void waitSynchronization() throws ApiException {
 
         logger.info("Checking consensus DB");
         final ConsensusApi api = new ConsensusApi(ctx.apiClient);
@@ -412,10 +427,9 @@ public class App {
     /**
      * Wait until minimum required contracts are signed.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Renter API.
      */
-    private void waitContracts(final Context ctx) throws ApiException {
+    void waitContracts() throws ApiException {
 
         logger.info("Checking contracts");
         final RenterApi api = new RenterApi(ctx.apiClient);

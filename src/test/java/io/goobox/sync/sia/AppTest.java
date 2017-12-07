@@ -303,20 +303,17 @@ public class AppTest {
             }
 
             @Mock
-            private void prepareWallet(Context context) {
-                assertEquals(ctx, context);
+            void prepareWallet() {
                 this.preparedWallet = true;
             }
 
             @Mock
-            private void waitSynchronization(Context context) {
-                assertEquals(ctx, context);
+            void waitSynchronization() {
                 this.waitedSynchronization = true;
             }
 
             @Mock
-            private void waitContracts(Context context) {
-                assertEquals(ctx, context);
+            void waitContracts() {
                 this.waitedContracts = true;
             }
 
@@ -404,7 +401,7 @@ public class AppTest {
             }
 
             @Mock
-            private void prepareWallet(Context context) throws ApiException {
+            void prepareWallet() throws ApiException {
                 this.prepareWalletCalled++;
                 throw new ApiException(new ConnectException("expected exception"));
             }
@@ -588,9 +585,11 @@ public class AppTest {
             result = res;
         }};
 
-        final Method init = App.class.getDeclaredMethod("prepareWallet", Context.class);
+        final Method init = App.class.getDeclaredMethod("prepareWallet");
         init.setAccessible(true);
-        init.invoke(new App(), ctx);
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", ctx);
+        init.invoke(app);
 
     }
 
@@ -604,9 +603,11 @@ public class AppTest {
             result = res;
         }};
 
-        final Method init = App.class.getDeclaredMethod("prepareWallet", Context.class);
+        final Method init = App.class.getDeclaredMethod("prepareWallet");
         init.setAccessible(true);
-        init.invoke(new App(), ctx);
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", ctx);
+        init.invoke(app);
 
     }
 
@@ -651,10 +652,11 @@ public class AppTest {
 
             final App app = new App();
             Deencapsulation.setField(app, "configPath", tmpFile);
+            Deencapsulation.setField(app, "ctx", ctx);
 
-            final Method init = App.class.getDeclaredMethod("prepareWallet", Context.class);
+            final Method init = App.class.getDeclaredMethod("prepareWallet");
             init.setAccessible(true);
-            init.invoke(app, ctx);
+            init.invoke(app);
 
             final Config cfg = Config.load(tmpFile);
             assertEquals(primarySeed, cfg.getPrimarySeed());
@@ -707,9 +709,10 @@ public class AppTest {
         }};
 
         final App app = new App();
-        final Method init = App.class.getDeclaredMethod("prepareWallet", Context.class);
+        final Method init = App.class.getDeclaredMethod("prepareWallet");
         init.setAccessible(true);
-        init.invoke(app, ctx);
+        Deencapsulation.setField(app, "ctx", ctx);
+        init.invoke(app);
 
     }
 
@@ -733,9 +736,10 @@ public class AppTest {
         }};
 
         final App app = new App();
-        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization", Context.class);
+        Deencapsulation.setField(app, "ctx", ctx);
+        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization");
         waitSynchronization.setAccessible(true);
-        waitSynchronization.invoke(app, this.ctx);
+        waitSynchronization.invoke(app);
 
     }
 
@@ -750,9 +754,10 @@ public class AppTest {
         }};
 
         final App app = new App();
-        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization", Context.class);
+        Deencapsulation.setField(app, "ctx", ctx);
+        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization");
         waitSynchronization.setAccessible(true);
-        waitSynchronization.invoke(app, this.ctx);
+        waitSynchronization.invoke(app);
 
     }
 
@@ -785,9 +790,10 @@ public class AppTest {
         }};
 
         final App app = new App();
-        final Method waitContracts = App.class.getDeclaredMethod("waitContracts", Context.class);
+        Deencapsulation.setField(app, "ctx", ctx);
+        final Method waitContracts = App.class.getDeclaredMethod("waitContracts");
         waitContracts.setAccessible(true);
-        waitContracts.invoke(app, this.ctx);
+        waitContracts.invoke(app);
 
     }
 
@@ -810,9 +816,10 @@ public class AppTest {
         }};
 
         final App app = new App();
-        final Method waitContracts = App.class.getDeclaredMethod("waitContracts", Context.class);
+        Deencapsulation.setField(app, "ctx", ctx);
+        final Method waitContracts = App.class.getDeclaredMethod("waitContracts");
         waitContracts.setAccessible(true);
-        waitContracts.invoke(app, this.ctx);
+        waitContracts.invoke(app);
 
     }
 
