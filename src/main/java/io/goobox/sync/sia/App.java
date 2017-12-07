@@ -43,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -84,9 +85,13 @@ public class App {
      */
     private static final int WorkerThreadSize = 2;
 
+    static final int MaxRetry = 20;
+
     private static final Logger logger = LogManager.getLogger();
 
     private Path configPath;
+
+    private SiaDaemon daemon;
 
     /**
      * The main function.
@@ -156,6 +161,23 @@ public class App {
 
     }
 
+    public synchronized void startSiaDaemon() {
+
+        if (this.daemon == null) {
+
+            this.daemon = new SiaDaemon();
+            try {
+                this.daemon.checkAndDownloadConsensusDB();
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> this.daemon.close()));
+                this.daemon.start();
+            } catch (IOException e) {
+                logger.error("Failed to start SIA daemon: {}", e.getMessage());
+            }
+
+        }
+
+    }
+
     /**
      * Initialize the app and starts an event loop.
      */
@@ -166,24 +188,46 @@ public class App {
 
         if (!checkAndCreateSyncDir()) {
             System.exit(1);
+            return;
         }
         if (!checkAndCreateDataDir()) {
             System.exit(1);
+            return;
         }
 
         final ApiClient apiClient = CmdUtils.getApiClient();
         final Context ctx = new Context(cfg, apiClient);
 
-        try {
+        int retry = 0;
+        while (true) {
 
-            this.prepareWallet(ctx);
-            this.waitSynchronization(ctx);
-            this.waitContracts(ctx);
+            try {
 
-        } catch (ApiException e) {
+                this.prepareWallet(ctx);
+                this.waitSynchronization(ctx);
+                this.waitContracts(ctx);
+                break;
 
-            logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
-            System.exit(1);
+            } catch (ApiException e) {
+
+                if (!(e.getCause() instanceof ConnectException) || retry >= App.MaxRetry) {
+                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    System.exit(1);
+                    return;
+                }
+                this.startSiaDaemon();
+                retry++;
+
+                logger.info("Waiting SIA daemon starts");
+                try {
+                    Thread.sleep(DefaultSleepTime);
+                } catch (InterruptedException e1) {
+                    logger.error("Interrupted while waiting SIA daemon starts: {}", e1.getMessage());
+                    System.exit(1);
+                    return;
+                }
+
+            }
 
         }
 

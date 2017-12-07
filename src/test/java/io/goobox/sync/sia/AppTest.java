@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -359,6 +360,72 @@ public class AppTest {
         assertTrue(mock.calledSynchronizeModifiedFiles);
         assertTrue(mock.calledSynchronizeDeletedFiles);
         assertTrue(mock.calledResumeTasks);
+
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void initWithApiException(@Mocked Thread thread)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InterruptedException {
+
+        final Config cfg = new Config();
+        new Expectations() {{
+            CmdUtils.getApiClient();
+            result = null;
+            Thread.sleep(App.DefaultSleepTime);
+        }};
+
+        new Expectations(System.class) {{
+            System.exit(1);
+        }};
+
+        class AppMock extends MockUp<App> {
+            private boolean checkedSyncDir = false;
+            private boolean checkedDataDir = false;
+            private int prepareWalletCalled = 0;
+            private int startSiaDaemonCalled = 0;
+
+            @Mock
+            private Config loadConfig(Path path) {
+                assertEquals(Utils.getDataDir().resolve(App.ConfigFileName), path);
+                return cfg;
+            }
+
+            @Mock
+            private boolean checkAndCreateSyncDir() {
+                this.checkedSyncDir = true;
+                return true;
+            }
+
+            @Mock
+            private boolean checkAndCreateDataDir() {
+                this.checkedDataDir = true;
+                return true;
+            }
+
+            @Mock
+            private void prepareWallet(Context context) throws ApiException {
+                this.prepareWalletCalled++;
+                throw new ApiException(new ConnectException("expected exception"));
+            }
+
+            @Mock
+            public synchronized void startSiaDaemon() {
+                this.startSiaDaemonCalled++;
+            }
+
+        }
+
+        final AppMock mock = new AppMock();
+        final App app = new App();
+        final Method init = App.class.getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(app);
+
+        assertTrue(mock.checkedSyncDir);
+        assertTrue(mock.checkedDataDir);
+        assertEquals(App.MaxRetry + 1, mock.prepareWalletCalled);
+        assertEquals(App.MaxRetry, mock.startSiaDaemonCalled);
 
     }
 
