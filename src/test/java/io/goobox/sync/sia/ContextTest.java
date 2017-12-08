@@ -55,4 +55,18 @@ public class ContextTest {
 
     }
 
+    @Test
+    public void getLocalPath() {
+
+        final Path wd = Paths.get(".").toAbsolutePath();
+        final Config cfg = new Config();
+        Deencapsulation.setField(cfg, "syncDir", wd);
+
+        final Context ctx = new Context(cfg, null);
+
+        final Path name = Paths.get("sub-dir", "some-file");
+        assertEquals(wd.resolve(name), ctx.getLocalPath(name.toString()));
+
+    }
+
 }

@@ -236,7 +236,7 @@ class CheckStateTask implements Callable<Void> {
                     return;
                 }
 
-                final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+                final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());

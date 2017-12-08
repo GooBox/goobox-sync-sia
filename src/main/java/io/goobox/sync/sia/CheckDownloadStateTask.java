@@ -69,7 +69,7 @@ class CheckDownloadStateTask implements Callable<Void> {
 
             for (final InlineResponse20010Downloads remoteFile : getRecentDownloads(api.renterDownloadsGet().getDownloads())) {
 
-                final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(remoteFile, this.ctx.pathPrefix);
+                final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(this.ctx, remoteFile);
                 final Optional<SyncFile> syncFileOpt = DB.get(file);
 
                 if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {

@@ -79,7 +79,7 @@ class DeleteCloudFileTask implements Callable<Void> {
 
                 for (final InlineResponse20011Files file : files.getFiles()) {
 
-                    final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.ctx.pathPrefix);
+                    final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
                     if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                         return null;
                     }

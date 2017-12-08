@@ -17,7 +17,7 @@
 
 package io.goobox.sync.sia.model;
 
-import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -40,13 +40,13 @@ public abstract class AbstractSiaFile implements SiaFile {
     @Nullable
     private final Long creationTime;
 
-    AbstractSiaFile(@NotNull final String cloudPath, @NotNull final Path prefix) {
+    AbstractSiaFile(@NotNull Context ctx, @NotNull final String cloudPath) {
 
         this.cloudPath = Paths.get(cloudPath);
 
         Path withoutTimestamp = this.cloudPath;
         Long created = null;
-        if (this.cloudPath.getNameCount() - prefix.getNameCount() != 1) {
+        if (this.cloudPath.getNameCount() - ctx.pathPrefix.getNameCount() != 1) {
             try {
                 created = Long.parseLong(this.cloudPath.getFileName().toString());
                 withoutTimestamp = this.cloudPath.getParent();
@@ -56,8 +56,9 @@ public abstract class AbstractSiaFile implements SiaFile {
         }
         this.creationTime = created;
 
-        this.name = prefix.relativize(withoutTimestamp);
-        this.localPath = Utils.getSyncDir().resolve(this.name);
+        this.name = ctx.pathPrefix.relativize(withoutTimestamp);
+        this.localPath = ctx.getLocalPath(this.name.toString());
+
 
     }
 

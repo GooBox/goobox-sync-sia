@@ -16,12 +16,11 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.file.Path;
 
 /**
  * SiaFileFromDownloadsAPI is a SiaFile which wraps a result of /renter/downloads.
@@ -34,8 +33,8 @@ public class SiaFileFromDownloadsAPI extends AbstractSiaFile {
     @NotNull
     private final InlineResponse20010Downloads rawFile;
 
-    public SiaFileFromDownloadsAPI(@NotNull final InlineResponse20010Downloads file, @NotNull final Path prefix) {
-        super(file.getSiapath(), prefix);
+    public SiaFileFromDownloadsAPI(@NotNull final Context ctx, @NotNull final InlineResponse20010Downloads file) {
+        super(ctx, file.getSiapath());
         this.rawFile = file;
     }
 

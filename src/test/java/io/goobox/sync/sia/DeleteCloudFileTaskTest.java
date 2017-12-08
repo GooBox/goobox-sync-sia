@@ -156,7 +156,7 @@ public class DeleteCloudFileTaskTest {
         file.setLocalpath(localPath.toString());
         file.setAvailable(true);
         file.setFilesize(1234L);
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, ctx.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(ctx, file);
         DB.setSynced(siaFile, localPath);
         DB.setForCloudDelete(siaFile);
 
@@ -183,7 +183,7 @@ public class DeleteCloudFileTaskTest {
         file.setFilesize(1234L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, ctx.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(ctx, file);
         DB.setSynced(siaFile, localPath);
         DB.setForCloudDelete(siaFile);
 
@@ -209,6 +209,5 @@ public class DeleteCloudFileTaskTest {
         assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
 
     }
-
 
 }

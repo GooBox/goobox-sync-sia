@@ -60,7 +60,7 @@ class CheckUploadStateTask implements Callable<Void> {
 
             res.getFiles().forEach(item -> {
 
-                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
+                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, item);
                 final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
 
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {

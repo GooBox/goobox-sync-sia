@@ -110,7 +110,7 @@ public class CheckStateTaskTest {
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
@@ -162,7 +162,7 @@ public class CheckStateTaskTest {
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -216,7 +216,7 @@ public class CheckStateTaskTest {
         file.setFilesize(10L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
 
         DB.commit();
         new Expectations() {{
@@ -290,7 +290,7 @@ public class CheckStateTaskTest {
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
@@ -389,7 +389,7 @@ public class CheckStateTaskTest {
         file.setAvailable(false);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
@@ -463,7 +463,7 @@ public class CheckStateTaskTest {
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -505,7 +505,7 @@ public class CheckStateTaskTest {
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         assertTrue(localPath.toFile().createNewFile());
         assertTrue(localPath.toFile().setLastModified(this.oldTimeStamp.getTime()));

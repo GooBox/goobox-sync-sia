@@ -18,6 +18,9 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
+import mockit.Deencapsulation;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,14 +35,18 @@ public class AbstractSiaFileTest {
     private String user;
     private String path;
     private Long created;
-    private Path prefix;
+    private Context ctx;
 
     @Before
     public void setUp() {
         this.user = "testuser";
         this.path = "foo/bar.txt";
         this.created = System.currentTimeMillis();
-        this.prefix = Paths.get(user, "Goobox");
+
+        final Config cfg = new Config();
+        Deencapsulation.setField(cfg, "userName", this.user);
+        ctx = new Context(cfg, null);
+
     }
 
 
@@ -48,7 +55,7 @@ public class AbstractSiaFileTest {
     public void cloudPathWithCreationTime() {
 
         final Path inPath = Paths.get(user, "Goobox", path, String.valueOf(created));
-        final SiaFile siaFile = new AbstractSiaFile(inPath.toString(), prefix) {
+        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;
@@ -66,7 +73,7 @@ public class AbstractSiaFileTest {
     public void couldPathWithoutCreationTime() {
 
         final Path inPath = Paths.get(user, "Goobox", path);
-        final SiaFile siaFile = new AbstractSiaFile(inPath.toString(), prefix) {
+        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;
@@ -85,7 +92,7 @@ public class AbstractSiaFileTest {
 
         final String path = "1234567890";
         final Path inPath = Paths.get(user, "Goobox", path);
-        final SiaFile siaFile = new AbstractSiaFile(inPath.toString(), prefix) {
+        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;

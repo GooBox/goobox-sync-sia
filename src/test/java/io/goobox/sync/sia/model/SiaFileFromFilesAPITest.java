@@ -17,7 +17,10 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import mockit.Deencapsulation;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -36,8 +39,11 @@ public class SiaFileFromFilesAPITest {
         final String user = "test-user";
         final String name = "foo/bar.txt";
         final Long created = new Date().getTime();
-        final Path prefix = Paths.get(user, "Goobox");
         final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
+
+        final Config cfg = new Config();
+        Deencapsulation.setField(cfg, "userName", user);
+        final Context ctx = new Context(cfg, null);
 
         final long fileSize = 12345;
         final InlineResponse20011Files file = new InlineResponse20011Files();
@@ -45,7 +51,7 @@ public class SiaFileFromFilesAPITest {
         file.setFilesize(fileSize);
         file.setAvailable(false);
         file.setUploadprogress(new BigDecimal(24.5));
-        final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(file, prefix);
+        final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(ctx, file);
 
         assertEquals(name, siaFile.getName());
         assertEquals(remotePath, siaFile.getCloudPath());

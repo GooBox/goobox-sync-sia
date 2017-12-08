@@ -58,10 +58,20 @@ public class Context {
      * @param localPath of the file
      * @return the name used in goobox for the given file.
      */
+    @NotNull
     public String getName(@NotNull final Path localPath) {
-
         return this.config.getSyncDir().relativize(localPath).toString();
+    }
 
+    /**
+     * Returns a local path to the given named file.
+     *
+     * @param name of the file.
+     * @return local path to the file.
+     */
+    @NotNull
+    public Path getLocalPath(@NotNull final String name) {
+        return this.config.getSyncDir().resolve(name);
     }
 
     @Override
