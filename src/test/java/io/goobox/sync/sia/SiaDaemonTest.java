@@ -22,8 +22,8 @@ import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
-import net.harawata.appdirs.AppDirsFactory;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,11 +50,18 @@ import static org.junit.Assert.fail;
 @RunWith(JMockit.class)
 public class SiaDaemonTest {
 
+    private Path dataDir;
     private SiaDaemon daemon;
 
     @Before
-    public void setUp() {
-        daemon = new SiaDaemon();
+    public void setUp() throws IOException {
+        dataDir = Files.createTempDirectory(null);
+        daemon = new SiaDaemon(dataDir);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        FileUtils.deleteDirectory(dataDir.toFile());
     }
 
     @SuppressWarnings("unused")
@@ -88,12 +95,6 @@ public class SiaDaemonTest {
 
     }
 
-    @Test
-    public void getDataDir() {
-        final String userData = AppDirsFactory.getInstance().getUserDataDir("Sia-UI", null, "", true);
-        assertEquals(Paths.get(userData, "sia"), daemon.getDataDir());
-    }
-
     /**
      * checkAndDownloadConsensusDB checks {DataDIR}/consensus/consensus.db, and if not exists download it from
      * https://consensus.siahub.info/consensus.db with a check sum in https://consensus.siahub.info/sha256sum.txt
@@ -101,46 +102,34 @@ public class SiaDaemonTest {
     @Test
     public void checkAndDownloadConsensusDB() throws IOException {
 
-        Path tmpDir = Files.createTempDirectory(null);
-        try {
+        // Case 1: consensus.db doesn't exist.
+        Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
+        assertFalse(consensusDB.toFile().exists());
 
-            // Case 1: consensus.db doesn't exist.
-            Path consensusDB = tmpDir.resolve(Paths.get("consensus", "consensus.db"));
-            assertFalse(consensusDB.toFile().exists());
+        final List<String> dummyData = new ArrayList<>();
+        dummyData.add("abcdefg");
+        dummyData.add("012345");
+        final Path dummyPath = Files.createTempFile(null, null);
+        Files.write(dummyPath, dummyData);
 
-            new Expectations(daemon) {{
-                daemon.getDataDir();
-                result = tmpDir;
-            }};
+        final URLConnection conn = dummyPath.toUri().toURL().openConnection();
 
-            final List<String> dummyData = new ArrayList<>();
-            dummyData.add("abcdefg");
-            dummyData.add("012345");
-            final Path dummyPath = Files.createTempFile(null, null);
-            Files.write(dummyPath, dummyData);
-
-            final URLConnection conn = dummyPath.toUri().toURL().openConnection();
-
-            class URLMock extends MockUp<URL> {
-                @SuppressWarnings("unused")
-                @Mock
-                public URLConnection openConnection() {
-                    return conn;
-                }
+        class URLMock extends MockUp<URL> {
+            @SuppressWarnings("unused")
+            @Mock
+            public URLConnection openConnection() {
+                return conn;
             }
-            new URLMock();
+        }
+        new URLMock();
 
-            assertTrue(daemon.checkAndDownloadConsensusDB());
+        assertTrue(daemon.checkAndDownloadConsensusDB());
 
-            assertTrue(consensusDB.toFile().exists());
-            final List<String> contents = Files.readAllLines(consensusDB);
-            assertEquals(dummyData.size(), contents.size());
-            for (int i = 0; i != dummyData.size(); ++i) {
-                assertEquals(dummyData.get(i), contents.get(i));
-            }
-
-        } finally {
-            FileUtils.deleteDirectory(tmpDir.toFile());
+        assertTrue(consensusDB.toFile().exists());
+        final List<String> contents = Files.readAllLines(consensusDB);
+        assertEquals(dummyData.size(), contents.size());
+        for (int i = 0; i != dummyData.size(); ++i) {
+            assertEquals(dummyData.get(i), contents.get(i));
         }
 
     }
@@ -148,25 +137,12 @@ public class SiaDaemonTest {
     @Test
     public void checkAndDownloadConsensusDBWithExistingDBFile() throws IOException {
 
-        Path tmpDir = Files.createTempDirectory(null);
-        try {
-
-            // Case 2: consensus.db exists.
-            Path consensusDB = tmpDir.resolve(Paths.get("consensus", "consensus.db"));
-            assertFalse(consensusDB.toFile().exists());
-            Files.createDirectories(consensusDB.getParent());
-            assertTrue(consensusDB.toFile().createNewFile());
-
-            new Expectations(daemon) {{
-                daemon.getDataDir();
-                result = tmpDir;
-            }};
-
-            assertFalse(daemon.checkAndDownloadConsensusDB());
-
-        } finally {
-            FileUtils.deleteDirectory(tmpDir.toFile());
-        }
+        // Case 2: consensus.db exists.
+        Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
+        assertFalse(consensusDB.toFile().exists());
+        Files.createDirectories(consensusDB.getParent());
+        assertTrue(consensusDB.toFile().createNewFile());
+        assertFalse(daemon.checkAndDownloadConsensusDB());
 
     }
 
@@ -175,12 +151,9 @@ public class SiaDaemonTest {
     public void run(@Mocked ProcessBuilder builder, @Mocked Process proc) throws IOException {
 
         final Path daemonPath = Paths.get(System.getProperty("java.io.tmpdir"), "daemon");
-        final Path dataPath = Paths.get(System.getProperty("java.io.tmpdir"), "data");
         new Expectations(daemon) {{
             daemon.getDaemonPath();
             result = daemonPath;
-            daemon.getDataDir();
-            result = dataPath;
         }};
 
         final PipedOutputStream out = new PipedOutputStream();
@@ -205,7 +178,7 @@ public class SiaDaemonTest {
                     "--api-addr=127.0.0.1:9980",
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
-                    String.format("--sia-directory=%s", dataPath),
+                    String.format("--sia-directory=%s", dataDir),
                     "--modules=cghrtw");
             cmd.redirectErrorStream(true);
             cmd.start();
@@ -222,12 +195,9 @@ public class SiaDaemonTest {
     public void runAndClose() throws IOException {
 
         final Path daemonPath = Paths.get(System.getProperty("java.io.tmpdir"), "daemon");
-        final Path dataPath = Paths.get(System.getProperty("java.io.tmpdir"), "data");
         new Expectations(daemon) {{
             daemon.getDaemonPath();
             result = daemonPath;
-            daemon.getDataDir();
-            result = dataPath;
         }};
 
         final ProcessBuilder dummyProc = new ProcessBuilder("cat");
@@ -244,7 +214,7 @@ public class SiaDaemonTest {
                     "--api-addr=127.0.0.1:9980",
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
-                    String.format("--sia-directory=%s", dataPath),
+                    String.format("--sia-directory=%s", dataDir),
                     "--modules=cghrtw");
             result = dummyProc;
         }};

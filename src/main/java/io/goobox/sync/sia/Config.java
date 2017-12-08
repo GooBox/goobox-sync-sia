@@ -42,25 +42,32 @@ public class Config {
     static final String UserName = "username";
     static final String PrimarySeed = "primary-seed";
     static final String SyncDir = "sync-folder";
+    static final String DataDir = "data-folder";
     static final String DataPieces = "data-pieces";
     static final String ParityPieces = "parity-pieces";
     static final Logger logger = LogManager.getLogger();
 
     /**
-     * user name.
+     * User name.
      */
     private String userName;
 
     /**
-     * primary seed.
+     * Primary seed.
      */
     private String primarySeed;
 
     /**
-     * path to the directory where synchronising files are.
+     * Path to the directory where synchronising files are stored.
      */
     @NotNull
     private Path syncDir;
+
+    /**
+     * Path to the directory where SIA daemon data files are stored.
+     */
+    @NotNull
+    private Path dataDir;
 
     /**
      * The number of data pieces to use when erasure coding the file.
@@ -78,6 +85,7 @@ public class Config {
         this.userName = "";
         this.primarySeed = "";
         this.syncDir = Utils.getSyncDir().toAbsolutePath();
+        this.dataDir = Utils.getDataDir().toAbsolutePath();
     }
 
     @NotNull
@@ -101,6 +109,11 @@ public class Config {
     @NotNull
     public Path getSyncDir() {
         return syncDir;
+    }
+
+    @NotNull
+    public Path getDataDir() {
+        return dataDir;
     }
 
     public int getDataPieces() {
@@ -136,7 +149,8 @@ public class Config {
         if (parityPieces != config.parityPieces) return false;
         if (userName != null ? !userName.equals(config.userName) : config.userName != null) return false;
         if (primarySeed != null ? !primarySeed.equals(config.primarySeed) : config.primarySeed != null) return false;
-        return syncDir.equals(config.syncDir);
+        if (!syncDir.equals(config.syncDir)) return false;
+        return dataDir.equals(config.dataDir);
     }
 
     @Override
@@ -144,6 +158,7 @@ public class Config {
         int result = userName != null ? userName.hashCode() : 0;
         result = 31 * result + (primarySeed != null ? primarySeed.hashCode() : 0);
         result = 31 * result + syncDir.hashCode();
+        result = 31 * result + dataDir.hashCode();
         result = 31 * result + dataPieces;
         result = 31 * result + parityPieces;
         return result;
@@ -161,6 +176,7 @@ public class Config {
         props.setProperty(UserName, this.userName);
         props.setProperty(PrimarySeed, this.primarySeed);
         props.setProperty(SyncDir, this.syncDir.toAbsolutePath().toString());
+        props.setProperty(DataDir, this.dataDir.toAbsolutePath().toString());
         props.setProperty(DataPieces, String.valueOf(this.dataPieces));
         props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
 
@@ -193,6 +209,12 @@ public class Config {
             cfg.syncDir = Paths.get(props.getProperty(SyncDir)).toAbsolutePath();
         } else {
             cfg.syncDir = Utils.getSyncDir().toAbsolutePath();
+        }
+
+        if (props.getProperty(DataDir) != null) {
+            cfg.dataDir = Paths.get(props.getProperty(DataDir)).toAbsolutePath();
+        } else {
+            cfg.dataDir = Utils.getDataDir().toAbsolutePath();
         }
 
         try {

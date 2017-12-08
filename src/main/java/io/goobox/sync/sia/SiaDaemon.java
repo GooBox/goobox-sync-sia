@@ -17,11 +17,12 @@
 
 package io.goobox.sync.sia;
 
-import net.harawata.appdirs.AppDirsFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -43,7 +44,14 @@ public class SiaDaemon extends Thread implements Closeable {
     private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
     private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db";
 
+    @NotNull
+    private final Path dataDir;
+    @Nullable
     private Process process;
+
+    public SiaDaemon(@NotNull final Path dataDir) {
+        this.dataDir = dataDir.toAbsolutePath();
+    }
 
     /**
      * Start SIA daemon. This method blocks until the child process ends.
@@ -56,7 +64,7 @@ public class SiaDaemon extends Thread implements Closeable {
                 "--api-addr=127.0.0.1:9980",
                 "--host-addr=:9982",
                 "--rpc-addr=:9981",
-                String.format("--sia-directory=%s", this.getDataDir()),
+                String.format("--sia-directory=%s", this.dataDir),
                 "--modules=cghrtw");
         cmd.redirectErrorStream(true);
 
@@ -111,17 +119,10 @@ public class SiaDaemon extends Thread implements Closeable {
 
     }
 
-    @NotNull
-    Path getDataDir() {
-        // TODO: App name should be changed.
-        final String SiaUI = AppDirsFactory.getInstance().getUserDataDir("Sia-UI", null, "", true);
-        return Paths.get(SiaUI, "sia");
-    }
-
     boolean checkAndDownloadConsensusDB() throws IOException {
 
         // TODO: check sum : https://consensus.siahub.info/sha256sum.txt
-        final Path dbPath = this.getDataDir().resolve(ConsensusDBPath);
+        final Path dbPath = this.dataDir.resolve(ConsensusDBPath);
         if (dbPath.toFile().exists()) {
             return false;
         }
@@ -135,11 +136,29 @@ public class SiaDaemon extends Thread implements Closeable {
 
             final URL url = new URL(ConsensusDBURL);
             final URLConnection conn = url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+            conn.connect();
+
+            final Thread th = new Thread(() -> {
+                try {
+                    while (tempFile.toFile().exists()) {
+                        logger.info("Downloading consensus database... ({} MB)", tempFile.toFile().length() / 1000000);
+                        Thread.sleep(5000);
+                    }
+                } catch (InterruptedException e) {
+                    logger.error("Interrupted while downloading consensus database");
+                }
+            });
+            th.start();
+
             try (final InputStream in = conn.getInputStream()) {
-                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(new BufferedInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
             }
             Files.move(tempFile, dbPath);
+            th.join();
 
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             if (tempFile.toFile().exists()) {
                 if (tempFile.toFile().delete()) {

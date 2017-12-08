@@ -39,6 +39,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -95,9 +96,14 @@ public class App {
     private static App app;
 
     // Instance fields.
-    private Path configPath;
-    private Context ctx;
+    @NotNull
+    private final Path configPath;
+    @NotNull
+    private final Config cfg;
+    @NotNull
+    private final Context ctx;
 
+    @Nullable
     private SiaDaemon daemon;
 
     /**
@@ -170,10 +176,13 @@ public class App {
     }
 
     public App() {
+
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        final Config cfg = this.loadConfig(this.configPath);
+        this.cfg = this.loadConfig(this.configPath);
+
         final ApiClient apiClient = CmdUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
+
     }
 
     @Nullable
@@ -185,7 +194,7 @@ public class App {
 
         if (this.daemon == null || this.daemon.isClosed()) {
 
-            this.daemon = new SiaDaemon();
+            this.daemon = new SiaDaemon(this.cfg.getDataDir().resolve("sia"));
             try {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> this.daemon.close()));

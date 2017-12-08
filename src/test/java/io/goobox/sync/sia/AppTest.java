@@ -1043,6 +1043,8 @@ public class AppTest {
     public void startSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
 
         new Expectations() {{
+            new SiaDaemon(Utils.getDataDir().resolve("sia"));
+            result = daemon;
             daemon.checkAndDownloadConsensusDB();
             daemon.start();
         }};

@@ -41,6 +41,7 @@ public class ConfigTest {
     private String userName;
     private String primarySeed;
     private Path syncDir;
+    private Path dataDir;
     private int dataPieces;
     private int parityPieces;
 
@@ -64,6 +65,7 @@ public class ConfigTest {
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
         this.syncDir = Paths.get("sync-dir");
+        this.dataDir = Paths.get("data-dir");
         this.dataPieces = 5;
         this.parityPieces = 12;
 
@@ -77,6 +79,7 @@ public class ConfigTest {
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
         assertEquals(syncDir.toAbsolutePath(), cfg.getSyncDir());
+        assertEquals(dataDir.toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
 
@@ -110,6 +113,7 @@ public class ConfigTest {
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
         this.syncDir = null;
+        this.dataDir = null;
         this.dataPieces = 5;
         this.parityPieces = 12;
 
@@ -123,29 +127,33 @@ public class ConfigTest {
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
         assertEquals(Utils.getSyncDir().toAbsolutePath(), cfg.getSyncDir());
+        assertEquals(Utils.getDataDir().toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
 
     }
 
-
     @Test
     public void save() throws IOException {
 
-        final Path path = Paths.get("sync-dir");
+        final Path syncDir = Paths.get("sync-dir");
+        final Path dataDir = Paths.get("data-dir");
         final Config cfg = new Config();
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        Deencapsulation.setField(cfg, "syncDir", path);
+        Deencapsulation.setField(cfg, "syncDir", syncDir);
+        Deencapsulation.setField(cfg, "dataDir", dataDir);
 
         cfg.save(tmpPath);
-        Deencapsulation.setField(cfg, "syncDir", path.toAbsolutePath());
+        Deencapsulation.setField(cfg, "syncDir", syncDir.toAbsolutePath());
+        Deencapsulation.setField(cfg, "dataDir", dataDir.toAbsolutePath());
 
         assertEquals(cfg, Config.load(tmpPath));
         // Absolute path has to be written.
-        assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(path.toAbsolutePath().toString())));
+        assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(syncDir.toAbsolutePath().toString())));
+        assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(dataDir.toAbsolutePath().toString())));
 
     }
 
@@ -158,6 +166,7 @@ public class ConfigTest {
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
         Deencapsulation.setField(cfg, "syncDir", Paths.get("sync-dir").toAbsolutePath());
+        Deencapsulation.setField(cfg, "dataDir", Paths.get("data-dir").toAbsolutePath());
 
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
         writer.write("write random dummy data");
@@ -196,6 +205,14 @@ public class ConfigTest {
             buf.append(Config.SyncDir);
             buf.append(" = ");
             buf.append(syncDir);
+            buf.append("\n");
+        }
+
+        if (dataDir != null) {
+            buf.append(Config.DataDir);
+            buf.append(" = ");
+            buf.append(dataDir);
+            buf.append("\n");
         }
 
         System.out.println(buf.toString());
