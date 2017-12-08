@@ -22,11 +22,12 @@ import mockit.Mock;
 import mockit.MockUp;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class UtilsMock extends MockUp<Utils> {
 
-    public static Path syncDir;
-    public static Path dataDir;
+    public static Path syncDir = Paths.get("sync-dir");
+    public static Path dataDir = Paths.get("data-dir");
 
     @Mock
     public static Path getSyncDir() {
