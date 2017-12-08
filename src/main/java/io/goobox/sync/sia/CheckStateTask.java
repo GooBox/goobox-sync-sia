@@ -16,7 +16,6 @@
  */
 package io.goobox.sync.sia;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
@@ -173,7 +172,7 @@ class CheckStateTask implements Callable<Void> {
                 // It should be uploaded.
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(Utils.getSyncDir().resolve(syncFile.getName()));
+                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
                 }
@@ -188,7 +187,7 @@ class CheckStateTask implements Callable<Void> {
                 // This file exist in neither the cloud network nor the local directory, but in the sync DB.
                 // It should be deleted from the DB.
                 logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
-                DB.remove(Utils.getSyncDir().resolve(syncFile.getName()));
+                DB.remove(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             });
 
@@ -201,7 +200,7 @@ class CheckStateTask implements Callable<Void> {
                 // It means this file was deleted from the cloud network by another client.
                 // This file should be deleted from the local directory, too.
                 logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
-                this.enqueueForLocalDelete(Utils.getSyncDir().resolve(syncFile.getName()));
+                this.enqueueForLocalDelete(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             });
 
@@ -277,7 +276,7 @@ class CheckStateTask implements Callable<Void> {
      */
     private void enqueueForUpload(final Path localPath) throws IOException {
 
-        final Path name = Utils.getSyncDir().relativize(localPath);
+        final Path name = this.ctx.config.getSyncDir().relativize(localPath);
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
         DB.setForUpload(localPath, cloudPath);
         executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));

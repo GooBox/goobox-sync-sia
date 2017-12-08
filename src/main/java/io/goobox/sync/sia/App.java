@@ -246,7 +246,7 @@ public class App {
 
         }
 
-        this.synchronizeModifiedFiles(Utils.getSyncDir());
+        this.synchronizeModifiedFiles(this.ctx.config.getSyncDir());
         this.synchronizeDeletedFiles();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
@@ -260,7 +260,7 @@ public class App {
         executor.scheduleWithFixedDelay(
                 new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
                 45, 60, TimeUnit.SECONDS);
-        new FileWatcher(Utils.getSyncDir(), executor);
+        new FileWatcher(this.ctx.config.getSyncDir(), executor);
 
     }
 
@@ -289,8 +289,8 @@ public class App {
      * @return true if the synchronizing directory is ready.
      */
     private boolean checkAndCreateSyncDir() {
-        logger.info("Checking if local Goobox sync folder exists: {}", Utils.getSyncDir());
-        return checkAndCreateFolder(Utils.getSyncDir());
+        logger.info("Checking if local Goobox sync folder exists: {}", this.ctx.config.getSyncDir());
+        return checkAndCreateFolder(this.ctx.config.getSyncDir());
     }
 
     /**

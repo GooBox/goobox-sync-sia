@@ -447,7 +447,6 @@ public class AppTest {
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        cfg.setIncludeHiddenFiles(true);
 
         final Path tmpFile = Files.createTempFile(null, null);
         try {
