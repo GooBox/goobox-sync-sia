@@ -53,7 +53,7 @@ class UploadLocalFileTask implements Callable<Void> {
     @Override
     public Void call() throws ApiException {
 
-        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
         if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.localPath);
             return null;
@@ -77,7 +77,7 @@ class UploadLocalFileTask implements Callable<Void> {
                     cloudPath.toString(),
                     this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
                     this.localPath.toString());
-            DB.setUploading(this.localPath);
+            DB.setUploading(this.ctx.getName(this.localPath));
 
         } catch (ApiException e) {
 
@@ -85,7 +85,7 @@ class UploadLocalFileTask implements Callable<Void> {
                 throw e;
             }
             logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-            DB.setUploadFailed(this.localPath);
+            DB.setUploadFailed(this.ctx.getName(this.localPath));
 
         } finally {
             DB.commit();

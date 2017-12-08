@@ -200,13 +200,13 @@ public class DeleteCloudFileTaskTest {
         final Callable<Void> task = new DeleteCloudFileTask(ctx, siaFile.getName());
 
         // the target is modified.
-        DB.setModified(localPath);
+        DB.setModified(name, localPath);
 
         // the task is executed.
         task.call();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
 
     }
 

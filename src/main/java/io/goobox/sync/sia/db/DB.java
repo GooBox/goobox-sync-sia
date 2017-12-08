@@ -34,7 +34,7 @@ public class DB {
         return db().getRepository(SyncFile.class);
     }
 
-    private static ObjectFilter withName(String name) {
+    private static ObjectFilter withName(@NotNull String name) {
         return eq("name", name);
     }
 
@@ -58,26 +58,14 @@ public class DB {
         return get(file.getName());
     }
 
-    public synchronized static Optional<SyncFile> get(@NotNull final Path localPath) {
-        return get(Utils.getSyncDir().relativize(localPath).toString());
-    }
-
     public synchronized static Optional<SyncFile> get(@NotNull final String name) {
         final SyncFile res = repo().find(withName(name)).firstOrDefault();
         logger.trace("get({}) = {}", name, res);
         return Optional.ofNullable(res);
     }
 
-    private static String pathToName(final Path localPath) {
-        return Utils.getSyncDir().relativize(localPath).toString();
-    }
-
-    private synchronized static SyncFile getOrCreate(final CloudFile file) {
+    private synchronized static SyncFile getOrCreate(@NotNull final CloudFile file) {
         return getOrCreate(file.getName());
-    }
-
-    private synchronized static SyncFile getOrCreate(final Path localPath) {
-        return getOrCreate(pathToName(localPath));
     }
 
     private synchronized static SyncFile getOrCreate(String name) {
@@ -92,10 +80,6 @@ public class DB {
 
     public synchronized static void remove(@NotNull final CloudFile file) {
         remove(file.getName());
-    }
-
-    public synchronized static void remove(@NotNull final Path localPath) {
-        remove(Utils.getSyncDir().relativize(localPath).toString());
     }
 
     public synchronized static void remove(@NotNull final String name) {
@@ -122,8 +106,8 @@ public class DB {
      * @param localPath of the new file.
      * @throws IOException if fail to access the file.
      */
-    public synchronized static void addNewFile(final Path localPath) throws IOException {
-        final SyncFile syncFile = getOrCreate(localPath);
+    public synchronized static void addNewFile(@NotNull final String name, @NotNull final Path localPath) throws IOException {
+        final SyncFile syncFile = getOrCreate(name);
         syncFile.setLocalData(localPath);
         syncFile.setState(SyncState.MODIFIED);
         repo().update(syncFile);
@@ -147,24 +131,26 @@ public class DB {
     /**
      * Updates information of the given file and marks it as MODIFIED.
      *
+     * @param name      of the file.
      * @param localPath to the file.
      * @throws IOException if fail to access the file.
      */
-    public synchronized static void setModified(final Path localPath) throws IOException {
-        DB.addNewFile(localPath);
+    public synchronized static void setModified(final String name, final Path localPath) throws IOException {
+        DB.addNewFile(name, localPath);
     }
 
     /**
      * Marks the given file to be uploaded to the given cloud path.
      *
+     * @param name      of the file.
      * @param localPath to the file to be uploaded.
      * @param cloudPath where the file will be stored.
      * @throws IOException if fail to access the local file.
      */
-    public synchronized static void setForUpload(@NotNull final Path localPath, @NotNull final Path cloudPath) throws IOException {
+    public synchronized static void setForUpload(
+            @NotNull final String name, @NotNull final Path localPath, @NotNull final Path cloudPath) throws IOException {
 
-        final String name = pathToName(localPath);
-        final Optional<SyncFile> syncFile = get(localPath);
+        final Optional<SyncFile> syncFile = get(name);
         if (!syncFile.isPresent()) {
             logger.warn("Update state of {} but it doesn't exist in the sync DB", name);
             return;
@@ -191,44 +177,32 @@ public class DB {
         });
     }
 
-    private static void setState(@NotNull final Path localPath, @NotNull final SyncState state) {
-        setState(pathToName(localPath), state);
-    }
-
     public static void setDownloading(@NotNull final String name) {
         setState(name, SyncState.DOWNLOADING);
     }
 
-    public static void setUploading(@NotNull final Path localPath) {
-        setState(localPath, SyncState.UPLOADING);
+    public static void setUploading(@NotNull final String name) {
+        setState(name, SyncState.UPLOADING);
     }
 
     public static void setDownloadFailed(@NotNull final String name) {
         setState(name, SyncState.DOWNLOAD_FAILED);
     }
 
-    public static void setUploadFailed(@NotNull final Path localPath) {
-        setState(localPath, SyncState.UPLOAD_FAILED);
+    public static void setUploadFailed(@NotNull final String name) {
+        setState(name, SyncState.UPLOAD_FAILED);
     }
 
-    public static void setForLocalDelete(@NotNull final Path localPath) {
-        setState(localPath, SyncState.FOR_LOCAL_DELETE);
+    public static void setForLocalDelete(@NotNull final String name) {
+        setState(name, SyncState.FOR_LOCAL_DELETE);
     }
 
     public static void setForCloudDelete(@NotNull final CloudFile file) {
         setState(file.getName(), SyncState.FOR_CLOUD_DELETE);
     }
 
-    public synchronized static void setConflict(@NotNull final CloudFile cloudFile, @NotNull final Path localPath) throws IOException {
-        SyncFile syncFile = getOrCreate(cloudFile);
-        syncFile.setCloudData(cloudFile);
-        syncFile.setLocalData(localPath);
-        syncFile.setState(SyncState.CONFLICT);
-        repo().update(syncFile);
-    }
-
-    public static void setDeleted(@NotNull final Path localPath) {
-        setState(localPath, SyncState.DELETED);
+    public static void setDeleted(@NotNull final String name) {
+        setState(name, SyncState.DELETED);
     }
 
     public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {

@@ -171,7 +171,7 @@ public class CheckStateTaskTest {
 
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
         Files.write(localPath, "new data".getBytes());
-        DB.setModified(localPath);
+        DB.setModified(name, localPath);
 
         DB.commit();
         new Expectations() {{
@@ -253,7 +253,7 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
         DB.commit();
 
         new Expectations() {{
@@ -266,7 +266,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath).get().getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(name).get().getState());
 
         // Check enqueued task.
         final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
@@ -285,7 +285,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -296,8 +296,8 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setDeleted(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setDeleted(name);
         files.add(file);
 
         DB.commit();
@@ -334,7 +334,7 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
         DB.setSynced(new CloudFile() {
             @Override
             public String getName() {
@@ -364,7 +364,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(localPath).get().getState());
+        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(name).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -395,8 +395,8 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setForUpload(localPath, cloudPath);
+        DB.addNewFile(name, localPath);
+        DB.setForUpload(name, localPath, cloudPath);
         files.add(file);
 
         DB.commit();
@@ -426,10 +426,10 @@ public class CheckStateTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("file");
         assertTrue(localPath.toFile().createNewFile());
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
 
         assertTrue(localPath.toFile().delete());
-        DB.setDeleted(localPath);
+        DB.setDeleted(name);
         DB.commit();
 
         new Expectations() {{
@@ -442,7 +442,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
         assertEquals(0, executor.queue.size());
 
     }
@@ -469,8 +469,8 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setUploadFailed(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
 
         DB.commit();
@@ -510,9 +510,9 @@ public class CheckStateTaskTest {
         assertTrue(localPath.toFile().createNewFile());
         assertTrue(localPath.toFile().setLastModified(this.oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setModified(localPath);
-        assertEquals(oldTimeStamp.getTime(), (long) DB.get(localPath).get().getLocalModificationTime().get());
+        DB.addNewFile(name, localPath);
+        DB.setModified(name, localPath);
+        assertEquals(oldTimeStamp.getTime(), (long) DB.get(name).get().getLocalModificationTime().get());
         DB.commit();
 
         new Expectations() {{
@@ -525,7 +525,7 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(localPath).get().getState());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
 
         // Check enqueued task.
         final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");

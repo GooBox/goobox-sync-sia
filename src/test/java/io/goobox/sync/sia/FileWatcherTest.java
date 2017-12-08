@@ -62,6 +62,8 @@ public class FileWatcherTest {
 
     private Path tmpDir;
     private long now;
+    private String name;
+    private Path localPath;
 
     @Before
     public void setUp() throws IOException {
@@ -70,6 +72,10 @@ public class FileWatcherTest {
         UtilsMock.syncDir = this.tmpDir;
         new UtilsMock();
         this.now = System.currentTimeMillis();
+
+        this.name = String.format("test-name-%x", this.now);
+        this.localPath = Utils.getSyncDir().resolve(this.name);
+
     }
 
     @After
@@ -82,7 +88,7 @@ public class FileWatcherTest {
      * Test FileWatcher ignores files modified in the last MinElapsedTime.
      */
     @Test
-    public void testIgnoreRecentModifiedFiles() throws IOException {
+    public void ignoreRecentModifiedFiles() throws IOException {
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         new Expectations(executor) {{
@@ -93,30 +99,29 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
-        final Path target = Utils.getSyncDir().resolve("test-file");
-        assertTrue(target.toFile().createNewFile());
+        assertTrue(localPath.toFile().createNewFile());
 
         new SystemMock();
 
         SystemMock.currentTime = now;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 0));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, localPath, 0));
 
         SystemMock.currentTime = now + 100;
         watcher.run();
 
         SystemMock.currentTime = now + 200;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 1));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, localPath, 1));
 
         SystemMock.currentTime = now + 300;
         watcher.run();
 
         SystemMock.currentTime = now + 400;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 2));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, localPath, 2));
 
         SystemMock.currentTime = now + 500;
         watcher.run();
 
-        assertFalse(DB.get(target).isPresent());
+        assertFalse(DB.get(name).isPresent());
 
     }
 
@@ -125,7 +130,7 @@ public class FileWatcherTest {
      * maintained in this app.
      */
     @Test
-    public void testIgnoreDirectoryCreated() throws IOException {
+    public void ignoreDirectoryCreated() throws IOException {
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         new Expectations(executor) {{
@@ -136,16 +141,15 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
-        final Path target = Utils.getSyncDir().resolve("test-dir");
-        Files.createDirectory(target);
+        Files.createDirectory(localPath);
 
         new SystemMock();
 
         SystemMock.currentTime = now;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 0));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, localPath, 0));
 
         final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-        assertFalse(trackingFiles.containsKey(target));
+        assertFalse(trackingFiles.containsKey(localPath));
 
     }
 
@@ -153,7 +157,7 @@ public class FileWatcherTest {
      * Delete event occurs if a directory was deleted but such event should be ignored.
      */
     @Test
-    public void testIgnoreDirectoryDeleted() throws IOException {
+    public void ignoreDirectoryDeleted() throws IOException {
 
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         new Expectations(executor) {{
@@ -164,15 +168,14 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
-        final Path target = Utils.getSyncDir().resolve("test-dir");
-        Files.createDirectory(target);
+        Files.createDirectory(localPath);
 
         new SystemMock();
 
         SystemMock.currentTime = now;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 0));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, localPath, 0));
 
-        assertFalse(DB.get(target).isPresent());
+        assertFalse(DB.get(name).isPresent());
 
     }
 
@@ -191,27 +194,26 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
-        final Path target = Utils.getSyncDir().resolve("test-file");
-        assertTrue(target.toFile().createNewFile());
+        assertTrue(localPath.toFile().createNewFile());
 
         new SystemMock();
 
         SystemMock.currentTime = now;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 0));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, localPath, 0));
 
         SystemMock.currentTime = now + 100;
         watcher.run();
 
         SystemMock.currentTime = now + 200;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 1));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, localPath, 1));
 
         SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
         watcher.run();
 
-        assertEquals(SyncState.MODIFIED, DB.get(target).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
         assertTrue(DBMock.committed);
         final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-        assertFalse(trackingFiles.containsKey(target));
+        assertFalse(trackingFiles.containsKey(localPath));
 
     }
 
@@ -219,7 +221,7 @@ public class FileWatcherTest {
      * When a user modifies a file, the file should be marked as MODIFIED.
      */
     @Test
-    public void testSyncedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void syncedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.SYNCED, SyncState.MODIFIED);
     }
 
@@ -228,7 +230,7 @@ public class FileWatcherTest {
      * the found file is marked as MODIFIED.
      */
     @Test
-    public void testToBeDownloadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void toBeDownloadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.FOR_DOWNLOAD, SyncState.MODIFIED);
     }
 
@@ -238,7 +240,7 @@ public class FileWatcherTest {
      * the downloaded file.
      */
     @Test
-    public void testDownloadingFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void downloadingFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.DOWNLOADING, SyncState.MODIFIED);
     }
 
@@ -247,7 +249,7 @@ public class FileWatcherTest {
      * Since metadata of the file is changed, delete the target file from the sync DB and add it as a new file.
      */
     @Test
-    public void testToBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void toBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.FOR_UPLOAD, SyncState.MODIFIED);
     }
 
@@ -256,7 +258,7 @@ public class FileWatcherTest {
      * Since the upload would be failed, delete the target file from the sync DB and add it as a new file.
      */
     @Test
-    public void testUploadingFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void uploadingFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.UPLOADING, SyncState.MODIFIED);
     }
 
@@ -266,7 +268,7 @@ public class FileWatcherTest {
      * and in most case the file should be uploaded.
      */
     @Test
-    public void toBeCloudDeleteFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
+    public void beCloudDeleteFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException {
         this.checkStatusAfterModifyEvent(SyncState.FOR_CLOUD_DELETE, SyncState.MODIFIED);
     }
 
@@ -296,30 +298,33 @@ public class FileWatcherTest {
         for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
 
             try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-                final Path target = Utils.getSyncDir().resolve(String.format("test-%s", event));
-                assertTrue(target.toFile().createNewFile());
-                DB.addNewFile(target);
-                this.updateStatus(target, before);
+
+                final String name = String.format("test-%s-%x", event, System.currentTimeMillis());
+                final Path localPath = Utils.getSyncDir().resolve(name);
+                assertTrue(localPath.toFile().createNewFile());
+                DB.addNewFile(name, localPath);
+                this.updateStatus(name, before);
 
                 new SystemMock();
 
-                Files.write(target, dummyData.getBytes());
+                Files.write(localPath, dummyData.getBytes());
 
                 SystemMock.currentTime = now;
-                watcher.onEvent(new DirectoryChangeEvent(event, target, 2));
+                watcher.onEvent(new DirectoryChangeEvent(event, localPath, 2));
                 SystemMock.currentTime = now + 100;
                 watcher.run();
 
                 // in MinElapsedTime, status must not be chanced.
-                assertEquals(before, DB.get(target).get().getState());
+                assertEquals(before, DB.get(name).get().getState());
 
                 SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
                 watcher.run();
 
-                assertEquals(expected, DB.get(target).get().getState());
+                assertEquals(expected, DB.get(name).get().getState());
                 final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-                assertFalse(trackingFiles.containsKey(target));
+                assertFalse(trackingFiles.containsKey(localPath));
                 assertTrue(DBMock.committed);
+
             }
             DBMock.committed = false;
 
@@ -342,22 +347,20 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
-        final Path target = Utils.getSyncDir().resolve("test-file");
-
         new SystemMock();
 
         SystemMock.currentTime = now;
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 0));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, localPath, 0));
         watcher.run();
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 1));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, localPath, 1));
         watcher.run();
-        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, localPath, 2));
         SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
         watcher.run();
 
-        assertFalse(DB.get(target).isPresent());
+        assertFalse(DB.get(name).isPresent());
         final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-        assertFalse(trackingFiles.containsKey(target));
+        assertFalse(trackingFiles.containsKey(localPath));
 
     }
 
@@ -416,16 +419,16 @@ public class FileWatcherTest {
 
         // Directory deleted.
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-            final Path target = Utils.getSyncDir().resolve("test-file1");
-            assertTrue(target.toFile().createNewFile());
-            DB.addNewFile(target);
-            this.updateStatus(target, before);
 
-            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
+            assertTrue(localPath.toFile().createNewFile());
+            DB.addNewFile(name, localPath);
+            this.updateStatus(name, before);
 
-            assertEquals(expected, DB.get(target).get().getState());
+            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, localPath, 2));
+
+            assertEquals(expected, DB.get(name).get().getState());
             final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-            assertFalse(trackingFiles.containsKey(target));
+            assertFalse(trackingFiles.containsKey(localPath));
             assertTrue(DBMock.committed);
         }
 
@@ -433,24 +436,27 @@ public class FileWatcherTest {
 
         // Modified and deleted.
         try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-            final Path target = Utils.getSyncDir().resolve("test-file2");
-            assertTrue(target.toFile().createNewFile());
-            DB.addNewFile(target);
-            this.updateStatus(target, before);
+
+            final String name = String.format("test-file-2-%x", System.currentTimeMillis());
+            final Path localPath = Utils.getSyncDir().resolve(name);
+            assertTrue(localPath.toFile().createNewFile());
+            DB.addNewFile(name, localPath);
+            this.updateStatus(name, before);
 
             new SystemMock();
 
             SystemMock.currentTime = now;
-            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, target, 2));
+            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.MODIFY, localPath, 2));
             SystemMock.currentTime = now + 100;
             watcher.run();
             SystemMock.currentTime = now + 300;
-            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, target, 2));
+            watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, localPath, 2));
 
-            assertEquals(expected, DB.get(target).get().getState());
+            assertEquals(expected, DB.get(name).get().getState());
             final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-            assertFalse(trackingFiles.containsKey(target));
+            assertFalse(trackingFiles.containsKey(localPath));
             assertTrue(DBMock.committed);
+
         }
 
     }
@@ -474,27 +480,29 @@ public class FileWatcherTest {
         for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
 
             try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
-                final Path target = Utils.getSyncDir().resolve(String.format("test-%s", event));
-                Files.write(target, dummyData.getBytes(), StandardOpenOption.CREATE);
-                DB.addNewFile(target);
-                this.updateStatus(target, SyncState.SYNCED);
+
+                final String name = String.format("test-%s-%x", event, System.currentTimeMillis());
+                final Path localPath = Utils.getSyncDir().resolve(name);
+                Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
+                DB.addNewFile(name, localPath);
+                this.updateStatus(name, SyncState.SYNCED);
 
                 new SystemMock();
 
                 SystemMock.currentTime = now;
-                watcher.onEvent(new DirectoryChangeEvent(event, target, 2));
+                watcher.onEvent(new DirectoryChangeEvent(event, localPath, 2));
                 SystemMock.currentTime = now + 100;
                 watcher.run();
 
                 // in MinElapsedTime, status must not be chanced.
-                assertEquals(SyncState.SYNCED, DB.get(target).get().getState());
+                assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
 
                 SystemMock.currentTime = now + 2 * FileWatcher.MinElapsedTime;
                 watcher.run();
 
-                assertEquals(SyncState.SYNCED, DB.get(target).get().getState());
+                assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
                 final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
-                assertFalse(trackingFiles.containsKey(target));
+                assertFalse(trackingFiles.containsKey(localPath));
                 assertTrue(DBMock.committed);
             }
             DBMock.committed = false;
@@ -519,9 +527,9 @@ public class FileWatcherTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void updateStatus(final Path localPath, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private void updateStatus(final String name, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final SyncFile syncFile = DB.get(localPath).get();
+        final SyncFile syncFile = DB.get(name).get();
         Deencapsulation.setField(syncFile, "state", newState);
 
         final Method repo = DB.class.getDeclaredMethod("repo");

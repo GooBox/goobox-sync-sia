@@ -52,6 +52,18 @@ public class Context {
         this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
     }
 
+    /**
+     * Returns a file name from a local path.
+     *
+     * @param localPath of the file
+     * @return the name used in goobox for the given file.
+     */
+    public String getName(@NotNull final Path localPath) {
+
+        return this.config.getSyncDir().relativize(localPath).toString();
+
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

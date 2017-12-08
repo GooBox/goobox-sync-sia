@@ -53,6 +53,7 @@ public class UploadLocalFileTaskTest {
     private Path tempDir;
     private Config config;
     private Context context;
+    private String name;
     private Path localPath;
     private Path cloudPath;
 
@@ -76,11 +77,12 @@ public class UploadLocalFileTaskTest {
         this.config.setParityPieces(50);
         this.context = new Context(this.config, null);
 
-        this.localPath = Utils.getSyncDir().resolve("test-file");
-        this.cloudPath = this.context.pathPrefix.resolve("test-file").resolve(String.valueOf(System.currentTimeMillis())).toAbsolutePath();
+        this.name = String.format("test-file-%x", System.currentTimeMillis());
+        this.localPath = Utils.getSyncDir().resolve(name);
+        this.cloudPath = this.context.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis())).toAbsolutePath();
         assertTrue(localPath.toFile().createNewFile());
-        DB.addNewFile(localPath);
-        DB.setForUpload(this.localPath, this.cloudPath);
+        DB.addNewFile(name, localPath);
+        DB.setForUpload(name, localPath, cloudPath);
 
     }
 
@@ -103,7 +105,7 @@ public class UploadLocalFileTaskTest {
         }};
         new UploadLocalFileTask(this.context, localPath).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
+        assertEquals(SyncState.UPLOADING, DB.get(name).get().getState());
 
     }
 
@@ -116,7 +118,7 @@ public class UploadLocalFileTaskTest {
         }};
         new UploadLocalFileTask(this.context, localPath).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOAD_FAILED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.UPLOAD_FAILED, DB.get(name).get().getState());
 
     }
 
@@ -137,14 +139,14 @@ public class UploadLocalFileTaskTest {
         final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
 
         // then, the target file is modified.
-        DB.setModified(localPath);
+        DB.setModified(name, localPath);
 
         // and, the task is executed.
         task.call();
 
         // check after conditions.
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
 
     }
 
@@ -165,14 +167,14 @@ public class UploadLocalFileTaskTest {
         final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
 
         // then, the target file is modified.
-        DB.setDeleted(localPath);
+        DB.setDeleted(name);
 
         // and, the task is executed.
         task.call();
 
         // check after conditions.
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.DELETED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.DELETED, DB.get(name).get().getState());
 
     }
 

@@ -838,14 +838,15 @@ public class AppTest {
     @Test
     public void synchronizeNewFile() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
 
-        final Path localPath = Utils.getSyncDir().resolve("sub-dir").resolve(String.format("file-%x", System.currentTimeMillis()));
+        final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
+        final Path localPath = Utils.getSyncDir().resolve(name);
         Files.createDirectories(localPath.getParent());
         assertTrue(localPath.toFile().createNewFile());
 
         invokeSynchronizeModifiedFiles();
 
-        assertTrue(DB.get(localPath).isPresent());
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+        assertTrue(DB.get(name.toString()).isPresent());
+        assertEquals(SyncState.MODIFIED, DB.get(name.toString()).map(SyncFile::getState).orElse(null));
 
     }
 
@@ -876,8 +877,8 @@ public class AppTest {
 
         invokeSynchronizeModifiedFiles();
 
-        assertTrue(DB.get(localPath).isPresent());
-        assertEquals(SyncState.SYNCED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+        assertTrue(DB.get(name.toString()).isPresent());
+        assertEquals(SyncState.SYNCED, DB.get(name.toString()).map(SyncFile::getState).orElse(null));
 
     }
 
@@ -910,8 +911,8 @@ public class AppTest {
 
         invokeSynchronizeModifiedFiles();
 
-        assertTrue(DB.get(localPath).isPresent());
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+        assertTrue(DB.get(name.toString()).isPresent());
+        assertEquals(SyncState.MODIFIED, DB.get(name.toString()).map(SyncFile::getState).orElse(null));
 
     }
 
@@ -954,8 +955,8 @@ public class AppTest {
         synchronizeDeletedFiles.setAccessible(true);
         synchronizeDeletedFiles.invoke(app);
 
-        assertTrue(DB.get(localPath).isPresent());
-        assertEquals(SyncState.DELETED, DB.get(localPath).map(SyncFile::getState).orElse(null));
+        assertTrue(DB.get(name.toString()).isPresent());
+        assertEquals(SyncState.DELETED, DB.get(name.toString()).map(SyncFile::getState).orElse(null));
 
     }
 
@@ -1008,7 +1009,7 @@ public class AppTest {
             }
         }, localPath);
 
-        final SyncFile syncFile = DB.get(localPath).get();
+        final SyncFile syncFile = DB.get(name).get();
         final Method setState = SyncFile.class.getDeclaredMethod("setState", SyncState.class);
         setState.setAccessible(true);
         setState.invoke(syncFile, state);

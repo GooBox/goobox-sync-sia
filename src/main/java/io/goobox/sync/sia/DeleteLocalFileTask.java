@@ -39,16 +39,19 @@ class DeleteLocalFileTask implements Runnable {
     private static final Logger logger = LogManager.getLogger();
 
     @NotNull
+    private final Context ctx;
+    @NotNull
     private final Path localPath;
 
-    DeleteLocalFileTask(@NotNull final Path localPath) {
+    DeleteLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
+        this.ctx = ctx;
         this.localPath = localPath;
     }
 
     @Override
     public void run() {
 
-        final Optional<SyncFile> syncFileOpt = DB.get(this.localPath);
+        final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
         if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was deleted from SyncDB", this.localPath);
             return;
@@ -66,7 +69,7 @@ class DeleteLocalFileTask implements Runnable {
                 if (!Files.deleteIfExists(this.localPath)) {
                     logger.warn("File {} doesn't exist", this.localPath);
                 }
-                DB.remove(this.localPath);
+                DB.remove(this.ctx.getName(this.localPath));
                 DB.commit();
 
             } catch (IOException e) {

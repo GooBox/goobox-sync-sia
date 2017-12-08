@@ -177,7 +177,7 @@ public class DownloadCloudFileTaskTest {
 
         // The same file is created/modified.
         assertTrue(this.localPath.toFile().createNewFile());
-        DB.setModified(this.localPath);
+        DB.setModified(name, this.localPath);
 
         // then, the task is executed.
         task.call();

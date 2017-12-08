@@ -81,7 +81,7 @@ class CheckUploadStateTask implements Callable<Void> {
                             DB.setSynced(siaFile, siaFile.getLocalPath());
                         } catch (final IOException e) {
                             logger.error("Failed to update the sync db: {}", e.getMessage());
-                            DB.setUploadFailed(siaFile.getLocalPath());
+                            DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
                         }
                     } else {
                         logger.info(

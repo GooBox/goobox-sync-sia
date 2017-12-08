@@ -17,8 +17,10 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiClient;
+import mockit.Deencapsulation;
 import org.junit.Test;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
@@ -36,6 +38,20 @@ public class ContextTest {
         assertEquals(ctx.config, cfg);
         assertEquals(ctx.apiClient, cli);
         assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
+
+    }
+
+    @Test
+    public void getName() {
+
+        final Path wd = Paths.get(".").toAbsolutePath();
+        final Config cfg = new Config();
+        Deencapsulation.setField(cfg, "syncDir", wd);
+
+        final Context ctx = new Context(cfg, null);
+
+        final Path name = Paths.get("sub-dir", "some-file");
+        assertEquals(name.toString(), ctx.getName(wd.resolve(name)));
 
     }
 

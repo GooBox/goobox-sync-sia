@@ -42,6 +42,8 @@ import static org.junit.Assert.assertTrue;
 public class DeleteLocalFileTaskTest {
 
     private Path tempDir;
+    private Context ctx;
+    private String name;
     private Path localPath;
 
     @Before
@@ -52,7 +54,10 @@ public class DeleteLocalFileTaskTest {
         UtilsMock.syncDir = tempDir;
         new UtilsMock();
 
-        final String name = String.format("file-%x", System.currentTimeMillis());
+        final Config cfg = new Config();
+        ctx = new Context(cfg, null);
+
+        name = String.format("file-%x", System.currentTimeMillis());
         localPath = Utils.getSyncDir().resolve(name);
         assertTrue(localPath.toFile().createNewFile());
         DB.setSynced(new CloudFile() {
@@ -71,7 +76,7 @@ public class DeleteLocalFileTaskTest {
                 return 0;
             }
         }, localPath);
-        DB.setForLocalDelete(localPath);
+        DB.setForLocalDelete(name);
 
     }
 
@@ -84,9 +89,9 @@ public class DeleteLocalFileTaskTest {
     @Test
     public void deleteExistingFile() throws IOException {
 
-        new DeleteLocalFileTask(localPath).run();
+        new DeleteLocalFileTask(ctx, localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
         assertFalse(localPath.toFile().exists());
 
     }
@@ -98,9 +103,9 @@ public class DeleteLocalFileTaskTest {
         assertTrue(localPath.toFile().delete());
         assertFalse(localPath.toFile().exists());
 
-        new DeleteLocalFileTask(localPath).run();
+        new DeleteLocalFileTask(ctx, localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
 
     }
 
@@ -113,16 +118,16 @@ public class DeleteLocalFileTaskTest {
     public void toBeDeletedFileModified() throws IOException {
 
         // Task is enqueued.
-        final Runnable task = new DeleteLocalFileTask(localPath);
+        final Runnable task = new DeleteLocalFileTask(ctx, localPath);
 
         // then, the file is modified.
-        DB.setModified(localPath);
+        DB.setModified(name, localPath);
 
         // and, the task is executed.
         task.run();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
         assertTrue(localPath.toFile().exists());
 
     }

@@ -483,7 +483,7 @@ public class App {
         logger.info("Resume pending deletes from the local directory if exist");
         DB.getFiles(SyncState.FOR_LOCAL_DELETE).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
             logger.info("File {} is going to be deleted from the local directory", syncFile.getName());
-            executor.execute(new DeleteLocalFileTask(localPath));
+            executor.execute(new DeleteLocalFileTask(ctx, localPath));
         }));
 
     }
@@ -493,20 +493,21 @@ public class App {
 
         try {
 
-            Files.list(rootDir).filter(path -> !Utils.isExcluded(path)).forEach(path -> {
+            Files.list(rootDir).filter(localPath -> !Utils.isExcluded(localPath)).forEach(localPath -> {
 
-                if (path.toFile().isDirectory()) {
-                    synchronizeModifiedFiles(path);
+                if (localPath.toFile().isDirectory()) {
+                    synchronizeModifiedFiles(localPath);
                     return;
                 }
 
-                final boolean modified = DB.get(path).flatMap(syncFile -> syncFile.getLocalDigest().map(digest -> {
+                final String name = ctx.getName(localPath);
+                final boolean modified = DB.get(name).flatMap(syncFile -> syncFile.getLocalDigest().map(digest -> {
 
                     try {
-                        final String currentDigest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
+                        final String currentDigest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
                         return !digest.equals(currentDigest);
                     } catch (IOException e) {
-                        logger.error("Failed to read {}: {}", path, e.getMessage());
+                        logger.error("Failed to read {}: {}", localPath, e.getMessage());
                         return false;
                     }
 
@@ -514,10 +515,10 @@ public class App {
 
                 if (modified) {
                     try {
-                        logger.debug("File {} has been modified", path);
-                        DB.setModified(path);
+                        logger.debug("File {} has been modified", localPath);
+                        DB.setModified(name, localPath);
                     } catch (IOException e) {
-                        logger.error("Failed to update state of {}: {}", path, e.getMessage());
+                        logger.error("Failed to update state of {}: {}", localPath, e.getMessage());
                     }
                 }
 
@@ -536,7 +537,7 @@ public class App {
 
             if (!localPath.toFile().exists()) {
                 logger.debug("File {} has been deleted", localPath);
-                DB.setDeleted(localPath);
+                DB.setDeleted(ctx.getName(localPath));
             }
 
         }));

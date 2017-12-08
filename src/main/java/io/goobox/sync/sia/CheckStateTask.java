@@ -187,7 +187,7 @@ class CheckStateTask implements Callable<Void> {
                 // This file exist in neither the cloud network nor the local directory, but in the sync DB.
                 // It should be deleted from the DB.
                 logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
-                DB.remove(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                DB.remove(syncFile.getName());
                 processedFiles.add(syncFile.getName());
             });
 
@@ -278,7 +278,7 @@ class CheckStateTask implements Callable<Void> {
 
         final Path name = this.ctx.config.getSyncDir().relativize(localPath);
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
-        DB.setForUpload(localPath, cloudPath);
+        DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
         executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
 
     }
@@ -314,8 +314,8 @@ class CheckStateTask implements Callable<Void> {
      */
     private void enqueueForLocalDelete(final Path localPath) {
 
-        DB.setForLocalDelete(localPath);
-        this.executor.execute(new DeleteLocalFileTask(localPath));
+        DB.setForLocalDelete(this.ctx.getName(localPath));
+        this.executor.execute(new DeleteLocalFileTask(this.ctx, localPath));
 
     }
 

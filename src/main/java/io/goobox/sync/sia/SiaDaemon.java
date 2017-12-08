@@ -113,6 +113,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
     @NotNull
     Path getDataDir() {
+        // TODO: App name should be changed.
         final String SiaUI = AppDirsFactory.getInstance().getUserDataDir("Sia-UI", null, "", true);
         return Paths.get(SiaUI, "sia");
     }
