@@ -15,29 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia.mocks;
+package io.goobox.sync.sia;
 
-import io.goobox.sync.common.Utils;
-import mockit.Mock;
-import mockit.MockUp;
+@FunctionalInterface
+public interface RecoveryTask {
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-public class UtilsMock extends MockUp<Utils> {
-
-    public static Path syncDir = Paths.get("sync-dir");
-    public static Path dataDir = Paths.get("data-dir");
-
-    @Mock
-    public static Path getSyncDir() {
-        return syncDir;
-    }
-
-    @SuppressWarnings("unused")
-    @Mock
-    public static Path getDataDir() {
-        return dataDir;
-    }
+    boolean recover(Exception e);
 
 }
+

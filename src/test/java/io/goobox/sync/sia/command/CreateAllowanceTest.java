@@ -31,17 +31,20 @@ import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
+import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@RunWith(JMockit.class)
 public class CreateAllowanceTest {
 
     @SuppressWarnings("unused")
@@ -81,7 +84,6 @@ public class CreateAllowanceTest {
         }
 
     }
-
 
     @Test
     public void testWithoutFundOption() throws ApiException {
@@ -161,7 +163,6 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
-        Deencapsulation.setField(cfg, "includeHiddenFiles", true);
         cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{
@@ -204,7 +205,6 @@ public class CreateAllowanceTest {
         Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
-        Deencapsulation.setField(cfg, "includeHiddenFiles", true);
         cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
 
         new Expectations() {{

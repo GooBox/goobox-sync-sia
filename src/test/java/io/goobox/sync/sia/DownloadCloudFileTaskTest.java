@@ -115,7 +115,7 @@ public class DownloadCloudFileTaskTest {
             //noinspection ConstantConditions
             api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
         }};
-        new DownloadCloudFileTask(this.context, this.name).run();
+        new DownloadCloudFileTask(this.context, this.name).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(this.name).get().getState());
 
@@ -134,7 +134,7 @@ public class DownloadCloudFileTaskTest {
             api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
             times = 0;
         }};
-        new DownloadCloudFileTask(this.context, "not-existing-name").run();
+        new DownloadCloudFileTask(this.context, "not-existing-name").call();
         assertFalse(DBMock.committed);
 
     }
@@ -152,7 +152,7 @@ public class DownloadCloudFileTaskTest {
             api.renterDownloadasyncSiapathGet(remotePath.toString(), DB.get(name).get().getTemporaryPath().get().toString());
             result = new ApiException("expected exception");
         }};
-        new DownloadCloudFileTask(this.context, this.name).run();
+        new DownloadCloudFileTask(this.context, this.name).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.name).get().getState());
 
@@ -177,10 +177,10 @@ public class DownloadCloudFileTaskTest {
 
         // The same file is created/modified.
         assertTrue(this.localPath.toFile().createNewFile());
-        DB.setModified(this.localPath);
+        DB.setModified(name, this.localPath);
 
         // then, the task is executed.
-        task.run();
+        task.call();
 
         assertFalse(DBMock.committed);
         assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());

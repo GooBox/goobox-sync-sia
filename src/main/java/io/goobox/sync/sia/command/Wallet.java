@@ -17,13 +17,18 @@
 
 package io.goobox.sync.sia.command;
 
+import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -32,17 +37,29 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
+import java.nio.file.Path;
 
 /**
  * Wallet command shows wallet information.
  */
-public class Wallet implements Runnable {
+public final class Wallet implements Runnable {
 
     public static final String CommandName = "wallet";
     public static final String Description = "Show your wallet information";
     private static final Logger logger = LogManager.getLogger();
+
+    @NotNull
+    private final Path configPath;
+    @NotNull
+    private final Config cfg;
+    @Nullable
+    private SiaDaemon daemon = null;
 
     public static void main(String[] args) {
 
@@ -69,6 +86,20 @@ public class Wallet implements Runnable {
 
         // Run this command.
         new Wallet().run();
+
+    }
+
+    public Wallet() {
+
+        configPath = Utils.getDataDir().resolve(App.ConfigFileName);
+        Config cfg;
+        try {
+            cfg = Config.load(configPath);
+        } catch (IOException e) {
+            logger.warn("Cannot find conifg file {}", configPath);
+            cfg = new Config();
+        }
+        this.cfg = cfg;
 
     }
 
@@ -99,65 +130,145 @@ public class Wallet implements Runnable {
 
         final ApiClient apiClient = CmdUtils.getApiClient();
 
-        try {
+        int attempt = 0;
+        while (attempt < 20) {
 
-            final WalletApi wallet = new WalletApi(apiClient);
-            System.out.println(String.format("wallet address: %s", wallet.walletAddressGet().getAddress()));
+            try {
 
-            final InlineResponse20013 balances = wallet.walletGet();
-            System.out.println(String.format(
-                    "balance: %s SC",
-                    new BigDecimal(balances.getConfirmedsiacoinbalance()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "unconfirmed delta: %s SC",
-                    new BigDecimal(balances.getUnconfirmedincomingsiacoins()).
-                            subtract(new BigDecimal(balances.getUnconfirmedoutgoingsiacoins())).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println("aaaa");
 
-            final RenterApi renter = new RenterApi(apiClient);
-            final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
-            System.out.println("current spending:");
-            System.out.println(String.format(
-                    "  download: %s SC",
-                    new BigDecimal(spendings.getDownloadspending()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  upload: %s SC",
-                    new BigDecimal(spendings.getUploadspending()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  storage: %s SC",
-                    new BigDecimal(spendings.getStoragespending()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  fee: %s SC",
-                    new BigDecimal(spendings.getContractspending()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                final WalletApi walletApi = new WalletApi(apiClient);
+                final InlineResponse20013 wallet = walletApi.walletGet();
+                System.out.println("bbbb");
+                if (!wallet.getUnlocked()) {
 
-            final InlineResponse20012 prices = renter.renterPricesGet();
-            System.out.println("current prices:");
-            System.out.println(String.format(
-                    "  download: %s SC/TB",
-                    new BigDecimal(prices.getDownloadterabyte()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  upload: %s SC/TB",
-                    new BigDecimal(prices.getUploadterabyte()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  storage: %s SC/TB*Month",
-                    new BigDecimal(prices.getStorageterabytemonth()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
-            System.out.println(String.format(
-                    "  fee: %s SC",
-                    new BigDecimal(prices.getFormcontracts()).
-                            divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                    try {
 
-        } catch (ApiException e) {
-            logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
-        } catch (NullPointerException e) {
-            logger.error("sia daemon returns invalid responses: {}", e.getMessage());
+                        logger.info("Unlocking the wallet");
+                        walletApi.walletUnlockPost(cfg.getPrimarySeed());
+
+                    } catch (final ApiException e) {
+
+                        if (e.getCause() instanceof ConnectException) {
+                            throw e;
+                        }
+
+                        if (!cfg.getPrimarySeed().isEmpty()) {
+                            logger.error("Primary seed is given but the corresponding wallet is not found");
+                            break;
+                        }
+
+                        // Create a new wallet.
+                        logger.info("No wallets are found, initializing a wallet");
+                        final InlineResponse20016 seed = walletApi.walletInitPost(null, null, false);
+                        cfg.setPrimarySeed(seed.getPrimaryseed());
+                        try {
+                            cfg.save(configPath);
+                        } catch (IOException e1) {
+                            logger.error("Failed to save the wallet information");
+                        }
+
+                        if (!walletApi.walletGet().getUnlocked()) {
+                            logger.info("Unlocking the wallet again");
+                            walletApi.walletUnlockPost(cfg.getPrimarySeed());
+                        }
+
+                    }
+
+                }
+
+                System.out.println(String.format("wallet address: %s", walletApi.walletAddressGet().getAddress()));
+
+                System.out.println(String.format(
+                        "balance: %s SC",
+                        new BigDecimal(wallet.getConfirmedsiacoinbalance()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "unconfirmed delta: %s SC",
+                        new BigDecimal(wallet.getUnconfirmedincomingsiacoins()).
+                                subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+
+                final RenterApi renter = new RenterApi(apiClient);
+                final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
+                System.out.println("current spending:");
+                System.out.println(String.format(
+                        "  download: %s SC",
+                        new BigDecimal(spendings.getDownloadspending()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  upload: %s SC",
+                        new BigDecimal(spendings.getUploadspending()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  storage: %s SC",
+                        new BigDecimal(spendings.getStoragespending()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  fee: %s SC",
+                        new BigDecimal(spendings.getContractspending()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+
+                final InlineResponse20012 prices = renter.renterPricesGet();
+                System.out.println("current prices:");
+                System.out.println(String.format(
+                        "  download: %s SC/TB",
+                        new BigDecimal(prices.getDownloadterabyte()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  upload: %s SC/TB",
+                        new BigDecimal(prices.getUploadterabyte()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  storage: %s SC/TB*Month",
+                        new BigDecimal(prices.getStorageterabytemonth()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format(
+                        "  fee: %s SC",
+                        new BigDecimal(prices.getFormcontracts()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+
+                break;
+
+            } catch (ApiException e) {
+
+                logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+                if (!(e.getCause() instanceof ConnectException)) {
+                    e.printStackTrace();
+                    break;
+                }
+
+                try {
+
+                    if (daemon == null) {
+                        daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
+                        Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
+                        daemon.start();
+                    }
+                    Thread.sleep(5000);
+                    attempt++;
+
+
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+
+            } catch (NullPointerException e) {
+
+                logger.error("sia daemon returns invalid responses: {}", e.getMessage());
+                break;
+
+            }
+
+        }
+
+        if (daemon != null) {
+            try {
+                daemon.close();
+                daemon.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
     }

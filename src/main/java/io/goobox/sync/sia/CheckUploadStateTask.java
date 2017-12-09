@@ -20,7 +20,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -31,9 +30,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
-class CheckUploadStateTask implements Runnable {
+class CheckUploadStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
@@ -46,7 +47,7 @@ class CheckUploadStateTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         logger.info("Checking upload status");
         final RenterApi api = new RenterApi(this.ctx.apiClient);
@@ -54,17 +55,17 @@ class CheckUploadStateTask implements Runnable {
 
             final InlineResponse20011 res = api.renterFilesGet();
             if (res.getFiles() == null) {
-                return;
+                return null;
             }
 
-            for (final InlineResponse20011Files item : res.getFiles()) {
+            res.getFiles().forEach(item -> {
 
-                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(item, this.ctx.pathPrefix);
+                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, item);
                 final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
 
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
-                    continue;
+                    return;
                 }
 
                 syncFileOpt.ifPresent(syncFile -> {
@@ -80,7 +81,7 @@ class CheckUploadStateTask implements Runnable {
                             DB.setSynced(siaFile, siaFile.getLocalPath());
                         } catch (final IOException e) {
                             logger.error("Failed to update the sync db: {}", e.getMessage());
-                            DB.setUploadFailed(siaFile.getLocalPath());
+                            DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
                         }
                     } else {
                         logger.info(
@@ -90,13 +91,17 @@ class CheckUploadStateTask implements Runnable {
 
                 });
 
-            }
+            });
 
-        } catch (ApiException e) {
+        } catch (final ApiException e) {
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
+            }
             logger.error("Failed to retrieve uploading status: {}", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
+        return null;
 
     }
 

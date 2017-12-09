@@ -26,12 +26,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.ConnectException;
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * Downloads a cloud name to the local directory.
  */
-class DownloadCloudFileTask implements Runnable {
+class DownloadCloudFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -47,41 +50,48 @@ class DownloadCloudFileTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public Void call() throws ApiException {
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
             logger.warn("File {} was specified to be downloaded but doesn't exist in the sync DB", this.name);
-            return;
+            return null;
         }
 
-        syncFileOpt.ifPresent(syncFile -> {
+        final SyncFile syncFile = syncFileOpt.get();
+        if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
+            logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
+            return null;
+        }
 
-            if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
-                logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
-                return;
+        if (!syncFile.getCloudPath().isPresent() || !syncFile.getTemporaryPath().isPresent()) {
+            logger.debug("File {} was enqueued but one of cloud path and temporary path is not given", this.name);
+            return null;
+        }
+        final Path cloudPath = syncFile.getCloudPath().get();
+        final Path temporaryPath = syncFile.getTemporaryPath().get();
+        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        try {
+
+            logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
+            api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
+            DB.setDownloading(this.name);
+
+        } catch (final ApiException e) {
+
+            if (e.getCause() instanceof ConnectException) {
+                throw e;
             }
-            syncFile.getCloudPath().ifPresent(cloudPath -> syncFile.getTemporaryPath().ifPresent(temporaryPath -> {
 
-                final RenterApi api = new RenterApi(this.ctx.apiClient);
-                try {
+            logger.error(
+                    "Cannot start downloading name {} to {}: {}",
+                    cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
+            DB.setDownloadFailed(this.name);
 
-                    logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
-                    api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
-                    DB.setDownloading(this.name);
-
-                } catch (final ApiException e) {
-                    logger.error(
-                            "Cannot start downloading name {} to {}: {}",
-                            cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
-                    DB.setDownloadFailed(this.name);
-                } finally {
-                    DB.commit();
-                }
-
-            }));
-
-        });
+        } finally {
+            DB.commit();
+        }
+        return null;
 
     }
 

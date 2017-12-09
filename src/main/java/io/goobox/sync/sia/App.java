@@ -30,19 +30,26 @@ import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncState;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +59,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class App {
 
+    // Constants.
     public static final String CommandName = "goobox-sync-sia";
     public static final String Description = "Sync app for Sia";
 
@@ -73,16 +81,30 @@ public class App {
     /**
      * Default config file name.
      */
-    static final String ConfigFileName = "goobox.properties";
+    public static final String ConfigFileName = "goobox.properties";
 
     /**
      * The number of worker threads.
      */
     private static final int WorkerThreadSize = 2;
 
+    static final int MaxRetry = 20;
+
     private static final Logger logger = LogManager.getLogger();
 
-    private Path configPath;
+    // Static fields.
+    private static App app;
+
+    // Instance fields.
+    @NotNull
+    private final Path configPath;
+    @NotNull
+    private final Config cfg;
+    @NotNull
+    private final Context ctx;
+
+    @Nullable
+    private SiaDaemon daemon;
 
     /**
      * The main function.
@@ -135,7 +157,8 @@ public class App {
             }
 
             // Start the app.
-            new App().init();
+            App.app = new App();
+            App.app.init();
 
         } catch (ParseException e) {
 
@@ -152,42 +175,101 @@ public class App {
 
     }
 
+    public App() {
+
+        this.configPath = Utils.getDataDir().resolve(ConfigFileName);
+        this.cfg = this.loadConfig(this.configPath);
+
+        final ApiClient apiClient = CmdUtils.getApiClient();
+        this.ctx = new Context(cfg, apiClient);
+
+    }
+
+    @Nullable
+    public static App getInstance() {
+        return App.app;
+    }
+
+    synchronized void startSiaDaemon() {
+
+        if (this.daemon == null || this.daemon.isClosed()) {
+
+            this.daemon = new SiaDaemon(this.cfg.getDataDir().resolve("sia"));
+            try {
+                this.daemon.checkAndDownloadConsensusDB();
+                Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
+                this.daemon.start();
+            } catch (IOException e) {
+                logger.error("Failed to start SIA daemon: {}", e.getMessage());
+            }
+
+        }
+
+    }
+
     /**
      * Initialize the app and starts an event loop.
      */
     private void init() throws IOException {
 
-        this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        final Config cfg = this.loadConfig(this.configPath);
-
         if (!checkAndCreateSyncDir()) {
             System.exit(1);
+            return;
         }
         if (!checkAndCreateDataDir()) {
             System.exit(1);
+            return;
         }
 
-        final ApiClient apiClient = CmdUtils.getApiClient();
-        final Context ctx = new Context(cfg, apiClient);
 
-        try {
+        int retry = 0;
+        while (true) {
 
-            this.prepareWallet(ctx);
-            this.waitSynchronization(ctx);
-            this.waitContracts(ctx);
+            try {
 
-        } catch (ApiException e) {
+                this.prepareWallet();
+                this.waitSynchronization();
+                this.waitContracts();
+                break;
 
-            logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
-            System.exit(1);
+            } catch (ApiException e) {
+
+                if (!(e.getCause() instanceof ConnectException) || retry >= App.MaxRetry) {
+                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    System.exit(1);
+                    return;
+                }
+                this.startSiaDaemon();
+                retry++;
+
+                logger.info("Waiting SIA daemon starts");
+                try {
+                    Thread.sleep(DefaultSleepTime);
+                } catch (InterruptedException e1) {
+                    logger.error("Interrupted while waiting SIA daemon starts: {}", e1.getMessage());
+                    System.exit(1);
+                    return;
+                }
+
+            }
 
         }
+
+        this.synchronizeModifiedFiles(this.ctx.config.getSyncDir());
+        this.synchronizeDeletedFiles();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
-        executor.scheduleWithFixedDelay(new CheckStateTask(ctx, executor), 0, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckDownloadStateTask(ctx), 30, 60, TimeUnit.SECONDS);
-        executor.scheduleWithFixedDelay(new CheckUploadStateTask(ctx), 45, 60, TimeUnit.SECONDS);
-        new FileWatcher(Utils.getSyncDir(), executor);
+        this.resumeTasks(ctx, executor);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckStateTask(ctx, executor), new StartSiaDaemonTask()),
+                0, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckDownloadStateTask(ctx), new StartSiaDaemonTask()),
+                30, 60, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(
+                new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
+                45, 60, TimeUnit.SECONDS);
+        new FileWatcher(this.ctx.config.getSyncDir(), executor);
 
     }
 
@@ -216,8 +298,8 @@ public class App {
      * @return true if the synchronizing directory is ready.
      */
     private boolean checkAndCreateSyncDir() {
-        logger.info("Checking if local Goobox sync folder exists: {}", Utils.getSyncDir());
-        return checkAndCreateFolder(Utils.getSyncDir());
+        logger.info("Checking if local Goobox sync folder exists: {}", this.ctx.config.getSyncDir());
+        return checkAndCreateFolder(this.ctx.config.getSyncDir());
     }
 
     /**
@@ -256,10 +338,9 @@ public class App {
      * <p>
      * If no wallets have been created, it'll initialize a wallet.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Wallet API.
      */
-    private void prepareWallet(final Context ctx) throws ApiException {
+    void prepareWallet() throws ApiException {
 
         final WalletApi api = new WalletApi(ctx.apiClient);
         final InlineResponse20013 wallet = api.walletGet();
@@ -280,7 +361,7 @@ public class App {
 
                         // If a primary seed is given but the corresponding wallet doesn't exist,
                         // initialize a wallet with the seed.
-                        this.waitSynchronization(ctx);
+                        this.waitSynchronization();
 
                         logger.info("Initializing a wallet with the given seed");
                         api.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
@@ -327,10 +408,9 @@ public class App {
     /**
      * Wait until the consensus DB is synced.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Consensus API.
      */
-    private void waitSynchronization(final Context ctx) throws ApiException {
+    void waitSynchronization() throws ApiException {
 
         logger.info("Checking consensus DB");
         final ConsensusApi api = new ConsensusApi(ctx.apiClient);
@@ -360,10 +440,9 @@ public class App {
     /**
      * Wait until minimum required contracts are signed.
      *
-     * @param ctx context object.
      * @throws ApiException when an error occurs in Renter API.
      */
-    private void waitContracts(final Context ctx) throws ApiException {
+    void waitContracts() throws ApiException {
 
         logger.info("Checking contracts");
         final RenterApi api = new RenterApi(ctx.apiClient);
@@ -390,11 +469,95 @@ public class App {
 
     }
 
+    private void resumeTasks(final Context ctx, final Executor executor) {
+
+        logger.info("Resume pending uploads if exist");
+        DB.getFiles(SyncState.FOR_UPLOAD).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+            logger.info("File {} is going to be uploaded", syncFile.getName());
+            executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
+        }));
+
+        logger.info("Resume pending downloads if exist");
+        DB.getFiles(SyncState.FOR_DOWNLOAD).forEach(syncFile -> {
+            logger.info("File {} is going to be downloaded", syncFile.getName());
+            executor.execute(new RetryableTask(new DownloadCloudFileTask(ctx, syncFile.getName()), new StartSiaDaemonTask()));
+        });
+
+        logger.info("Resume pending deletes from the cloud network if exist");
+        DB.getFiles(SyncState.FOR_CLOUD_DELETE).forEach(syncFile -> {
+            logger.info("File {} is going to be deleted from the cloud network", syncFile.getName());
+            executor.execute(new RetryableTask(new DeleteCloudFileTask(ctx, syncFile.getName()), new StartSiaDaemonTask()));
+        });
+
+        logger.info("Resume pending deletes from the local directory if exist");
+        DB.getFiles(SyncState.FOR_LOCAL_DELETE).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+            logger.info("File {} is going to be deleted from the local directory", syncFile.getName());
+            executor.execute(new DeleteLocalFileTask(ctx, localPath));
+        }));
+
+    }
+
+    private void synchronizeModifiedFiles(final Path rootDir) {
+        logger.debug("Checking modified files in {}", rootDir);
+
+        try {
+
+            Files.list(rootDir).filter(localPath -> !Utils.isExcluded(localPath)).forEach(localPath -> {
+
+                if (localPath.toFile().isDirectory()) {
+                    synchronizeModifiedFiles(localPath);
+                    return;
+                }
+
+                final String name = ctx.getName(localPath);
+                final boolean modified = DB.get(name).flatMap(syncFile -> syncFile.getLocalDigest().map(digest -> {
+
+                    try {
+                        final String currentDigest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
+                        return !digest.equals(currentDigest);
+                    } catch (IOException e) {
+                        logger.error("Failed to read {}: {}", localPath, e.getMessage());
+                        return false;
+                    }
+
+                })).orElse(true);
+
+                if (modified) {
+                    try {
+                        logger.debug("File {} has been modified", localPath);
+                        DB.setModified(name, localPath);
+                    } catch (IOException e) {
+                        logger.error("Failed to update state of {}: {}", localPath, e.getMessage());
+                    }
+                }
+
+            });
+
+        } catch (IOException e) {
+            logger.error("Failed to list files in {}: {}", rootDir, e.getMessage());
+        }
+
+    }
+
+    private void synchronizeDeletedFiles() {
+        logger.debug("Checking deleted files");
+
+        DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+
+            if (!localPath.toFile().exists()) {
+                logger.debug("File {} has been deleted", localPath);
+                DB.setDeleted(ctx.getName(localPath));
+            }
+
+        }));
+
+    }
+
     @SuppressWarnings("StringBufferReplaceableByString")
     private static void printHelp(final Options opts) {
 
         final StringBuilder builder = new StringBuilder();
-        builder.append("\nSubcommands:\n");
+        builder.append("\nCommands:\n");
         builder.append(" ");
         builder.append(Wallet.CommandName);
         builder.append("\n  ");
@@ -406,7 +569,6 @@ public class App {
 
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(CommandName, Description, opts, builder.toString(), true);
-
 
     }
 

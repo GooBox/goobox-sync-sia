@@ -20,11 +20,10 @@ import io.goobox.sync.sia.db.CloudFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * SiaFile defines an API representing a file stored in SIA network.
- *
- * @author junpei
  */
 public interface SiaFile extends CloudFile {
 
@@ -32,12 +31,14 @@ public interface SiaFile extends CloudFile {
      * Returns the name of this file.
      */
     @NotNull
+    @Override
     String getName();
 
     /**
      * Returns the path where this file located in the blockchain.
      */
     @NotNull
+    @Override
     Path getCloudPath();
 
     /**
@@ -49,17 +50,12 @@ public interface SiaFile extends CloudFile {
     /**
      * Returns the creation time of this file.
      */
-    long getCreationTime();
+    Optional<Long> getCreationTime();
 
     /**
      * Returns the byte size of this file.
      */
+    @Override
     long getFileSize();
-
-    /**
-     * Returns a SiaPath object.
-     */
-    @NotNull
-    SiaPath getSiaPath();
 
 }

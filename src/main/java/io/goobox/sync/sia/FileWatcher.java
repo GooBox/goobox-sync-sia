@@ -26,6 +26,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.FileInputStream;
@@ -47,6 +48,9 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
      */
     static final long MinElapsedTime = 3000L;
 
+    @NotNull
+    private final Path target;
+    @NotNull
     private final DirectoryWatcher watcher;
 
     /**
@@ -55,9 +59,10 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
      */
     private final Map<Path, Long> trackingFiles = new HashMap<>();
 
-    public FileWatcher(final Path target, final ScheduledExecutorService executor) throws IOException {
+    public FileWatcher(@NotNull final Path target, @NotNull final ScheduledExecutorService executor) throws IOException {
 
         logger.info("Start watching {}", target);
+        this.target = target;
         this.watcher = DirectoryWatcher.create(target, this);
         this.watcher.watchAsync(executor);
         executor.scheduleAtFixedRate(this, 0, MinElapsedTime, TimeUnit.MILLISECONDS);
@@ -78,6 +83,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
             return;
         }
 
+        final String name = this.getName(event.path());
         switch (event.eventType()) {
             case CREATE:
                 logger.trace("{} is created at {}", event.path(), now);
@@ -94,14 +100,14 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 if (this.trackingFiles.containsKey(event.path())) {
                     this.trackingFiles.remove(event.path());
                 }
-                DB.get(event.path()).ifPresent(syncFile -> {
+                DB.get(name).ifPresent(syncFile -> {
 
                     try {
                         switch (syncFile.getState()) {
                             case SYNCED:
                             case FOR_UPLOAD:
                             case UPLOADING:
-                                DB.setDeleted(event.path());
+                                DB.setDeleted(name);
                                 break;
 
                             case FOR_DOWNLOAD:
@@ -130,39 +136,40 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
         try {
 
             final List<Path> removePaths = new ArrayList<>();
-            this.trackingFiles.forEach((path, lastModifiedTime) -> {
+            this.trackingFiles.forEach((localPath, lastModifiedTime) -> {
 
                 if (now - lastModifiedTime < FileWatcher.MinElapsedTime) {
-                    logger.trace("{} in modified {} msec before and skipped", path, now - lastModifiedTime);
+                    logger.trace("{} in modified {} msec before and skipped", localPath, now - lastModifiedTime);
                     return;
                 }
 
+                final String name = getName(localPath);
                 try {
 
-                    final boolean shouldBeAdded = DB.get(path).map(syncFile -> {
+                    final boolean shouldBeAdded = DB.get(name).map(syncFile -> {
 
                         try {
-                            final String digest = DigestUtils.sha512Hex(new FileInputStream(path.toFile()));
+                            final String digest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
                             if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
-                                logger.trace("File {} is modified but the contents are not changed", path);
-                                removePaths.add(path);
+                                logger.trace("File {} is modified but the contents are not changed", name);
+                                removePaths.add(localPath);
                                 return false;
                             }
                         } catch (IOException e) {
-                            logger.error("Failed to compute digest of {}: {}", path, e.getMessage());
+                            logger.error("Failed to compute digest of {}: {}", name, e.getMessage());
                         }
                         return true;
 
                     }).orElse(true);
 
                     if (shouldBeAdded) {
-                        logger.info("Found modified file {}", path);
-                        DB.addNewFile(path);
-                        removePaths.add(path);
+                        logger.info("Found modified file {}", name);
+                        DB.addNewFile(name, localPath);
+                        removePaths.add(localPath);
                     }
 
                 } catch (IOException e) {
-                    logger.error("Failed to add a new file {} to the sync DB: {}", path, e.getMessage());
+                    logger.error("Failed to add a new file {} to the sync DB: {}", name, e.getMessage());
                 }
 
             });
@@ -177,6 +184,10 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     @Override
     public void close() throws IOException {
         this.watcher.close();
+    }
+
+    private String getName(final Path localPath) {
+        return this.target.relativize(localPath).toString();
     }
 
 }

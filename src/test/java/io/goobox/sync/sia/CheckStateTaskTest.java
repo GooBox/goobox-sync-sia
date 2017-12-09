@@ -49,6 +49,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -109,7 +110,7 @@ public class CheckStateTaskTest {
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
@@ -132,13 +133,13 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
         assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof DownloadCloudFileTask);
         final String enqueuedName = Deencapsulation.getField(task, "name");
         assertEquals(siaFile.getName(), enqueuedName);
@@ -161,7 +162,7 @@ public class CheckStateTaskTest {
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -170,7 +171,7 @@ public class CheckStateTaskTest {
 
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
         Files.write(localPath, "new data".getBytes());
-        DB.setModified(localPath);
+        DB.setModified(name, localPath);
 
         DB.commit();
         new Expectations() {{
@@ -181,7 +182,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
@@ -193,7 +194,7 @@ public class CheckStateTaskTest {
         assertTrue(Math.abs(time1 - time2) < 1000);
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof UploadLocalFileTask);
         assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
 
@@ -215,7 +216,7 @@ public class CheckStateTaskTest {
         file.setFilesize(10L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
 
         DB.commit();
         new Expectations() {{
@@ -227,13 +228,13 @@ public class CheckStateTaskTest {
 
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
         assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof DownloadCloudFileTask);
         assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
 
@@ -252,7 +253,7 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
         DB.commit();
 
         new Expectations() {{
@@ -263,12 +264,12 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_UPLOAD, DB.get(localPath).get().getState());
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(name).get().getState());
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof UploadLocalFileTask);
         assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
 
@@ -284,19 +285,19 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get("file", String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setDeleted(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setDeleted(name);
         files.add(file);
 
         DB.commit();
@@ -308,12 +309,12 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_CLOUD_DELETE, DB.get(siaFile).get().getState());
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof DeleteCloudFileTask);
         assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
 
@@ -333,7 +334,7 @@ public class CheckStateTaskTest {
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
         DB.setSynced(new CloudFile() {
             @Override
             public String getName() {
@@ -361,9 +362,9 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(localPath).get().getState());
+        assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(name).get().getState());
 
         // Check enqueued task.
         final Runnable task = executor.queue.get(0);
@@ -388,14 +389,14 @@ public class CheckStateTaskTest {
         file.setAvailable(false);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setForUpload(localPath, cloudPath);
+        DB.addNewFile(name, localPath);
+        DB.setForUpload(name, localPath, cloudPath);
         files.add(file);
 
         DB.commit();
@@ -407,7 +408,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
 
         // Check enqueued task.
@@ -425,10 +426,10 @@ public class CheckStateTaskTest {
 
         final Path localPath = Utils.getSyncDir().resolve("file");
         assertTrue(localPath.toFile().createNewFile());
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
 
         assertTrue(localPath.toFile().delete());
-        DB.setDeleted(localPath);
+        DB.setDeleted(name);
         DB.commit();
 
         new Expectations() {{
@@ -439,9 +440,9 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
         assertEquals(0, executor.queue.size());
 
     }
@@ -462,14 +463,14 @@ public class CheckStateTaskTest {
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(file, this.context.pathPrefix);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
 
-        DB.addNewFile(localPath);
-        DB.setUploadFailed(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
 
         DB.commit();
@@ -481,15 +482,55 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).run();
+        new CheckStateTask(this.context, executor).call();
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
         // Check enqueued task.
-        final Runnable task = executor.queue.get(0);
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof UploadLocalFileTask);
         assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
+
+    }
+
+    @Test
+    public void toBeDownloadedFileModified() throws IOException, ApiException {
+
+        final List<InlineResponse20011Files> files = new ArrayList<>();
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        file.setSiapath(remotePath.toString());
+        file.setAvailable(true);
+        file.setFilesize(0L);
+        files.add(file);
+
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final Path localPath = siaFile.getLocalPath();
+        assertTrue(localPath.toFile().createNewFile());
+        assertTrue(localPath.toFile().setLastModified(this.oldTimeStamp.getTime()));
+
+        DB.addNewFile(name, localPath);
+        DB.setModified(name, localPath);
+        assertEquals(oldTimeStamp.getTime(), (long) DB.get(name).get().getLocalModificationTime().get());
+        DB.commit();
+
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(files);
+            api.renterFilesGet();
+            result = res;
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.context, executor).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
+
+        // Check enqueued task.
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
+        assertTrue(task instanceof DownloadCloudFileTask);
+        assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
 
     }
 

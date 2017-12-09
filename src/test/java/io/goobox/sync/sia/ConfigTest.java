@@ -16,9 +16,13 @@
  */
 package io.goobox.sync.sia;
 
+import io.goobox.sync.common.Utils;
+import mockit.Deencapsulation;
+import mockit.integration.junit4.JMockit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,18 +30,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(JMockit.class)
 public class ConfigTest {
 
     private String userName;
     private String primarySeed;
+    private Path syncDir;
+    private Path dataDir;
     private int dataPieces;
     private int parityPieces;
-    private Boolean includeHiddenFiles;
 
     private Path tmpPath;
 
@@ -54,13 +60,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void testLoad() throws IOException {
+    public void load() throws IOException {
 
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
+        this.syncDir = Paths.get("sync-dir");
+        this.dataDir = Paths.get("data-dir");
         this.dataPieces = 5;
         this.parityPieces = 12;
-        this.includeHiddenFiles = true;
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -71,15 +78,15 @@ public class ConfigTest {
         final Config cfg = Config.load(tmpPath);
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(syncDir.toAbsolutePath(), cfg.getSyncDir());
+        assertEquals(dataDir.toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
-        assertEquals(includeHiddenFiles, cfg.isIncludeHiddenFiles());
-
 
     }
 
     @Test
-    public void testLoadWithInvalidParityPieces() throws IOException {
+    public void loadWithInvalidParityPieces() throws IOException {
 
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
@@ -101,13 +108,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void testLoadWihoutIncludeHiddenFilesOption() throws IOException {
+    public void loadWithoutSyncFolderOption() throws IOException {
 
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
+        this.syncDir = null;
+        this.dataDir = null;
         this.dataPieces = 5;
         this.parityPieces = 12;
-        this.includeHiddenFiles = null;
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -118,37 +126,47 @@ public class ConfigTest {
         final Config cfg = Config.load(tmpPath);
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(Utils.getSyncDir().toAbsolutePath(), cfg.getSyncDir());
+        assertEquals(Utils.getDataDir().toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
-        assertFalse(cfg.isIncludeHiddenFiles());
 
     }
 
-
     @Test
-    public void testSave() throws IOException {
+    public void save() throws IOException {
 
+        final Path syncDir = Paths.get("sync-dir");
+        final Path dataDir = Paths.get("data-dir");
         final Config cfg = new Config();
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        cfg.setIncludeHiddenFiles(true);
+        Deencapsulation.setField(cfg, "syncDir", syncDir);
+        Deencapsulation.setField(cfg, "dataDir", dataDir);
 
         cfg.save(tmpPath);
+        Deencapsulation.setField(cfg, "syncDir", syncDir.toAbsolutePath());
+        Deencapsulation.setField(cfg, "dataDir", dataDir.toAbsolutePath());
+
         assertEquals(cfg, Config.load(tmpPath));
+        // Absolute path has to be written.
+        assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(syncDir.toAbsolutePath().toString())));
+        assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(dataDir.toAbsolutePath().toString())));
 
     }
 
     @Test
-    public void testOverwrite() throws IOException {
+    public void overwrite() throws IOException {
 
         final Config cfg = new Config();
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        cfg.setIncludeHiddenFiles(true);
+        Deencapsulation.setField(cfg, "syncDir", Paths.get("sync-dir").toAbsolutePath());
+        Deencapsulation.setField(cfg, "dataDir", Paths.get("data-dir").toAbsolutePath());
 
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
         writer.write("write random dummy data");
@@ -162,26 +180,42 @@ public class ConfigTest {
 
     private String getPropertiesString() {
 
-        final StringBuffer buf = new StringBuffer();
-        buf.append("username = ");
+        final StringBuilder buf = new StringBuilder();
+        buf.append(Config.UserName);
+        buf.append(" = ");
         buf.append(userName);
         buf.append("\n");
 
-        buf.append("primary-seed = ");
+        buf.append(Config.PrimarySeed);
+        buf.append(" = ");
         buf.append(primarySeed);
         buf.append("\n");
 
-        buf.append("data-pieces = ");
+        buf.append(Config.DataPieces);
+        buf.append(" = ");
         buf.append(dataPieces);
         buf.append("\n");
 
-        buf.append("parity-pieces = ");
+        buf.append(Config.ParityPieces);
+        buf.append(" = ");
         buf.append(parityPieces);
+        buf.append("\n");
 
-        if (this.includeHiddenFiles != null) {
-            buf.append("\ninclude-hidden-files = ");
-            buf.append(includeHiddenFiles.booleanValue());
+        if (syncDir != null) {
+            buf.append(Config.SyncDir);
+            buf.append(" = ");
+            buf.append(syncDir);
+            buf.append("\n");
         }
+
+        if (dataDir != null) {
+            buf.append(Config.DataDir);
+            buf.append(" = ");
+            buf.append(dataDir);
+            buf.append("\n");
+        }
+
+        System.out.println(buf.toString());
         return buf.toString();
 
     }

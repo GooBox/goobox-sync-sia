@@ -16,6 +16,7 @@
  */
 package io.goobox.sync.sia;
 
+import io.goobox.sync.common.Utils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
@@ -34,24 +36,38 @@ import java.util.Properties;
  *
  * @author junpei
  */
+@SuppressWarnings("WeakerAccess")
 public class Config {
 
-    private static final String UserName = "username";
-    private static final String PrimarySeed = "primary-seed";
-    private static final String DataPieces = "data-pieces";
-    private static final String ParityPieces = "parity-pieces";
-    private static final String IncludeHiddenFiles = "include-hidden-files";
-    private static final Logger logger = LogManager.getLogger();
+    static final String UserName = "username";
+    static final String PrimarySeed = "primary-seed";
+    static final String SyncDir = "sync-folder";
+    static final String DataDir = "data-folder";
+    static final String DataPieces = "data-pieces";
+    static final String ParityPieces = "parity-pieces";
+    static final Logger logger = LogManager.getLogger();
 
     /**
-     * user name.
+     * User name.
      */
     private String userName;
 
     /**
-     * primary seed.
+     * Primary seed.
      */
     private String primarySeed;
+
+    /**
+     * Path to the directory where synchronising files are stored.
+     */
+    @NotNull
+    private Path syncDir;
+
+    /**
+     * Path to the directory where SIA daemon data files are stored.
+     */
+    @NotNull
+    private Path dataDir;
 
     /**
      * The number of data pieces to use when erasure coding the file.
@@ -65,14 +81,11 @@ public class Config {
      */
     private int parityPieces;
 
-    /**
-     * if true, sync hidden files, too.
-     */
-    private boolean includeHiddenFiles;
-
     public Config() {
         this.userName = "";
         this.primarySeed = "";
+        this.syncDir = Utils.getSyncDir().toAbsolutePath();
+        this.dataDir = Utils.getDataDir().toAbsolutePath();
     }
 
     @NotNull
@@ -89,8 +102,18 @@ public class Config {
         return primarySeed;
     }
 
-    void setPrimarySeed(@NotNull String primarySeed) {
+    public void setPrimarySeed(@NotNull String primarySeed) {
         this.primarySeed = primarySeed;
+    }
+
+    @NotNull
+    public Path getSyncDir() {
+        return syncDir;
+    }
+
+    @NotNull
+    public Path getDataDir() {
+        return dataDir;
     }
 
     public int getDataPieces() {
@@ -109,19 +132,12 @@ public class Config {
         this.parityPieces = parityPieces;
     }
 
-    public boolean isIncludeHiddenFiles() {
-        return includeHiddenFiles;
-    }
-
-    void setIncludeHiddenFiles(boolean includeHiddenFiles) {
-        this.includeHiddenFiles = includeHiddenFiles;
-    }
-
     @Override
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();
     }
 
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -131,18 +147,20 @@ public class Config {
 
         if (dataPieces != config.dataPieces) return false;
         if (parityPieces != config.parityPieces) return false;
-        if (includeHiddenFiles != config.includeHiddenFiles) return false;
-        if (!userName.equals(config.userName)) return false;
-        return primarySeed.equals(config.primarySeed);
+        if (userName != null ? !userName.equals(config.userName) : config.userName != null) return false;
+        if (primarySeed != null ? !primarySeed.equals(config.primarySeed) : config.primarySeed != null) return false;
+        if (!syncDir.equals(config.syncDir)) return false;
+        return dataDir.equals(config.dataDir);
     }
 
     @Override
     public int hashCode() {
-        int result = userName.hashCode();
-        result = 31 * result + primarySeed.hashCode();
+        int result = userName != null ? userName.hashCode() : 0;
+        result = 31 * result + (primarySeed != null ? primarySeed.hashCode() : 0);
+        result = 31 * result + syncDir.hashCode();
+        result = 31 * result + dataDir.hashCode();
         result = 31 * result + dataPieces;
         result = 31 * result + parityPieces;
-        result = 31 * result + (includeHiddenFiles ? 1 : 0);
         return result;
     }
 
@@ -157,9 +175,10 @@ public class Config {
         final Properties props = new Properties();
         props.setProperty(UserName, this.userName);
         props.setProperty(PrimarySeed, this.primarySeed);
+        props.setProperty(SyncDir, this.syncDir.toAbsolutePath().toString());
+        props.setProperty(DataDir, this.dataDir.toAbsolutePath().toString());
         props.setProperty(DataPieces, String.valueOf(this.dataPieces));
         props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
-        props.setProperty(IncludeHiddenFiles, String.valueOf(this.includeHiddenFiles));
 
         try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             props.store(output, "");
@@ -186,6 +205,18 @@ public class Config {
         cfg.userName = props.getProperty(UserName, "");
         cfg.primarySeed = props.getProperty(PrimarySeed, "");
 
+        if (props.getProperty(SyncDir) != null) {
+            cfg.syncDir = Paths.get(props.getProperty(SyncDir)).toAbsolutePath();
+        } else {
+            cfg.syncDir = Utils.getSyncDir().toAbsolutePath();
+        }
+
+        if (props.getProperty(DataDir) != null) {
+            cfg.dataDir = Paths.get(props.getProperty(DataDir)).toAbsolutePath();
+        } else {
+            cfg.dataDir = Utils.getDataDir().toAbsolutePath();
+        }
+
         try {
             cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, "1"));
         } catch (NumberFormatException e) {
@@ -204,11 +235,10 @@ public class Config {
             cfg.parityPieces = 12;
         }
 
-        cfg.includeHiddenFiles = Boolean.valueOf(props.getProperty(IncludeHiddenFiles, "false"));
-
+        logger.info("Sync directory: {}", cfg.getSyncDir());
         logger.info(
-                "Sync configuration: data pieces = {}, parity pieces = {}, include hidden files = {}",
-                cfg.dataPieces, cfg.parityPieces, cfg.includeHiddenFiles);
+                "Sync configuration: data pieces = {}, parity pieces = {}",
+                cfg.dataPieces, cfg.parityPieces);
         return cfg;
 
     }

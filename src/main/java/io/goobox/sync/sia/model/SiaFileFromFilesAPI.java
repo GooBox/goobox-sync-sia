@@ -16,61 +16,31 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.nio.file.Path;
 
 /**
  * SiaFileFromDownloadsAPI is a SiaFile which wraps a result of /renter/files.
  */
-public class SiaFileFromFilesAPI implements SiaFile {
-
-    /**
-     * SiaPath object.
-     */
-    private final SiaPath siaPath;
+public class SiaFileFromFilesAPI extends AbstractSiaFile {
 
     /**
      * File object returned by /renter/files.
      */
+    @NotNull
     private final InlineResponse20011Files rawFile;
 
 
     /**
      * Create a new SiaFile object with a path prefix.
-     *
-     * @param file   returned by /renter/files API.
-     * @param prefix of remote paths.
      */
-    public SiaFileFromFilesAPI(final InlineResponse20011Files file, final Path prefix) {
-        this.siaPath = new SiaPath(file.getSiapath(), prefix);
+    public SiaFileFromFilesAPI(@NotNull final Context ctx, @NotNull final InlineResponse20011Files file) {
+        super(ctx, file.getSiapath());
         this.rawFile = file;
-    }
-
-    @NotNull
-    @Override
-    public String getName() {
-        return this.siaPath.remotePath.toString();
-    }
-
-    @NotNull
-    @Override
-    public Path getCloudPath() {
-        return this.siaPath.siaPath;
-    }
-
-    @NotNull
-    @Override
-    public Path getLocalPath() {
-        return this.siaPath.localPath;
-    }
-
-    @Override
-    public long getCreationTime() {
-        return this.siaPath.created;
     }
 
     @Override
@@ -82,14 +52,9 @@ public class SiaFileFromFilesAPI implements SiaFile {
         return this.rawFile.getAvailable();
     }
 
+    @NotNull
     public BigDecimal getUploadProgress() {
         return this.rawFile.getUploadprogress();
-    }
-
-    @NotNull
-    @Override
-    public SiaPath getSiaPath() {
-        return this.siaPath;
     }
 
     @Override
@@ -98,17 +63,21 @@ public class SiaFileFromFilesAPI implements SiaFile {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof SiaFileFromFilesAPI)) {
-            return false;
-        }
-        final SiaFileFromFilesAPI c = (SiaFileFromFilesAPI) obj;
-        return this.siaPath.equals(c.siaPath) && this.rawFile.equals(c.rawFile);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SiaFileFromFilesAPI that = (SiaFileFromFilesAPI) o;
+
+        return rawFile.equals(that.rawFile);
     }
 
     @Override
     public int hashCode() {
-        return this.siaPath.hashCode() + this.rawFile.hashCode();
+        int result = super.hashCode();
+        result = 31 * result + rawFile.hashCode();
+        return result;
     }
 
 }

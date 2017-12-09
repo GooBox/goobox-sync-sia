@@ -61,6 +61,7 @@ public class CheckUploadStateTaskTest {
 
     private Path tempDir;
     private Context context;
+    private String name;
     private Path cloudPath;
     private Path localPath;
 
@@ -78,7 +79,7 @@ public class CheckUploadStateTaskTest {
         cfg.setUserName("test-user");
         this.context = new Context(cfg, null);
 
-        final String name = String.format("file-%x", System.currentTimeMillis());
+        this.name = String.format("file-%x", System.currentTimeMillis());
         this.cloudPath = this.context.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis()));
         this.localPath = Utils.getSyncDir().resolve(name);
         assertTrue(this.localPath.toFile().createNewFile());
@@ -102,8 +103,8 @@ public class CheckUploadStateTaskTest {
         file1.setFilesize(1234L);
         file1.setUploadprogress(new BigDecimal(100));
 
-        DB.addNewFile(localPath);
-        DB.setUploading(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setUploading(name);
         files.add(file1);
 
         new Expectations() {{
@@ -113,9 +114,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(localPath).get().getState());
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
 
     }
 
@@ -129,8 +130,8 @@ public class CheckUploadStateTaskTest {
         file2.setLocalpath(localPath.toString());
         file2.setFilesize(1234L);
         file2.setUploadprogress(new BigDecimal(95.2));
-        DB.addNewFile(localPath);
-        DB.setUploading(localPath);
+        DB.addNewFile(name, localPath);
+        DB.setUploading(name);
         files.add(file2);
 
         new Expectations() {{
@@ -140,9 +141,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(localPath).get().getState());
+        assertEquals(SyncState.UPLOADING, DB.get(name).get().getState());
 
     }
 
@@ -195,9 +196,9 @@ public class CheckUploadStateTaskTest {
         file.setLocalpath(localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100L));
-        DB.addNewFile(localPath);
+        DB.addNewFile(name, localPath);
 
-        final SyncFile syncFile = DB.get(localPath).get();
+        final SyncFile syncFile = DB.get(name).get();
         Deencapsulation.setField(syncFile, "state", before);
 
         final Method repo = DB.class.getDeclaredMethod("repo");
@@ -213,9 +214,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
-        assertEquals(expected, DB.get(localPath).get().getState());
+        assertEquals(expected, DB.get(name).get().getState());
 
     }
 
@@ -239,9 +240,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
 
     }
 
@@ -265,9 +266,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).run();
+        new CheckUploadStateTask(this.context).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(localPath).isPresent());
+        assertFalse(DB.get(name).isPresent());
 
     }
 
