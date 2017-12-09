@@ -113,7 +113,7 @@ siaArchives.each { type ->
             from "$buildDir/install/$baseName"
         }
 
-        into("sia") {
+        into("$baseName-$version-$classifier/sia") {
             from "$buildDir/sia/Sia-$siaVersion-$type.value"
         }
     }
