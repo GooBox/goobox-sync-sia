@@ -81,7 +81,7 @@ public class App {
     /**
      * Default config file name.
      */
-    static final String ConfigFileName = "goobox.properties";
+    public static final String ConfigFileName = "goobox.properties";
 
     /**
      * The number of worker threads.
@@ -197,7 +197,7 @@ public class App {
             this.daemon = new SiaDaemon(this.cfg.getDataDir().resolve("sia"));
             try {
                 this.daemon.checkAndDownloadConsensusDB();
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> this.daemon.close()));
+                Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
                 this.daemon.start();
             } catch (IOException e) {
                 logger.error("Failed to start SIA daemon: {}", e.getMessage());

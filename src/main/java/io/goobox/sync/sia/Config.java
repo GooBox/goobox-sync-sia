@@ -102,7 +102,7 @@ public class Config {
         return primarySeed;
     }
 
-    void setPrimarySeed(@NotNull String primarySeed) {
+    public void setPrimarySeed(@NotNull String primarySeed) {
         this.primarySeed = primarySeed;
     }
 
