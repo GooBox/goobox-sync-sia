@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -137,12 +138,57 @@ public class SiaDaemonTest {
     @Test
     public void checkAndDownloadConsensusDBWithExistingDBFile() throws IOException {
 
-        // Case 2: consensus.db exists.
+        // Case 2: consensus.db exists and the sile size is bigger than the threshold.
         Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
         assertFalse(consensusDB.toFile().exists());
         Files.createDirectories(consensusDB.getParent());
         assertTrue(consensusDB.toFile().createNewFile());
+
+        class FileMock extends MockUp<File> {
+            @Mock
+            public long length() {
+                return SiaDaemon.ConsensusDBThreshold * 2L;
+            }
+        }
+        new FileMock();
+
         assertFalse(daemon.checkAndDownloadConsensusDB());
+
+    }
+
+    @Test
+    public void checkAndDownloadConsensusDBOverwritesIncompleteDB() throws IOException {
+
+        // Case 3: consensus.db exists but the file size is less than the threshold.
+        Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
+        Files.createDirectories(consensusDB.getParent());
+        assertTrue(consensusDB.toFile().createNewFile());
+
+        final List<String> dummyData = new ArrayList<>();
+        dummyData.add("abcdefg");
+        dummyData.add("012345");
+        final Path dummyPath = Files.createTempFile(null, null);
+        Files.write(dummyPath, dummyData);
+
+        final URLConnection conn = dummyPath.toUri().toURL().openConnection();
+
+        class URLMock extends MockUp<URL> {
+            @SuppressWarnings("unused")
+            @Mock
+            public URLConnection openConnection() {
+                return conn;
+            }
+        }
+        new URLMock();
+
+        assertTrue(daemon.checkAndDownloadConsensusDB());
+
+        assertTrue(consensusDB.toFile().exists());
+        final List<String> contents = Files.readAllLines(consensusDB);
+        assertEquals(dummyData.size(), contents.size());
+        for (int i = 0; i != dummyData.size(); ++i) {
+            assertEquals(dummyData.get(i), contents.get(i));
+        }
 
     }
 

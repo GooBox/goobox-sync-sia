@@ -44,6 +44,12 @@ public class SiaDaemon extends Thread implements Closeable {
     private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
     private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db";
 
+    /**
+     * Threshold file size of the consensus.db. (2GB)
+     * If current file size is smaller than this, the database snapshot will be downloaded.
+     */
+    static final long ConsensusDBThreshold = 2L * 1024L * 1024L * 1024L;
+
     @NotNull
     private final Path dataDir;
     @Nullable
@@ -68,7 +74,7 @@ public class SiaDaemon extends Thread implements Closeable {
                 "--modules=cghrtw");
         cmd.redirectErrorStream(true);
 
-        logger.info("Start SIA daemon");
+        logger.info("Starting SIA daemon");
         logger.debug("Execute: {}", String.join(" ", cmd.command()));
         try {
             this.process = cmd.start();
@@ -123,7 +129,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
         // TODO: check sum : https://consensus.siahub.info/sha256sum.txt
         final Path dbPath = this.dataDir.resolve(ConsensusDBPath);
-        if (dbPath.toFile().exists()) {
+        if (dbPath.toFile().exists() && dbPath.toFile().length() > ConsensusDBThreshold) {
             return false;
         }
 
@@ -154,7 +160,7 @@ public class SiaDaemon extends Thread implements Closeable {
             try (final InputStream in = conn.getInputStream()) {
                 Files.copy(new BufferedInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
             }
-            Files.move(tempFile, dbPath);
+            Files.move(tempFile, dbPath, StandardCopyOption.REPLACE_EXISTING);
             th.join();
 
         } catch (InterruptedException e) {
