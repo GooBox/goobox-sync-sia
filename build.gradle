@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'idea'
 
 version = '0.0.7'
 mainClassName = 'io.goobox.sync.sia.App'
@@ -30,6 +30,9 @@ tasks.withType(JavaCompile) {
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://dl.bintray.com/goobox/maven"
+    }
 }
 
 dependencies {
@@ -49,7 +52,7 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-core:2.9.1'
     compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.9.1'
     compile 'com.intellij:annotations:12.0'
-    compile files('../goobox-sync-common/target/goobox-sync-common-0.0.1.jar')
+    compile 'io.goobox:goobox-sync-common:0.0.1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.jmockit:jmockit:1.36'
     testCompile 'commons-io:commons-io:2.6'
@@ -70,6 +73,53 @@ task swagger(type: Exec) {
 
 run {
     if (project.hasProperty('args')) {
-        args(project.args.split('\\s+'))
+        args project.args.split('\\s+')
     }
+}
+
+def siaVersion = 'v1.3.0'
+def siaArchives = [
+        ['key': 'win64', 'value': 'windows-amd64'],
+        ['key': 'linux', 'value': 'linux-amd64'],
+        ['key': 'mac', 'value': 'darwin-amd64']
+]
+
+siaArchives.each { type ->
+
+    Task download = tasks.create(name: "sia-$type.key") {
+        description "Download SIA daemon for $type.key"
+        group 'distribution'
+
+        def sia = file("$buildDir/sia")
+        def archive = sia.toPath().resolve("Sia-$siaVersion-${type.value}.zip")
+        outputs.dir sia.toPath().resolve("Sia-$siaVersion-$type.value")
+        doLast {
+            sia.mkdirs()
+            ant.get(src: "https://github.com/NebulousLabs/Sia/releases/download/$siaVersion/Sia-$siaVersion-${type.value}.zip", dest: archive)
+            ant.unzip(src: archive, dest: sia, stripAbsolutePathSpec: true)
+        }
+    }
+
+    tasks.create(name: "distZip-$type.key", type: Zip, dependsOn: [test, installDist, startScripts, download]) {
+        description "Bundles the project as a distribution for $type.key"
+        group 'distribution'
+        classifier = "$type.key"
+
+        inputs.dir file("$buildDir/install")
+        inputs.file file("$buildDir/sia/Sia-$siaVersion-${type.value}.zip")
+        outputs.file file("$buildDir/distributions/goobox-sync-sia-$version-${type.key}.zio")
+
+        into("$baseName-$version-$classifier") {
+            from "$buildDir/install/$baseName"
+        }
+
+        into("sia") {
+            from "$buildDir/sia/Sia-$siaVersion-$type.value"
+        }
+    }
+
+}
+
+task distZip(overwrite: true, dependsOn: siaArchives.collect { "distZip-$it.key" }) {
+
 }
