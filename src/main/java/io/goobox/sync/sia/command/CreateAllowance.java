@@ -40,7 +40,7 @@ import java.math.BigDecimal;
 /**
  * Creates allowance.
  */
-public class CreateAllowance implements Runnable {
+public final class CreateAllowance implements Runnable {
 
     public static final String CommandName = "create-allowance";
     public static final String Description = "Create allowance";
@@ -87,7 +87,8 @@ public class CreateAllowance implements Runnable {
 
     private BigDecimal fund;
 
-    public CreateAllowance(final BigDecimal fund) {
+    @SuppressWarnings("WeakerAccess")
+    CreateAllowance(final BigDecimal fund) {
         this.fund = fund;
     }
 
