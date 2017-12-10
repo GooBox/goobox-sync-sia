@@ -39,7 +39,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String SiaDaemonFolderName = "Sia";
+    private static final String SiaDaemonFolderName = "sia";
     private static final String SiaDaemonName = "siad";
     private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
     private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db";
@@ -71,7 +71,7 @@ public class SiaDaemon extends Thread implements Closeable {
                 "--host-addr=:9982",
                 "--rpc-addr=:9981",
                 String.format("--sia-directory=%s", this.dataDir),
-                "--modules=cghrtw");
+                "--modules=cgrtw");
         cmd.redirectErrorStream(true);
 
         logger.info("Starting SIA daemon");

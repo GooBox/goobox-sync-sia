@@ -80,8 +80,8 @@ public class SiaDaemonTest {
         }
 
         final Fixture[] workingDirectories = {
-                new Fixture("/Users/someuser/somewhere/", Paths.get("/Users/someuser/somewhere/Sia/siad")),
-                new Fixture("/Users/someuser/somewhere/bin", Paths.get("/Users/someuser/somewhere/Sia/siad")),
+                new Fixture("/Users/someuser/somewhere/", Paths.get("/Users/someuser/somewhere/sia/siad")),
+                new Fixture("/Users/someuser/somewhere/bin", Paths.get("/Users/someuser/somewhere/sia/siad")),
         };
 
         for (Fixture fixture : workingDirectories) {
@@ -225,7 +225,7 @@ public class SiaDaemonTest {
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
-                    "--modules=cghrtw");
+                    "--modules=cgrtw");
             cmd.redirectErrorStream(true);
             cmd.start();
             result = proc;
@@ -261,7 +261,7 @@ public class SiaDaemonTest {
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
-                    "--modules=cghrtw");
+                    "--modules=cgrtw");
             result = dummyProc;
         }};
 
