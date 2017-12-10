@@ -18,7 +18,7 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
 
-version = '0.0.8'
+version = '0.0.9'
 mainClassName = 'io.goobox.sync.sia.App'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
