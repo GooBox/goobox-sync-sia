@@ -17,7 +17,7 @@
 package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
-
+import com.google.gson.JsonSyntaxException;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 
@@ -34,8 +34,12 @@ public class APIUtils {
         }
 
         final Gson gson = new Gson();
-        final StandardError err = gson.fromJson(body, StandardError.class);
-        return err.getMessage();
+        try {
+            final StandardError err = gson.fromJson(body, StandardError.class);
+            return err.getMessage();
+        } catch (final JsonSyntaxException e1) {
+            return body;
+        }
 
     }
 

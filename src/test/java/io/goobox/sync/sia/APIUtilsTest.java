@@ -22,7 +22,7 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class APIUtilsTest {
 
@@ -54,6 +54,15 @@ public class APIUtilsTest {
 
         final ApiException e = new ApiException();
         assertEquals(null, APIUtils.getErrorMessage(e));
+
+    }
+
+    @Test
+    public void testGetErrorMessageWtihBrokenJsonObject() {
+
+        final String anotherMsg = "{ this is not: json}";
+        final ApiException e = new ApiException(501, "", null, anotherMsg);
+        assertEquals(anotherMsg, APIUtils.getErrorMessage(e));
 
     }
 
