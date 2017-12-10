@@ -71,7 +71,8 @@ public class CmdUtils {
         try {
             cfg = Config.load(path);
         } catch (IOException e) {
-            logger.error("cannot load config file {}: {}", path, e.getMessage());
+            logger.warn("Failed to read config file {}: {}", path, e.getMessage());
+            logger.info("Loading the default configuration");
             cfg = new Config();
         }
         return cfg;

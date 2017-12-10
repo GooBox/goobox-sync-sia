@@ -20,6 +20,7 @@ package io.goobox.sync.sia.command;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
@@ -27,6 +28,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
+import io.goobox.sync.sia.mocks.SystemMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
@@ -41,8 +43,11 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(JMockit.class)
 public class CreateAllowanceTest {
@@ -86,7 +91,7 @@ public class CreateAllowanceTest {
     }
 
     @Test
-    public void testWithoutFundOption() throws ApiException {
+    public void withoutFundOption() throws ApiException {
 
         final double balance = 12345.02;
         final double fund = 2234.85;
@@ -120,7 +125,7 @@ public class CreateAllowanceTest {
     }
 
     @Test
-    public void testWithFundOption() throws ApiException {
+    public void withFundOption() throws ApiException {
 
         final double param = 12345.02;
         final double fund = 2234.85;
@@ -153,7 +158,7 @@ public class CreateAllowanceTest {
     }
 
     @Test
-    public void testWithLockedWalletWithoutFundOption() throws ApiException, IOException {
+    public void withLockedWalletWithoutFundOption() throws ApiException, IOException {
 
         final double balance = 12345.02;
         final double fund = 2234.85;
@@ -196,7 +201,7 @@ public class CreateAllowanceTest {
     }
 
     @Test
-    public void testWithLockedWalletAndFundOption() throws ApiException, IOException {
+    public void withLockedWalletAndFundOption() throws ApiException, IOException {
 
         final double param = 12345.02;
         final double fund = 2234.85;
@@ -236,13 +241,53 @@ public class CreateAllowanceTest {
 
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void testWithHelpOption(@Mocked HelpFormatter formatter, @Mocked System system) {
+    public void withoutRunningSiaDaemon(@Mocked SiaDaemon daemon) throws ApiException {
+
+        final double balance = 12345.02;
+        final double fund = 2234.85;
+
+        new Expectations() {{
+
+            // Starting SIA daemon.
+            new SiaDaemon(Utils.getDataDir().resolve("sia"));
+            result = daemon;
+            daemon.start();
+
+            final InlineResponse20013 res1 = new InlineResponse20013();
+            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
+            res1.setUnlocked(true);
+            wallet.walletGet();
+            result = new ApiException(new ConnectException());
+            result = res1;
+
+            final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+            settings.setAllowance(allowance);
+            final InlineResponse2008 res2 = new InlineResponse2008();
+            res2.setSettings(settings);
+            renter.renterGet();
+            result = res2;
+
+            final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
+                    multiply(CmdUtils.Hasting).
+                    setScale(0, BigDecimal.ROUND_DOWN);
+            renter.renterPost(newFund.toString(), null, null, null);
+
+        }};
+
+        CreateAllowance.main(new String[]{});
+
+
+    }
+
+    @Test
+    public void withHelpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
             formatter.printHelp(
-                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    String.format("%s %s", App.Name, CreateAllowance.CommandName),
                     CreateAllowance.Description, withNotNull(), "", true);
         }};
         CreateAllowance.main(new String[]{"-h"});
@@ -250,17 +295,17 @@ public class CreateAllowanceTest {
 
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void testWithInvalidOption(@Mocked HelpFormatter formatter, @Mocked System system) {
+    public void withInvalidOption(@Mocked HelpFormatter formatter) {
 
+        new SystemMock();
         new Expectations() {{
             formatter.printHelp(
-                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    String.format("%s %s", App.Name, CreateAllowance.CommandName),
                     CreateAllowance.Description, withNotNull(), "", true);
-            System.exit(1);
         }};
         CreateAllowance.main(new String[]{"--fund", "abcde"});
+        assertEquals(1, SystemMock.statusCode);
 
     }
 
