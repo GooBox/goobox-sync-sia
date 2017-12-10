@@ -135,11 +135,8 @@ public final class Wallet implements Runnable {
 
             try {
 
-                System.out.println("aaaa");
-
                 final WalletApi walletApi = new WalletApi(apiClient);
                 final InlineResponse20013 wallet = walletApi.walletGet();
-                System.out.println("bbbb");
                 if (!wallet.getUnlocked()) {
 
                     try {
