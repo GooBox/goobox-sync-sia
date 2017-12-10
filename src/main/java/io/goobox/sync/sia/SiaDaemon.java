@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -114,10 +115,11 @@ public class SiaDaemon extends Thread implements Closeable {
     Path getDaemonPath() {
 
         String cmd = SiaDaemonName;
-        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+        if (SystemUtils.IS_OS_WINDOWS) {
             cmd = cmd + ".exe";
         }
-        final Path wd = Paths.get(System.getProperty("user.dir"));
+
+        final Path wd = SystemUtils.getUserDir().toPath();
         if (wd.getFileName().toString().equals("bin")) {
             return wd.getParent().resolve(SiaDaemonFolderName).resolve(cmd);
         }

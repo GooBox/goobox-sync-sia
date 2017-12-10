@@ -23,6 +23,7 @@ import mockit.MockUp;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,9 +66,8 @@ public class SiaDaemonTest {
         FileUtils.deleteDirectory(dataDir.toFile());
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void getDaemonPath(@Mocked System system) {
+    public void getDaemonPath() {
 
         class Fixture {
             private final String wd;
@@ -85,10 +85,8 @@ public class SiaDaemonTest {
         };
 
         for (Fixture fixture : workingDirectories) {
-            new Expectations() {{
-                System.getProperty("os.name");
-                result = "Mac OS X";
-                System.getProperty("user.dir");
+            new Expectations(SystemUtils.class) {{
+                SystemUtils.getUserDir();
                 result = fixture.wd;
             }};
             assertEquals(fixture.result, daemon.getDaemonPath());
