@@ -37,6 +37,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -60,13 +61,21 @@ import java.util.concurrent.TimeUnit;
 public class App {
 
     // Constants.
-    public static final String CommandName = "goobox-sync-sia";
+    public static final String Name;
     public static final String Description = "Sync app for Sia";
+
+    static {
+        String name = "goobox-sync-sia";
+        if (SystemUtils.IS_OS_WINDOWS) {
+            name = String.format("%s.bat", name);
+        }
+        Name = name;
+    }
 
     /**
      * Version information.
      */
-    public static final String Version = "0.0.6";
+    public static final String Version = "0.0.8";
 
     /**
      * The number of the minimum required contructs.
@@ -568,7 +577,7 @@ public class App {
         builder.append(CreateAllowance.Description);
 
         final HelpFormatter help = new HelpFormatter();
-        help.printHelp(CommandName, Description, opts, builder.toString(), true);
+        help.printHelp(Name, Description, opts, builder.toString(), true);
 
     }
 
