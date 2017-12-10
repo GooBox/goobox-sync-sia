@@ -20,14 +20,20 @@ package io.goobox.sync.sia.mocks;
 import mockit.Mock;
 import mockit.MockUp;
 
+@SuppressWarnings("unused")
 public class SystemMock extends MockUp<System> {
 
     public static long currentTime;
+    public static int statusCode;
 
-    @SuppressWarnings("unused")
     @Mock
     public static long currentTimeMillis() {
         return currentTime;
+    }
+
+    @Mock
+    public static void exit(int code) {
+        statusCode = code;
     }
 
 }

@@ -21,6 +21,7 @@ import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
@@ -34,8 +35,8 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 
 /**
  * Creates allowance.
@@ -45,6 +46,9 @@ public final class CreateAllowance implements Runnable {
     public static final String CommandName = "create-allowance";
     public static final String Description = "Create allowance";
     private static final Logger logger = LogManager.getLogger();
+
+    private final Config cfg;
+    private SiaDaemon daemon = null;
 
     public static void main(final String[] args) {
 
@@ -59,7 +63,7 @@ public final class CreateAllowance implements Runnable {
             if (cmd.hasOption("h")) {
                 final HelpFormatter help = new HelpFormatter();
                 help.printHelp(
-                        String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                        String.format("%s %s", App.Name, CreateAllowance.CommandName),
                         Description, opts, "", true);
                 return;
             }
@@ -74,7 +78,7 @@ public final class CreateAllowance implements Runnable {
 
             final HelpFormatter help = new HelpFormatter();
             help.printHelp(
-                    String.format("%s %s", App.CommandName, CreateAllowance.CommandName),
+                    String.format("%s %s", App.Name, CreateAllowance.CommandName),
                     Description, opts, "", true);
             System.exit(1);
             return;
@@ -90,6 +94,7 @@ public final class CreateAllowance implements Runnable {
     @SuppressWarnings("WeakerAccess")
     CreateAllowance(final BigDecimal fund) {
         this.fund = fund;
+        this.cfg = CmdUtils.loadConfig(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
     }
 
     @Override
@@ -97,36 +102,68 @@ public final class CreateAllowance implements Runnable {
 
         final ApiClient apiClient = CmdUtils.getApiClient();
 
-        try {
-            final WalletApi wallet = new WalletApi(apiClient);
-            final InlineResponse20013 walletInfo = wallet.walletGet();
+        int retry = 0;
+        while (retry < 20) {
 
-            // If the wallet is locked, unlock it first.
-            if (!walletInfo.getUnlocked()) {
-                final Config cfg = Config.load(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
-                wallet.walletUnlockPost(cfg.getPrimarySeed());
+            try {
+                final WalletApi wallet = new WalletApi(apiClient);
+                final InlineResponse20013 walletInfo = wallet.walletGet();
+
+                // If the wallet is locked, unlock it first.
+                if (!walletInfo.getUnlocked()) {
+                    logger.info("Unlocking the wallet");
+                    wallet.walletUnlockPost(cfg.getPrimarySeed());
+                }
+
+                // If fund is null, get current balance.
+                if (this.fund == null) {
+                    this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
+                }
+
+                // Get current fund and compute updated fund by adding `fund` value.
+                final RenterApi renter = new RenterApi(apiClient);
+                final BigDecimal currentFund = new BigDecimal(renter.renterGet().getSettings().getAllowance().getFunds());
+
+                // Allocate new fund.
+                final BigDecimal newFund = currentFund.add(this.fund).setScale(0, BigDecimal.ROUND_DOWN);
+                logger.info("Allocating {} hastings", newFund);
+                renter.renterPost(newFund.toString(), null, null, null);
+
+                break;
+
+            } catch (final ApiException e) {
+
+                logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+                if (!(e.getCause() instanceof ConnectException)) {
+                    break;
+                }
+
+                try {
+
+                    if (daemon == null) {
+                        daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
+                        Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
+                        daemon.start();
+                    }
+                    Thread.sleep(5000);
+                    retry++;
+
+                } catch (final InterruptedException e1) {
+                    logger.error("Interrupted while waiting for preparing a wallet: {}", e1.getMessage());
+                    break;
+                }
+
             }
 
-            // If fund is null, get current balance.
-            if (this.fund == null) {
-                this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
+        }
+
+        if (daemon != null) {
+            try {
+                daemon.close();
+                daemon.join();
+            } catch (final InterruptedException e) {
+                logger.error("Interrupted while closing SIA daemon: {}", e.getMessage());
             }
-
-            // Get current fund and compute updated fund by adding `fund` value.
-            final RenterApi renter = new RenterApi(apiClient);
-            final BigDecimal currentFund = new BigDecimal(renter.renterGet().getSettings().getAllowance().getFunds());
-
-            // Allocate new fund.
-            final BigDecimal newFund = currentFund.add(this.fund).setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
-
-        } catch (ApiException e) {
-            logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
-        } catch (IOException e) {
-            logger.error(
-                    "Failed to read config file {}: {}",
-                    Utils.getDataDir().resolve(CmdUtils.ConfigFileName),
-                    e.getMessage());
         }
 
     }

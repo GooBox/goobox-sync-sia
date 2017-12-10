@@ -29,6 +29,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
+import io.goobox.sync.sia.mocks.SystemMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -47,11 +48,11 @@ import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class WalletTest {
-
 
     private ByteArrayOutputStream out;
     private PrintStream oldOut;
@@ -506,7 +507,7 @@ public class WalletTest {
     }
 
     @Test
-    public void testHelpOption(@Mocked HelpFormatter formatter) {
+    public void helpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
             formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
@@ -516,7 +517,7 @@ public class WalletTest {
     }
 
     @Test
-    public void testLongHelpOption(@Mocked HelpFormatter formatter) {
+    public void longHelpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
             formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
@@ -525,15 +526,15 @@ public class WalletTest {
 
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void testInvalidOption(@Mocked HelpFormatter formatter, @Mocked System system) {
+    public void invalidOption(@Mocked HelpFormatter formatter) {
 
+        new SystemMock();
         new Expectations() {{
             formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
-            System.exit(1);
         }};
         Wallet.main(new String[]{"-something"});
+        assertEquals(1, SystemMock.statusCode);
 
     }
 

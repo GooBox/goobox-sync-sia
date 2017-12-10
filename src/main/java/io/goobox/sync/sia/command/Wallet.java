@@ -70,7 +70,7 @@ public final class Wallet implements Runnable {
             final CommandLine cmd = new DefaultParser().parse(opts, args);
             if (cmd.hasOption("h")) {
                 final HelpFormatter help = new HelpFormatter();
-                help.printHelp(String.format("goobox-sync-sia %s", CommandName), Description, opts, "", true);
+                help.printHelp(String.format("%s %s", App.Name, CommandName), Description, opts, "", true);
                 return;
             }
 
@@ -78,7 +78,7 @@ public final class Wallet implements Runnable {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
-            help.printHelp(String.format("goobox-sync-sia %s", CommandName), Description, opts, "", true);
+            help.printHelp(String.format("%s %s", App.Name, CommandName), Description, opts, "", true);
             System.exit(1);
             return;
 
@@ -90,17 +90,8 @@ public final class Wallet implements Runnable {
     }
 
     public Wallet() {
-
         configPath = Utils.getDataDir().resolve(App.ConfigFileName);
-        Config cfg;
-        try {
-            cfg = Config.load(configPath);
-        } catch (IOException e) {
-            logger.warn("Cannot find conifg file {}", configPath);
-            cfg = new Config();
-        }
-        this.cfg = cfg;
-
+        this.cfg = CmdUtils.loadConfig(configPath);
     }
 
     /**
@@ -135,11 +126,8 @@ public final class Wallet implements Runnable {
 
             try {
 
-                System.out.println("aaaa");
-
                 final WalletApi walletApi = new WalletApi(apiClient);
                 final InlineResponse20013 wallet = walletApi.walletGet();
-                System.out.println("bbbb");
                 if (!wallet.getUnlocked()) {
 
                     try {
@@ -230,11 +218,10 @@ public final class Wallet implements Runnable {
 
                 break;
 
-            } catch (ApiException e) {
+            } catch (final ApiException e) {
 
-                logger.error("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+                logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                 if (!(e.getCause() instanceof ConnectException)) {
-                    e.printStackTrace();
                     break;
                 }
 
@@ -248,9 +235,9 @@ public final class Wallet implements Runnable {
                     Thread.sleep(5000);
                     attempt++;
 
-
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                } catch (final InterruptedException e1) {
+                    logger.error("Interrupted while waiting for preparing a wallet: {}", e1.getMessage());
+                    break;
                 }
 
             } catch (NullPointerException e) {
@@ -267,7 +254,7 @@ public final class Wallet implements Runnable {
                 daemon.close();
                 daemon.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.error("Interrupted while closing SIA daemon: {}", e.getMessage());
             }
         }
 

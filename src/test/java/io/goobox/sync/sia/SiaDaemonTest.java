@@ -23,6 +23,7 @@ import mockit.MockUp;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,9 +66,8 @@ public class SiaDaemonTest {
         FileUtils.deleteDirectory(dataDir.toFile());
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void getDaemonPath(@Mocked System system) {
+    public void getDaemonPath() {
 
         class Fixture {
             private final String wd;
@@ -80,15 +80,13 @@ public class SiaDaemonTest {
         }
 
         final Fixture[] workingDirectories = {
-                new Fixture("/Users/someuser/somewhere/", Paths.get("/Users/someuser/somewhere/Sia/siad")),
-                new Fixture("/Users/someuser/somewhere/bin", Paths.get("/Users/someuser/somewhere/Sia/siad")),
+                new Fixture("/Users/someuser/somewhere/", Paths.get("/Users/someuser/somewhere/sia/siad")),
+                new Fixture("/Users/someuser/somewhere/bin", Paths.get("/Users/someuser/somewhere/sia/siad")),
         };
 
         for (Fixture fixture : workingDirectories) {
-            new Expectations() {{
-                System.getProperty("os.name");
-                result = "Mac OS X";
-                System.getProperty("user.dir");
+            new Expectations(SystemUtils.class) {{
+                SystemUtils.getUserDir();
                 result = fixture.wd;
             }};
             assertEquals(fixture.result, daemon.getDaemonPath());
@@ -225,7 +223,7 @@ public class SiaDaemonTest {
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
-                    "--modules=cghrtw");
+                    "--modules=cgrtw");
             cmd.redirectErrorStream(true);
             cmd.start();
             result = proc;
@@ -261,7 +259,7 @@ public class SiaDaemonTest {
                     "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
-                    "--modules=cghrtw");
+                    "--modules=cgrtw");
             result = dummyProc;
         }};
 

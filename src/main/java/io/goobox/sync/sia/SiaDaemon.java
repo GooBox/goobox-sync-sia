@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
     private static final Logger logger = LogManager.getLogger();
 
-    private static final String SiaDaemonFolderName = "Sia";
+    private static final String SiaDaemonFolderName = "sia";
     private static final String SiaDaemonName = "siad";
     private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
     private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db";
@@ -71,7 +72,7 @@ public class SiaDaemon extends Thread implements Closeable {
                 "--host-addr=:9982",
                 "--rpc-addr=:9981",
                 String.format("--sia-directory=%s", this.dataDir),
-                "--modules=cghrtw");
+                "--modules=cgrtw");
         cmd.redirectErrorStream(true);
 
         logger.info("Starting SIA daemon");
@@ -114,10 +115,11 @@ public class SiaDaemon extends Thread implements Closeable {
     Path getDaemonPath() {
 
         String cmd = SiaDaemonName;
-        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+        if (SystemUtils.IS_OS_WINDOWS) {
             cmd = cmd + ".exe";
         }
-        final Path wd = Paths.get(System.getProperty("user.dir"));
+
+        final Path wd = SystemUtils.getUserDir().toPath();
         if (wd.getFileName().toString().equals("bin")) {
             return wd.getParent().resolve(SiaDaemonFolderName).resolve(cmd);
         }

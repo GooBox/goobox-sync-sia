@@ -224,7 +224,7 @@ public class AppTest {
 
         final Options opt = new Options();
         new Expectations() {{
-            help.printHelp(App.CommandName, App.Description, opt, builder.toString(), true);
+            help.printHelp(App.Name, App.Description, opt, builder.toString(), true);
         }};
 
         final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
