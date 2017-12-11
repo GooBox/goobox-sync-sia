@@ -103,7 +103,7 @@ public final class CreateAllowance implements Runnable {
         final ApiClient apiClient = CmdUtils.getApiClient();
 
         int retry = 0;
-        while (retry < 20) {
+        while (true) {
 
             try {
                 final WalletApi wallet = new WalletApi(apiClient);
@@ -133,21 +133,31 @@ public final class CreateAllowance implements Runnable {
 
             } catch (final ApiException e) {
 
-                logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
-                if (!(e.getCause() instanceof ConnectException)) {
-                    break;
+                if (retry >= App.MaxRetry) {
+                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    System.exit(1);
+                    return;
                 }
 
-                try {
+                if (e.getCause() instanceof ConnectException) {
 
+                    logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
                         daemon.start();
                     }
-                    Thread.sleep(5000);
-                    retry++;
 
+                }
+
+                try {
+                    logger.info("Waiting SIA daemon starts");
+                    if (retry == 0) {
+                        Thread.sleep(5000);
+                    } else {
+                        Thread.sleep(App.DefaultSleepTime);
+                    }
+                    retry++;
                 } catch (final InterruptedException e1) {
                     logger.error("Interrupted while waiting for preparing a wallet: {}", e1.getMessage());
                     break;

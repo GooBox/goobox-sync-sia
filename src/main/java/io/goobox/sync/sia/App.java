@@ -85,7 +85,7 @@ public class App {
     /**
      * Default sleep time to wait synchronization and signing contracts.
      */
-    static final long DefaultSleepTime = 60 * 1000;
+    public static final long DefaultSleepTime = 60 * 1000;
 
     /**
      * Default config file name.
@@ -97,7 +97,10 @@ public class App {
      */
     private static final int WorkerThreadSize = 2;
 
-    static final int MaxRetry = 20;
+    /**
+     * How many times retrying to start SIA daemon.
+     */
+    public static final int MaxRetry = 60 * 24;
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -241,14 +244,18 @@ public class App {
                 this.waitContracts();
                 break;
 
-            } catch (ApiException e) {
+            } catch (final ApiException e) {
 
-                if (!(e.getCause() instanceof ConnectException) || retry >= App.MaxRetry) {
+                if (retry >= App.MaxRetry) {
                     logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
                     System.exit(1);
                     return;
                 }
-                this.startSiaDaemon();
+
+                if (e.getCause() instanceof ConnectException) {
+                    logger.info("SIA daemon is not running: {}", APIUtils.getErrorMessage(e));
+                    this.startSiaDaemon();
+                }
                 retry++;
 
                 logger.info("Waiting SIA daemon starts");
@@ -395,7 +402,7 @@ public class App {
                     logger.info("Unlocking a wallet");
                     api.walletUnlockPost(ctx.config.getPrimarySeed());
 
-                } catch (ApiException e1) {
+                } catch (final ApiException e1) {
                     // Cannot initialize new wallet.
                     logger.error("Cannot initialize new wallet: {}", APIUtils.getErrorMessage(e1));
                     System.exit(1);
