@@ -75,7 +75,6 @@ public class SiaDaemon extends Thread implements Closeable {
                 "--modules=cgrtw");
         cmd.redirectErrorStream(true);
 
-        logger.info("Starting SIA daemon");
         logger.debug("Execute: {}", String.join(" ", cmd.command()));
         try {
             this.process = cmd.start();
@@ -129,6 +128,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
     boolean checkAndDownloadConsensusDB() throws IOException {
 
+
         // TODO: check sum : https://consensus.siahub.info/sha256sum.txt
         final Path dbPath = this.dataDir.resolve(ConsensusDBPath);
         if (dbPath.toFile().exists() && dbPath.toFile().length() > ConsensusDBThreshold) {
@@ -145,6 +145,7 @@ public class SiaDaemon extends Thread implements Closeable {
             final URL url = new URL(ConsensusDBURL);
             final URLConnection conn = url.openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+            conn.setRequestProperty("Accept-Encoding", "identity");
             conn.connect();
 
             final Thread th = new Thread(() -> {

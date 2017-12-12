@@ -232,6 +232,8 @@ public final class Wallet implements Runnable {
                     if (daemon == null) {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
+
+                        logger.info("Starting SIA daemon");
                         daemon.start();
                     }
 

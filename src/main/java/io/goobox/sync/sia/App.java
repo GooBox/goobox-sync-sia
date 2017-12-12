@@ -210,6 +210,8 @@ public class App {
             try {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
+
+                logger.info("Starting SIA daemon");
                 this.daemon.start();
             } catch (IOException e) {
                 logger.error("Failed to start SIA daemon: {}", e.getMessage());
@@ -440,7 +442,7 @@ public class App {
 
             } else {
 
-                logger.info("Consensus DB isn't synchronized, wait a minute");
+                logger.info("Consensus DB isn't synchronized (block height: {}), wait a minute", res.getHeight());
                 try {
                     Thread.sleep(DefaultSleepTime);
                 } catch (InterruptedException e) {
