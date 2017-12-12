@@ -77,7 +77,7 @@ run {
     }
 }
 
-def siaVersion = 'v1.3.0'
+def siaVersion = 'v1.3.1-rc2'
 def siaArchives = [
         ['key': 'win64', 'value': 'windows-amd64'],
         ['key': 'linux', 'value': 'linux-amd64'],
@@ -95,8 +95,9 @@ siaArchives.each { type ->
         outputs.dir sia.toPath().resolve("Sia-$siaVersion-$type.value")
         doLast {
             sia.mkdirs()
-            ant.get(src: "https://github.com/NebulousLabs/Sia/releases/download/$siaVersion/Sia-$siaVersion-${type.value}.zip", dest: archive)
+//            ant.get(src: "https://github.com/NebulousLabs/Sia/releases/download/$siaVersion/Sia-$siaVersion-${type.value}.zip", dest: archive)
             ant.unzip(src: archive, dest: sia, stripAbsolutePathSpec: true)
+            sia.toPath().resolve("Sia-$siaVersion-${type.value}/siad").toFile().setExecutable(true)
         }
     }
 
