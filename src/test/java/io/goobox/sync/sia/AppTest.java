@@ -32,6 +32,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2009;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
+import io.goobox.sync.sia.command.GatewayConnect;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
@@ -221,6 +222,10 @@ public class AppTest {
         builder.append(CreateAllowance.CommandName);
         builder.append("\n  ");
         builder.append(CreateAllowance.Description);
+        builder.append("\n  ");
+        builder.append(GatewayConnect.CommandName);
+        builder.append("\n  ");
+        builder.append(GatewayConnect.Description);
 
         final Options opt = new Options();
         new Expectations() {{
@@ -252,6 +257,18 @@ public class AppTest {
         final String[] args = new String[]{CreateAllowance.CommandName, "x", "y", "z"};
         new Expectations() {{
             CreateAllowance.main(Arrays.copyOfRange(args, 1, args.length));
+        }};
+        App.main(args);
+
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void testMainWithGatewayConnectCommand(@Mocked GatewayConnect cmd) {
+
+        final String[] args = new String[]{GatewayConnect.CommandName, "x", "y", "z"};
+        new Expectations() {{
+            GatewayConnect.main(Arrays.copyOfRange(args, 1, args.length));
         }};
         App.main(args);
 

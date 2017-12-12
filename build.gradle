@@ -44,6 +44,7 @@ dependencies {
     compile 'org.apache.commons:commons-lang3:3.7'
     compile 'commons-cli:commons-cli:1.4'
     compile 'commons-codec:commons-codec:1.4'
+    compile 'commons-io:commons-io:2.6'
     compile 'org.dizitart:nitrite:2.0.1'
     compile 'net.harawata:appdirs:1.0.0'
     compile 'net.java.dev.jna:jna-platform:4.5.0'
@@ -55,7 +56,6 @@ dependencies {
     compile 'io.goobox:goobox-sync-common:0.0.1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.jmockit:jmockit:1.36'
-    testCompile 'commons-io:commons-io:2.6'
 }
 
 task packageTests(type: Jar) {
@@ -77,7 +77,7 @@ run {
     }
 }
 
-def siaVersion = 'v1.3.0'
+def siaVersion = 'v1.3.1-rc2'
 def siaArchives = [
         ['key': 'win64', 'value': 'windows-amd64'],
         ['key': 'linux', 'value': 'linux-amd64'],
@@ -95,8 +95,9 @@ siaArchives.each { type ->
         outputs.dir sia.toPath().resolve("Sia-$siaVersion-$type.value")
         doLast {
             sia.mkdirs()
-            ant.get(src: "https://github.com/NebulousLabs/Sia/releases/download/$siaVersion/Sia-$siaVersion-${type.value}.zip", dest: archive)
+//            ant.get(src: "https://github.com/NebulousLabs/Sia/releases/download/$siaVersion/Sia-$siaVersion-${type.value}.zip", dest: archive)
             ant.unzip(src: archive, dest: sia, stripAbsolutePathSpec: true)
+            sia.toPath().resolve("Sia-$siaVersion-${type.value}/siad").toFile().setExecutable(true)
         }
     }
 
