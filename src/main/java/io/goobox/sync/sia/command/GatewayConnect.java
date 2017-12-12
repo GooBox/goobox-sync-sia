@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 
-public class GatewayConnect implements Runnable {
+public final class GatewayConnect implements Runnable {
 
     public static final String CommandName = "gateway-connect";
     public static final String Description = "Connects the gateway to a peer";

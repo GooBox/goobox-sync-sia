@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The goobox-sync-sia App.
  */
-public class App {
+public final class App {
 
     // Constants.
     public static final String Name;
