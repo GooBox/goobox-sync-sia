@@ -28,6 +28,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
+import io.goobox.sync.sia.command.GatewayConnect;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
@@ -133,7 +134,11 @@ public class App {
                     return;
 
                 case CreateAllowance.CommandName:
-                    CreateAllowance.main((Arrays.copyOfRange(args, 1, args.length)));
+                    CreateAllowance.main(Arrays.copyOfRange(args, 1, args.length));
+                    return;
+
+                case GatewayConnect.CommandName:
+                    GatewayConnect.main(Arrays.copyOfRange(args, 1, args.length));
                     return;
 
             }
@@ -584,6 +589,10 @@ public class App {
         builder.append(CreateAllowance.CommandName);
         builder.append("\n  ");
         builder.append(CreateAllowance.Description);
+        builder.append("\n  ");
+        builder.append(GatewayConnect.CommandName);
+        builder.append("\n  ");
+        builder.append(GatewayConnect.Description);
 
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(Name, Description, opts, builder.toString(), true);
