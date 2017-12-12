@@ -236,11 +236,13 @@ public final class Wallet implements Runnable {
                         logger.info("Starting SIA daemon");
                         daemon.start();
                     }
+                    logger.info("Waiting SIA daemon starts");
 
+                } else {
+                    logger.warn("Failed to get wallet information: {}", APIUtils.getErrorMessage(e));
                 }
 
                 try {
-                    logger.info("Waiting SIA daemon starts");
                     if (retry == 0) {
                         Thread.sleep(5000);
                     } else {
