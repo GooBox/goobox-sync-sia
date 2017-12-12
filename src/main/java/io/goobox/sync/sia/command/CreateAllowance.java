@@ -45,6 +45,9 @@ public final class CreateAllowance implements Runnable {
 
     public static final String CommandName = "create-allowance";
     public static final String Description = "Create allowance";
+
+    static final int DefaultPeriod = 4320;
+
     private static final Logger logger = LogManager.getLogger();
 
     private final Config cfg;
@@ -127,7 +130,7 @@ public final class CreateAllowance implements Runnable {
                 // Allocate new fund.
                 final BigDecimal newFund = currentFund.add(this.fund).setScale(0, BigDecimal.ROUND_DOWN);
                 logger.info("Allocating {} hastings", newFund);
-                renter.renterPost(newFund.toString(), null, null, null);
+                renter.renterPost(newFund.toString(), null, DefaultPeriod, null);
 
                 break;
 

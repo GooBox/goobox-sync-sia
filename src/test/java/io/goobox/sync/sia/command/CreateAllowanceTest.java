@@ -116,7 +116,7 @@ public class CreateAllowanceTest {
             final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
                     multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
+            renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
@@ -149,7 +149,7 @@ public class CreateAllowanceTest {
             final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
                     multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
+            renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
@@ -192,7 +192,7 @@ public class CreateAllowanceTest {
             final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
                     multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
+            renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
@@ -233,7 +233,7 @@ public class CreateAllowanceTest {
             final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
                     multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
+            renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
@@ -273,7 +273,7 @@ public class CreateAllowanceTest {
             final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
                     multiply(CmdUtils.Hasting).
                     setScale(0, BigDecimal.ROUND_DOWN);
-            renter.renterPost(newFund.toString(), null, null, null);
+            renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
