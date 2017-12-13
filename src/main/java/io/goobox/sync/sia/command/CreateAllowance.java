@@ -27,6 +27,7 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -119,18 +120,25 @@ public final class CreateAllowance implements Runnable {
                 }
 
                 // If fund is null, get current balance.
+                final RenterApi renter = new RenterApi(apiClient);
                 if (this.fund == null) {
+                    // Allocating new fund.
                     this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
                 }
 
-                // Get current fund and compute updated fund by adding `fund` value.
-                final RenterApi renter = new RenterApi(apiClient);
-                final BigDecimal currentFund = new BigDecimal(renter.renterGet().getSettings().getAllowance().getFunds());
-
                 // Allocate new fund.
-                final BigDecimal newFund = currentFund.add(this.fund).setScale(0, BigDecimal.ROUND_DOWN);
-                logger.info("Allocating {} hastings", newFund);
-                renter.renterPost(newFund.toString(), null, DefaultPeriod, null);
+                logger.info("Allocating {} hastings", this.fund);
+                renter.renterPost(this.fund.setScale(0, BigDecimal.ROUND_DOWN).toString(), null, DefaultPeriod, null);
+
+                final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
+                System.out.println("allowance:");
+                System.out.println(String.format(
+                        "  funds: %s SC",
+                        new BigDecimal(allowance.getFunds()).
+                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                System.out.println(String.format("  host: %d", allowance.getHosts()));
+                System.out.println(String.format("  period: %d blocks", allowance.getPeriod()));
+                System.out.println(String.format("  renew-window: %d blocks", allowance.getRenewwindow()));
 
                 break;
 
@@ -144,7 +152,7 @@ public final class CreateAllowance implements Runnable {
 
                 if (e.getCause() instanceof ConnectException) {
 
-                    logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.info("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));

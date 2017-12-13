@@ -41,12 +41,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(JMockit.class)
@@ -61,6 +64,21 @@ public class CreateAllowanceTest {
     private RenterApi renter;
 
     private Path tempDir;
+
+    private ByteArrayOutputStream out;
+    private PrintStream oldOut;
+
+    @Before
+    public void setUp() {
+        out = new ByteArrayOutputStream();
+        oldOut = System.out;
+        System.setOut(new PrintStream(out));
+    }
+
+    @After
+    public void tearDown() {
+        System.setOut(oldOut);
+    }
 
     /**
      * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
@@ -95,6 +113,9 @@ public class CreateAllowanceTest {
 
         final double balance = 12345.02;
         final double fund = 2234.85;
+        final int host = 10;
+        final long period = 1234;
+        final long renewWindow = 5;
 
         new Expectations() {{
 
@@ -106,6 +127,9 @@ public class CreateAllowanceTest {
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setHosts(host);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -113,14 +137,28 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
-                    multiply(CmdUtils.Hasting).
-                    setScale(0, BigDecimal.ROUND_DOWN);
+            final BigDecimal newFund = new BigDecimal(balance).
+                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
         CreateAllowance.main(new String[]{});
+
+        final String output = out.toString();
+        System.err.println(output);
+        assertTrue(
+                String.format("funds: %.4f SC", fund),
+                output.contains(String.format("funds: %.4f SC", fund)));
+        assertTrue(
+                String.format("host: %d", host),
+                output.contains(String.format("host: %d", host)));
+        assertTrue(
+                String.format("period: %d blocks", period),
+                output.contains(String.format("period: %d blocks", period)));
+        assertTrue(
+                String.format("renew-window: %d blocks", renewWindow),
+                output.contains(String.format("renew-window: %d blocks", renewWindow)));
 
     }
 
@@ -129,6 +167,9 @@ public class CreateAllowanceTest {
 
         final double param = 12345.02;
         final double fund = 2234.85;
+        final int host = 10;
+        final long period = 1234;
+        final long renewWindow = 5;
 
         new Expectations() {{
 
@@ -139,6 +180,9 @@ public class CreateAllowanceTest {
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setHosts(host);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -146,14 +190,28 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
-                    multiply(CmdUtils.Hasting).
-                    setScale(0, BigDecimal.ROUND_DOWN);
+            final BigDecimal newFund = new BigDecimal(param).
+                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
         CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
+
+        final String output = out.toString();
+        System.err.println(output);
+        assertTrue(
+                String.format("funds: %.4f SC", fund),
+                output.contains(String.format("funds: %.4f SC", fund)));
+        assertTrue(
+                String.format("host: %d", host),
+                output.contains(String.format("host: %d", host)));
+        assertTrue(
+                String.format("period: %d blocks", period),
+                output.contains(String.format("period: %d blocks", period)));
+        assertTrue(
+                String.format("renew-window: %d blocks", renewWindow),
+                output.contains(String.format("renew-window: %d blocks", renewWindow)));
 
     }
 
@@ -162,6 +220,9 @@ public class CreateAllowanceTest {
 
         final double balance = 12345.02;
         final double fund = 2234.85;
+        final int host = 10;
+        final long period = 1234;
+        final long renewWindow = 5;
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
@@ -182,6 +243,9 @@ public class CreateAllowanceTest {
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setHosts(host);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -189,14 +253,28 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
-                    multiply(CmdUtils.Hasting).
-                    setScale(0, BigDecimal.ROUND_DOWN);
+            final BigDecimal newFund = new BigDecimal(balance).
+                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
         CreateAllowance.main(new String[]{});
+
+        final String output = out.toString();
+        System.err.println(output);
+        assertTrue(
+                String.format("funds: %.4f SC", fund),
+                output.contains(String.format("funds: %.4f SC", fund)));
+        assertTrue(
+                String.format("host: %d", host),
+                output.contains(String.format("host: %d", host)));
+        assertTrue(
+                String.format("period: %d blocks", period),
+                output.contains(String.format("period: %d blocks", period)));
+        assertTrue(
+                String.format("renew-window: %d blocks", renewWindow),
+                output.contains(String.format("renew-window: %d blocks", renewWindow)));
 
     }
 
@@ -205,6 +283,10 @@ public class CreateAllowanceTest {
 
         final double param = 12345.02;
         final double fund = 2234.85;
+        final int host = 10;
+        final long period = 1234;
+        final long renewWindow = 5;
+
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
         Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
@@ -223,6 +305,9 @@ public class CreateAllowanceTest {
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setHosts(host);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -230,14 +315,28 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(param).add(new BigDecimal(fund)).
-                    multiply(CmdUtils.Hasting).
-                    setScale(0, BigDecimal.ROUND_DOWN);
+            final BigDecimal newFund = new BigDecimal(param).
+                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
         CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
+
+        final String output = out.toString();
+        System.err.println(output);
+        assertTrue(
+                String.format("funds: %.4f SC", fund),
+                output.contains(String.format("funds: %.4f SC", fund)));
+        assertTrue(
+                String.format("host: %d", host),
+                output.contains(String.format("host: %d", host)));
+        assertTrue(
+                String.format("period: %d blocks", period),
+                output.contains(String.format("period: %d blocks", period)));
+        assertTrue(
+                String.format("renew-window: %d blocks", renewWindow),
+                output.contains(String.format("renew-window: %d blocks", renewWindow)));
 
     }
 
@@ -246,6 +345,9 @@ public class CreateAllowanceTest {
 
         final double balance = 12345.02;
         final double fund = 2234.85;
+        final int host = 10;
+        final long period = 1234;
+        final long renewWindow = 5;
 
         new Expectations() {{
 
@@ -263,6 +365,9 @@ public class CreateAllowanceTest {
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
             allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setHosts(host);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             settings.setAllowance(allowance);
             final InlineResponse2008 res2 = new InlineResponse2008();
@@ -270,15 +375,28 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).add(new BigDecimal(fund)).
-                    multiply(CmdUtils.Hasting).
-                    setScale(0, BigDecimal.ROUND_DOWN);
+            final BigDecimal newFund = new BigDecimal(balance).
+                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
         CreateAllowance.main(new String[]{});
 
+        final String output = out.toString();
+        System.err.println(output);
+        assertTrue(
+                String.format("funds: %.4f SC", fund),
+                output.contains(String.format("funds: %.4f SC", fund)));
+        assertTrue(
+                String.format("host: %d", host),
+                output.contains(String.format("host: %d", host)));
+        assertTrue(
+                String.format("period: %d blocks", period),
+                output.contains(String.format("period: %d blocks", period)));
+        assertTrue(
+                String.format("renew-window: %d blocks", renewWindow),
+                output.contains(String.format("renew-window: %d blocks", renewWindow)));
 
     }
 
