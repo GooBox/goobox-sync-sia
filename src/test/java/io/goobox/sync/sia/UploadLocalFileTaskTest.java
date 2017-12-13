@@ -145,7 +145,6 @@ public class UploadLocalFileTaskTest {
         task.call();
 
         // check after conditions.
-        assertFalse(DBMock.committed);
         assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
 
     }
