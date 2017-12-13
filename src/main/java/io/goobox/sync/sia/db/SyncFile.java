@@ -199,7 +199,9 @@ public class SyncFile implements Serializable {
         this.setLocalPath(localPath);
         this.setLocalModificationTime(Files.getLastModifiedTime(localPath).toMillis());
         this.setLocalSize(Files.size(localPath));
-        this.setLocalDigest(DigestUtils.sha512Hex(new FileInputStream(localPath.toFile())));
+        try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+            this.setLocalDigest(DigestUtils.sha512Hex(in));
+        }
     }
 
     @NotNull

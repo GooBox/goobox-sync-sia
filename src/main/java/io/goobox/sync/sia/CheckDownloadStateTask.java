@@ -158,8 +158,15 @@ class CheckDownloadStateTask implements Callable<Void> {
 
                                 } else if (cloudCreationTime > syncTime) {
 
-                                    final String cloudDigest = DigestUtils.sha512Hex(new FileInputStream(tempPath.toFile()));
-                                    final String localDigest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
+                                    String cloudDigest;
+                                    try (final FileInputStream in = new FileInputStream(tempPath.toFile())) {
+                                        cloudDigest = DigestUtils.sha512Hex(in);
+                                    }
+                                    String localDigest;
+                                    try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                                        localDigest = DigestUtils.sha512Hex(in);
+                                    }
+
                                     if (!cloudDigest.equals(localDigest)) {
                                         logger.info("Conflicted copy of {} has been created", file.getName());
 

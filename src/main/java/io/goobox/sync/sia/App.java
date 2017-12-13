@@ -96,7 +96,7 @@ public final class App {
     /**
      * The number of worker threads.
      */
-    private static final int WorkerThreadSize = 2;
+    private static final int WorkerThreadSize = 3;
 
     /**
      * How many times retrying to start SIA daemon.
@@ -535,8 +535,8 @@ public final class App {
                 final String name = ctx.getName(localPath);
                 final boolean modified = DB.get(name).flatMap(syncFile -> syncFile.getLocalDigest().map(digest -> {
 
-                    try {
-                        final String currentDigest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
+                    try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                        final String currentDigest = DigestUtils.sha512Hex(in);
                         return !digest.equals(currentDigest);
                     } catch (IOException e) {
                         logger.error("Failed to read {}: {}", localPath, e.getMessage());
