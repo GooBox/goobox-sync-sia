@@ -212,7 +212,7 @@ public final class Wallet implements Runnable {
                         new BigDecimal(prices.getStorageterabytemonth()).
                                 divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
                 System.out.println(String.format(
-                        "  fee: %s SC",
+                        "  fee: %s SC/contract",
                         new BigDecimal(prices.getFormcontracts()).
                                 divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
 
@@ -228,7 +228,7 @@ public final class Wallet implements Runnable {
 
                 if (e.getCause() instanceof ConnectException) {
 
-                    logger.warn("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.info("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));

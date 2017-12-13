@@ -17,6 +17,11 @@
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
+apply plugin: 'pmd'
+apply plugin: 'findbugs'
+//apply plugin: 'checkstyle'
+apply plugin: "jacoco"
+apply plugin: "com.github.hierynomus.license"
 
 version = '0.0.10'
 mainClassName = 'io.goobox.sync.sia.App'
@@ -26,6 +31,17 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+}
+
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1"
+    }
 }
 
 repositories {
@@ -53,7 +69,7 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-core:2.9.1'
     compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.9.1'
     compile 'com.intellij:annotations:12.0'
-    compile 'io.goobox:goobox-sync-common:0.0.1'
+    compile 'io.goobox:goobox-sync-common:0.0.2'
     testCompile 'junit:junit:4.12'
     testCompile 'org.jmockit:jmockit:1.36'
 }
@@ -122,5 +138,18 @@ siaArchives.each { type ->
 }
 
 task distZip(overwrite: true, dependsOn: siaArchives.collect { "distZip-$it.key" }) {
+    group 'distribution'
 
+}
+
+pmd {
+    ignoreFailures = true
+    ruleSets = [
+            'java-braces',
+            'java-codesize',
+    ]
+}
+
+findbugs {
+    ignoreFailures = true
 }

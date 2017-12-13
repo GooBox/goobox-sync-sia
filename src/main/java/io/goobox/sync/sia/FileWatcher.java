@@ -148,14 +148,14 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
 
                     final boolean shouldBeAdded = DB.get(name).map(syncFile -> {
 
-                        try {
-                            final String digest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
+                        try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                            final String digest = DigestUtils.sha512Hex(in);
                             if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
                                 logger.trace("File {} is modified but the contents are not changed", name);
                                 removePaths.add(localPath);
                                 return false;
                             }
-                        } catch (IOException e) {
+                        } catch (final IOException e) {
                             logger.error("Failed to compute digest of {}: {}", name, e.getMessage());
                         }
                         return true;
