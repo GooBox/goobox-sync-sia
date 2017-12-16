@@ -103,7 +103,7 @@ public class ConfigTest {
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
         assertEquals(dataPieces, cfg.getDataPieces());
-        assertEquals(12, cfg.getParityPieces());
+        assertEquals(Config.DefaultParityPieces, cfg.getParityPieces());
 
     }
 
