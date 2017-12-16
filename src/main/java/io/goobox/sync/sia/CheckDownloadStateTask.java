@@ -73,7 +73,10 @@ class CheckDownloadStateTask implements Callable<Void> {
                 final Optional<SyncFile> syncFileOpt = DB.get(file);
 
                 if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
-                    logger.trace("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
+                    logger.trace(
+                            "Found remote file {} but it's not managed by Goobox (not starts with {})",
+                            file.getCloudPath(),
+                            this.ctx.pathPrefix);
                     continue;
                 }
 

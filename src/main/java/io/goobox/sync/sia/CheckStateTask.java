@@ -232,14 +232,17 @@ class CheckStateTask implements Callable<Void> {
 
                 if (!file.getAvailable()) {
                     // This file is still being uploaded.
-                    logger.debug("Found remote file {} but it's not available", file.getSiapath());
+                    logger.debug("Found remote file {} but it's not available (still being uploaded)", file.getSiapath());
                     return;
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
+                    logger.debug(
+                            "Found remote file {} but it's not managed by Goobox (not starts with {})",
+                            siaFile.getCloudPath(),
+                            this.ctx.pathPrefix);
                     return;
                 }
 
