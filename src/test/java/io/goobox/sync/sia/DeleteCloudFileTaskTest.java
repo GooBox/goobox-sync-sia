@@ -25,6 +25,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
+import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
@@ -81,6 +82,9 @@ public class DeleteCloudFileTaskTest {
         localPath = Utils.getSyncDir().resolve(name);
         assertTrue(localPath.toFile().createNewFile());
         cloudPath = ctx.pathPrefix.resolve(name);
+
+        APIUtilsMock.toSlashPaths.clear();
+        new APIUtilsMock();
 
     }
 
@@ -145,6 +149,11 @@ public class DeleteCloudFileTaskTest {
         new DeleteCloudFileTask(ctx, name).call();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(name).isPresent());
+
+        assertEquals(siaPaths.size(), APIUtilsMock.toSlashPaths.size());
+        for (int i = 0; i != siaPaths.size(); i++) {
+            assertEquals(Paths.get(siaPaths.get(i)), APIUtilsMock.toSlashPaths.get(i));
+        }
 
     }
 

@@ -22,6 +22,8 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.junit.Test;
 
+import java.nio.file.Paths;
+
 import static org.junit.Assert.assertEquals;
 
 public class APIUtilsTest {
@@ -64,6 +66,19 @@ public class APIUtilsTest {
         final ApiException e = new ApiException(501, "", null, anotherMsg);
         assertEquals(anotherMsg, APIUtils.getErrorMessage(e));
 
+    }
+
+    @Test
+    public void toSlash() {
+        assertEquals("/path/to/somefile", APIUtils.toSlash(Paths.get("/path", "to\\somefile")));
+    }
+
+    @Test
+    public void fromSlash() {
+        assertEquals(Paths.get("path"), APIUtils.fromSlash("path"));
+        assertEquals(Paths.get("path", "to", "somefile"), APIUtils.fromSlash("path/to/somefile"));
+        assertEquals(Paths.get("/path"), APIUtils.fromSlash("/path"));
+        assertEquals(Paths.get("/path", "to", "somefile"), APIUtils.fromSlash("/path/to/somefile"));
     }
 
 }

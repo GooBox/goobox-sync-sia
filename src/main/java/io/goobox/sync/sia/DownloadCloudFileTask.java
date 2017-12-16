@@ -74,7 +74,7 @@ class DownloadCloudFileTask implements Callable<Void> {
         try {
 
             logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
-            api.renterDownloadasyncSiapathGet(cloudPath.toString(), temporaryPath.toString());
+            api.renterDownloadasyncSiapathGet(APIUtils.toSlash(cloudPath), APIUtils.toSlash(temporaryPath));
             DB.setDownloading(this.name);
 
         } catch (final ApiException e) {

@@ -74,9 +74,9 @@ class UploadLocalFileTask implements Callable<Void> {
         try {
 
             api.renterUploadSiapathPost(
-                    cloudPath.toString(),
+                    APIUtils.toSlash(cloudPath),
                     this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                    this.localPath.toString());
+                    APIUtils.toSlash(this.localPath));
             DB.setUploading(this.ctx.getName(this.localPath));
 
         } catch (ApiException e) {

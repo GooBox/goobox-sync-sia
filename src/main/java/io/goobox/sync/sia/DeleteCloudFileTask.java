@@ -86,7 +86,7 @@ class DeleteCloudFileTask implements Callable<Void> {
                     if (siaFile.getName().equals(this.name)) {
                         logger.info("Delete file {}", siaFile.getCloudPath());
                         try {
-                            api.renterDeleteSiapathPost(siaFile.getCloudPath().toString());
+                            api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
                         } catch (final ApiException e) {
                             if (e.getCause() instanceof ConnectException) {
                                 throw e;
