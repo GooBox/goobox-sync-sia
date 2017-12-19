@@ -83,7 +83,7 @@ public final class App {
     /**
      * Version information.
      */
-    public static final String Version = "0.0.11";
+    public static final String Version = "0.0.12";
 
     /**
      * The number of the minimum required contructs.
