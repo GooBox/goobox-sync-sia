@@ -14,9 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
@@ -49,14 +51,14 @@ import java.util.concurrent.Callable;
  *
  * @author junpei
  */
-class CheckDownloadStateTask implements Callable<Void> {
+public class CheckDownloadStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
     @NotNull
     private final Context ctx;
 
-    CheckDownloadStateTask(@NotNull final Context ctx) {
+    public CheckDownloadStateTask(@NotNull final Context ctx) {
         this.ctx = ctx;
     }
 
@@ -73,7 +75,10 @@ class CheckDownloadStateTask implements Callable<Void> {
                 final Optional<SyncFile> syncFileOpt = DB.get(file);
 
                 if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
-                    logger.trace("Found remote file {} but it's not managed by Goobox", file.getCloudPath());
+                    logger.trace(
+                            "Found remote file {} but it's not managed by Goobox (not starts with {})",
+                            file.getCloudPath(),
+                            this.ctx.pathPrefix);
                     continue;
                 }
 

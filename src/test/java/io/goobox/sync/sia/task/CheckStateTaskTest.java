@@ -15,9 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
@@ -79,7 +81,7 @@ public class CheckStateTaskTest {
         new UtilsMock();
 
         final Config cfg = new Config();
-        cfg.setUserName("test-user");
+        Deencapsulation.setField(cfg, "userName", "test-user");
         this.context = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
@@ -531,6 +533,34 @@ public class CheckStateTaskTest {
         final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
         assertTrue(task instanceof DownloadCloudFileTask);
         assertEquals(siaFile.getName(), Deencapsulation.getField(task, "name"));
+
+    }
+
+    /**
+     * Test case that a file marked as modified but already deleted.
+     */
+    @Test
+    public void modifiedFileIsDeleted() throws ApiException, IOException {
+
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            final List<InlineResponse20011Files> files = new ArrayList<>();
+            res.setFiles(files);
+            api.renterFilesGet();
+            result = res;
+        }};
+
+        final Path localPath = tempDir.resolve(name);
+        assertTrue(localPath.toFile().createNewFile());
+        DB.addNewFile(name, localPath);
+        DB.setModified(name, localPath);
+
+        assertTrue(localPath.toFile().delete());
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.context, executor).call();
+
+        assertFalse(DB.get(name).isPresent());
+        assertEquals(0, executor.queue.size());
 
     }
 

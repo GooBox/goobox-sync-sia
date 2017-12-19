@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -34,7 +35,7 @@ import java.util.Optional;
  *
  * @author junpei
  */
-class DeleteLocalFileTask implements Runnable {
+public class DeleteLocalFileTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -43,7 +44,7 @@ class DeleteLocalFileTask implements Runnable {
     @NotNull
     private final Path localPath;
 
-    DeleteLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
+    public DeleteLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
         this.ctx = ctx;
         this.localPath = localPath;
     }

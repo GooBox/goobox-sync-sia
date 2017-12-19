@@ -20,6 +20,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
+import org.jetbrains.annotations.NotNull;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class APIUtils {
 
@@ -40,6 +45,26 @@ public class APIUtils {
         } catch (final JsonSyntaxException e1) {
             return body;
         }
+
+    }
+
+    @NotNull
+    public static String toSlash(@NotNull final Path path) {
+        return path.toString().replace("\\", "/");
+    }
+
+    @NotNull
+    public static Path fromSlash(@NotNull final String path) {
+
+        final String[] components = path.split("/");
+        if (components.length < 2) {
+            return Paths.get(path);
+        }
+        if (components[0].isEmpty()) {
+            components[0] = "/";
+        }
+
+        return Paths.get(components[0], Arrays.copyOfRange(components, 1, components.length));
 
     }
 

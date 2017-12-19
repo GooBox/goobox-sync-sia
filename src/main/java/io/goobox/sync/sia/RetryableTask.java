@@ -33,7 +33,7 @@ public class RetryableTask implements Runnable {
     @NotNull
     private final RecoveryTask recover;
 
-    RetryableTask(@NotNull final Callable<Void> task, @NotNull final RecoveryTask recover) {
+    public RetryableTask(@NotNull final Callable<Void> task, @NotNull final RecoveryTask recover) {
         this.task = task;
         this.recover = recover;
     }
@@ -56,6 +56,7 @@ public class RetryableTask implements Runnable {
 
     }
 
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -73,5 +74,4 @@ public class RetryableTask implements Runnable {
         result = 31 * result + recover.hashCode();
         return result;
     }
-    
 }

@@ -20,9 +20,12 @@ package io.goobox.sync.sia.model;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
+import io.goobox.sync.sia.mocks.APIUtilsMock;
 import mockit.Deencapsulation;
+import mockit.integration.junit4.JMockit;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +33,7 @@ import java.nio.file.Paths;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+@RunWith(JMockit.class)
 public class AbstractSiaFileTest {
 
     private String user;
@@ -46,6 +50,9 @@ public class AbstractSiaFileTest {
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", this.user);
         ctx = new Context(cfg, null);
+
+        APIUtilsMock.fromSlashPaths.clear();
+        new APIUtilsMock();
 
     }
 
@@ -67,6 +74,9 @@ public class AbstractSiaFileTest {
         assertEquals(Utils.getSyncDir().resolve(this.path), siaFile.getLocalPath());
         assertEquals(created, siaFile.getCreationTime().get());
 
+        assertEquals(1, APIUtilsMock.fromSlashPaths.size());
+        assertEquals(inPath.toString(), APIUtilsMock.fromSlashPaths.get(0));
+
     }
 
     @Test
@@ -84,6 +94,9 @@ public class AbstractSiaFileTest {
         assertEquals(inPath, siaFile.getCloudPath());
         assertEquals(Utils.getSyncDir().resolve(this.path), siaFile.getLocalPath());
         assertFalse(siaFile.getCreationTime().isPresent());
+
+        assertEquals(1, APIUtilsMock.fromSlashPaths.size());
+        assertEquals(inPath.toString(), APIUtilsMock.fromSlashPaths.get(0));
 
     }
 
@@ -103,6 +116,9 @@ public class AbstractSiaFileTest {
         assertEquals(inPath, siaFile.getCloudPath());
         assertEquals(Utils.getSyncDir().resolve(path), siaFile.getLocalPath());
         assertFalse(siaFile.getCreationTime().isPresent());
+
+        assertEquals(1, APIUtilsMock.fromSlashPaths.size());
+        assertEquals(inPath.toString(), APIUtilsMock.fromSlashPaths.get(0));
 
     }
 

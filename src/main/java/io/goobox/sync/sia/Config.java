@@ -47,6 +47,10 @@ public class Config {
     static final String ParityPieces = "parity-pieces";
     static final Logger logger = LogManager.getLogger();
 
+    static final int DefaultDataPieces = 10;
+    static final int DefaultParityPieces = 20;
+    static final int MinimumParityPieces = 12;
+
     /**
      * User name.
      */
@@ -218,21 +222,21 @@ public class Config {
         }
 
         try {
-            cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, "1"));
+            cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, String.valueOf(DefaultDataPieces)));
         } catch (NumberFormatException e) {
             logger.warn("Invalid data pieces {}", props.getProperty(DataPieces));
-            cfg.dataPieces = 1;
+            cfg.dataPieces = DefaultDataPieces;
         }
 
         try {
-            cfg.parityPieces = Integer.valueOf(props.getProperty(ParityPieces, "12"));
-            if (cfg.parityPieces < 12) {
-                logger.warn("Invalid parity pieces {}, minimum 12 pieces are required", cfg.parityPieces);
-                cfg.parityPieces = 12;
+            cfg.parityPieces = Integer.valueOf(props.getProperty(ParityPieces, String.valueOf(DefaultParityPieces)));
+            if (cfg.parityPieces < MinimumParityPieces) {
+                logger.warn("Invalid parity pieces {}, minimum {} pieces are required", cfg.parityPieces, MinimumParityPieces);
+                cfg.parityPieces = DefaultParityPieces;
             }
         } catch (NumberFormatException e) {
             logger.warn("Invalid parity pieces {}", props.getProperty(ParityPieces));
-            cfg.parityPieces = 12;
+            cfg.parityPieces = DefaultParityPieces;
         }
 
         logger.info("Sync directory: {}", cfg.getSyncDir());

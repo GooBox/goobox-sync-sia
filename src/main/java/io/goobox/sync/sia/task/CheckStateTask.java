@@ -14,8 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
+import io.goobox.sync.sia.RetryableTask;
+import io.goobox.sync.sia.StartSiaDaemonTask;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
@@ -45,7 +49,7 @@ import java.util.concurrent.Executor;
  *
  * @author junpei
  */
-class CheckStateTask implements Callable<Void> {
+public class CheckStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -54,7 +58,7 @@ class CheckStateTask implements Callable<Void> {
     @NotNull
     private final Executor executor;
 
-    CheckStateTask(@NotNull final Context ctx, @NotNull final Executor executor) {
+    public CheckStateTask(@NotNull final Context ctx, @NotNull final Executor executor) {
         this.ctx = ctx;
         this.executor = executor;
     }
@@ -170,11 +174,16 @@ class CheckStateTask implements Callable<Void> {
                 }
                 // This file is not stored in the cloud network and modified from the local directory.
                 // It should be uploaded.
+                final Path localPath = this.ctx.config.getSyncDir().resolve(syncFile.getName());
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                    this.enqueueForUpload(localPath);
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                    if (!localPath.toFile().exists()) {
+                        logger.info("File {} was deleted", syncFile.getName());
+                        DB.remove(syncFile.getName());
+                    }
                 }
                 processedFiles.add(syncFile.getName());
             });
@@ -232,14 +241,17 @@ class CheckStateTask implements Callable<Void> {
 
                 if (!file.getAvailable()) {
                     // This file is still being uploaded.
-                    logger.debug("Found remote file {} but it's not available", file.getSiapath());
+                    logger.debug("Found remote file {} but it's not available (still being uploaded)", file.getSiapath());
                     return;
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
                 if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
                     // This file isn't managed by Goobox.
-                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
+                    logger.debug(
+                            "Found remote file {} but it's not managed by Goobox (not starts with {})",
+                            siaFile.getCloudPath(),
+                            this.ctx.pathPrefix);
                     return;
                 }
 

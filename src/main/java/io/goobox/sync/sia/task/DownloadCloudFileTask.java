@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
@@ -32,9 +34,9 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
- * Uploads a given local file to cloud storage with a given remote path.
+ * Downloads a cloud name to the local directory.
  */
-class UploadLocalFileTask implements Callable<Void> {
+public class DownloadCloudFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -42,56 +44,57 @@ class UploadLocalFileTask implements Callable<Void> {
     private final Context ctx;
 
     @NotNull
-    private final Path localPath;
+    private final String name;
 
-
-    UploadLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
+    public DownloadCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
-        this.localPath = localPath;
+        this.name = name;
     }
 
     @Override
     public Void call() throws ApiException {
 
-        final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
+        final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
-            logger.warn("File {} was deleted from SyncDB", this.localPath);
+            logger.warn("File {} was specified to be downloaded but doesn't exist in the sync DB", this.name);
             return null;
         }
 
         final SyncFile syncFile = syncFileOpt.get();
-        if (syncFile.getState() != SyncState.FOR_UPLOAD) {
-            logger.debug("File {} was enqueued to be uploaded but its status was changed, skipped", syncFile.getName());
+        if (syncFile.getState() != SyncState.FOR_DOWNLOAD) {
+            logger.debug("File {} was enqueued to be downloaded but its status was changed, skipped", this.name);
             return null;
         }
 
-        if (!syncFile.getCloudPath().isPresent()) {
-            logger.debug("File {} was enqueued but it doesn't cloud path", syncFile.getName());
+        if (!syncFile.getCloudPath().isPresent() || !syncFile.getTemporaryPath().isPresent()) {
+            logger.debug("File {} was enqueued but one of cloud path and temporary path is not given", this.name);
             return null;
         }
         final Path cloudPath = syncFile.getCloudPath().get();
+        final Path temporaryPath = syncFile.getTemporaryPath().get();
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
 
-            api.renterUploadSiapathPost(
-                    cloudPath.toString(),
-                    this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
-                    this.localPath.toString());
-            DB.setUploading(this.ctx.getName(this.localPath));
+            logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
+            api.renterDownloadasyncSiapathGet(APIUtils.toSlash(cloudPath), APIUtils.toSlash(temporaryPath));
+            DB.setDownloading(this.name);
 
-        } catch (ApiException e) {
+        } catch (final ApiException e) {
 
             if (e.getCause() instanceof ConnectException) {
                 throw e;
             }
-            logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-            DB.setUploadFailed(this.ctx.getName(this.localPath));
+
+            logger.error(
+                    "Cannot start downloading name {} to {}: {}",
+                    cloudPath, syncFile.getLocalPath().orElse(temporaryPath), APIUtils.getErrorMessage(e));
+            DB.setDownloadFailed(this.name);
 
         } finally {
             DB.commit();
         }
-
         return null;
+
     }
 
 }

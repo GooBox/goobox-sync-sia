@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
@@ -34,7 +36,7 @@ import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
-class CheckUploadStateTask implements Callable<Void> {
+public class CheckUploadStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
     private static final BigDecimal Completed = new BigDecimal(100);
@@ -42,7 +44,7 @@ class CheckUploadStateTask implements Callable<Void> {
     @NotNull
     private final Context ctx;
 
-    CheckUploadStateTask(@NotNull final Context ctx) {
+    public CheckUploadStateTask(@NotNull final Context ctx) {
         this.ctx = ctx;
     }
 

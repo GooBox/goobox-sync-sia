@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 
 public abstract class AbstractSiaFile implements SiaFile {
@@ -42,7 +42,7 @@ public abstract class AbstractSiaFile implements SiaFile {
 
     AbstractSiaFile(@NotNull Context ctx, @NotNull final String cloudPath) {
 
-        this.cloudPath = Paths.get(cloudPath);
+        this.cloudPath = APIUtils.fromSlash(cloudPath);
 
         Path withoutTimestamp = this.cloudPath;
         Long created = null;
@@ -51,14 +51,13 @@ public abstract class AbstractSiaFile implements SiaFile {
                 created = Long.parseLong(this.cloudPath.getFileName().toString());
                 withoutTimestamp = this.cloudPath.getParent();
             } catch (NumberFormatException e) {
-                logger.debug("siapath {} doesn't have its creation time", cloudPath);
+                logger.debug("cloud path {} doesn't have its creation time", cloudPath);
             }
         }
         this.creationTime = created;
 
         this.name = ctx.pathPrefix.relativize(withoutTimestamp);
         this.localPath = ctx.getLocalPath(this.name.toString());
-
 
     }
 
