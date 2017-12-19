@@ -74,6 +74,11 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
         logger.traceEntry(new ReflectionToStringBuilder(event).toString());
         final long now = System.currentTimeMillis();
 
+        if (event.eventType() == DirectoryChangeEvent.EventType.OVERFLOW) {
+            logger.warn("{} is overflowed", event.path());
+            return;
+        }
+
         if (event.path().toFile().isDirectory()) {
             logger.trace("{} is a directory and will be ignored", event.path());
             return;
@@ -120,10 +125,6 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     }
 
                 });
-                break;
-
-            case OVERFLOW:
-                logger.warn("{} is overflowed", event.path());
                 break;
         }
 

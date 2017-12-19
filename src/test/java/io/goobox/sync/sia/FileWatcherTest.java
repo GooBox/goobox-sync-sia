@@ -526,6 +526,29 @@ public class FileWatcherTest {
 
     }
 
+    @Test
+    public void onEventWithOverflow() throws IOException {
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+
+        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+
+        new SystemMock();
+
+        SystemMock.currentTime = now;
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.OVERFLOW, null, 0));
+
+        final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+        assertTrue(trackingFiles.isEmpty());
+
+    }
+
     @SuppressWarnings("unchecked")
     private void updateStatus(final String name, final SyncState newState) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
