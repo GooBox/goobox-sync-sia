@@ -536,4 +536,32 @@ public class CheckStateTaskTest {
 
     }
 
+    /**
+     * Test case that a file marked as modified but already deleted.
+     */
+    @Test
+    public void modifiedFileIsDeleted() throws ApiException, IOException {
+
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            final List<InlineResponse20011Files> files = new ArrayList<>();
+            res.setFiles(files);
+            api.renterFilesGet();
+            result = res;
+        }};
+
+        final Path localPath = tempDir.resolve(name);
+        assertTrue(localPath.toFile().createNewFile());
+        DB.addNewFile(name, localPath);
+        DB.setModified(name, localPath);
+
+        assertTrue(localPath.toFile().delete());
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.context, executor).call();
+
+        assertFalse(DB.get(name).isPresent());
+        assertEquals(0, executor.queue.size());
+
+    }
+
 }

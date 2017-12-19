@@ -174,11 +174,16 @@ public class CheckStateTask implements Callable<Void> {
                 }
                 // This file is not stored in the cloud network and modified from the local directory.
                 // It should be uploaded.
+                final Path localPath = this.ctx.config.getSyncDir().resolve(syncFile.getName());
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                    this.enqueueForUpload(localPath);
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                    if (!localPath.toFile().exists()) {
+                        logger.info("File {} was deleted", syncFile.getName());
+                        DB.remove(syncFile.getName());
+                    }
                 }
                 processedFiles.add(syncFile.getName());
             });
