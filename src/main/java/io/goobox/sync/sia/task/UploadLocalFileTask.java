@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
@@ -34,7 +36,7 @@ import java.util.concurrent.Callable;
 /**
  * Uploads a given local file to cloud storage with a given remote path.
  */
-class UploadLocalFileTask implements Callable<Void> {
+public class UploadLocalFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -45,7 +47,7 @@ class UploadLocalFileTask implements Callable<Void> {
     private final Path localPath;
 
 
-    UploadLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
+    public UploadLocalFileTask(@NotNull final Context ctx, @NotNull final Path localPath) {
         this.ctx = ctx;
         this.localPath = localPath;
     }

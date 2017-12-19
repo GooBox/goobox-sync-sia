@@ -15,9 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
@@ -79,7 +81,7 @@ public class CheckStateTaskTest {
         new UtilsMock();
 
         final Config cfg = new Config();
-        cfg.setUserName("test-user");
+        Deencapsulation.setField(cfg, "userName", "test-user");
         this.context = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());

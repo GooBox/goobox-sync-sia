@@ -15,9 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
@@ -25,6 +27,7 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
+import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -73,9 +76,9 @@ public class UploadLocalFileTaskTest {
         new UtilsMock();
 
         this.config = new Config();
-        this.config.setUserName("test-user");
-        this.config.setDataPieces(120);
-        this.config.setParityPieces(50);
+        Deencapsulation.setField(this.config, "userName", "test-user");
+        Deencapsulation.setField(this.config, "dataPieces", 120);
+        Deencapsulation.setField(this.config, "parityPieces", 50);
         this.context = new Context(this.config, null);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());

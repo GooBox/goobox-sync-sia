@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
@@ -34,7 +36,7 @@ import java.util.concurrent.Callable;
 /**
  * Downloads a cloud name to the local directory.
  */
-class DownloadCloudFileTask implements Callable<Void> {
+public class DownloadCloudFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -44,7 +46,7 @@ class DownloadCloudFileTask implements Callable<Void> {
     @NotNull
     private final String name;
 
-    DownloadCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
+    public DownloadCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
         this.name = name;
     }

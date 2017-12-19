@@ -14,8 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
+import io.goobox.sync.sia.RetryableTask;
+import io.goobox.sync.sia.StartSiaDaemonTask;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
@@ -45,7 +49,7 @@ import java.util.concurrent.Executor;
  *
  * @author junpei
  */
-class CheckStateTask implements Callable<Void> {
+public class CheckStateTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -54,7 +58,7 @@ class CheckStateTask implements Callable<Void> {
     @NotNull
     private final Executor executor;
 
-    CheckStateTask(@NotNull final Context ctx, @NotNull final Executor executor) {
+    public CheckStateTask(@NotNull final Context ctx, @NotNull final Executor executor) {
         this.ctx = ctx;
         this.executor = executor;
     }

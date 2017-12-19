@@ -15,8 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.goobox.sync.sia;
+package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
@@ -37,7 +39,7 @@ import java.util.concurrent.Callable;
 /**
  * Deletes a given file from the cloud network and sync DB.
  */
-class DeleteCloudFileTask implements Callable<Void> {
+public class DeleteCloudFileTask implements Callable<Void> {
 
     private static final Logger logger = LogManager.getLogger();
 
@@ -47,7 +49,7 @@ class DeleteCloudFileTask implements Callable<Void> {
     @NotNull
     private final String name;
 
-    DeleteCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
+    public DeleteCloudFileTask(@NotNull final Context ctx, @NotNull final String name) {
         this.ctx = ctx;
         this.name = name;
     }
