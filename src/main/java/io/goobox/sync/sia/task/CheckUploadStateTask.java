@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -88,7 +89,7 @@ public class CheckUploadStateTask implements Callable<Void> {
                     } else {
                         logger.info(
                                 "File {} is now being uploaded ({}%)", siaFile.getName(),
-                                siaFile.getUploadProgress().setScale(3, BigDecimal.ROUND_HALF_UP));
+                                siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP));
                     }
 
                 });

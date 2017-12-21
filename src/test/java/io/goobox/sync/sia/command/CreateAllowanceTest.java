@@ -45,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +139,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
+                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -191,7 +192,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(param).
-                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
+                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -254,7 +255,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
+                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -316,7 +317,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(param).
-                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
+                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -376,7 +377,7 @@ public class CreateAllowanceTest {
             result = res2;
 
             final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, BigDecimal.ROUND_DOWN);
+                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};

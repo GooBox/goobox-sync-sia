@@ -35,7 +35,12 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 
@@ -66,7 +71,7 @@ public class CheckStateTask implements Callable<Void> {
         final Set<String> processedFiles = new HashSet<>();
         try {
 
-            logger.trace("Processing files stored in the cloud netwrok");
+            logger.trace("Processing files stored in the cloud network");
             for (final SiaFile file : this.takeNewestFiles(api.renterFilesGet().getFiles())) {
 
                 try {

@@ -49,9 +49,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
@@ -66,7 +64,6 @@ public class CheckUploadStateTaskTest {
     private String name;
     private Path cloudPath;
     private Path localPath;
-
 
     @Before
     public void setUp() throws IOException {
@@ -223,7 +220,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void notManagedFile() throws IOException, ApiException {
+    public void notManagedFile() throws ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
@@ -249,7 +246,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void deletedFromDBFile() throws IOException, ApiException {
+    public void deletedFromDBFile() throws ApiException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
