@@ -37,6 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.ConnectException;
 
 /**
@@ -128,14 +129,14 @@ public final class CreateAllowance implements Runnable {
 
                 // Allocate new fund.
                 logger.info("Allocating {} hastings", this.fund);
-                renter.renterPost(this.fund.setScale(0, BigDecimal.ROUND_DOWN).toString(), null, DefaultPeriod, null);
+                renter.renterPost(this.fund.setScale(0, RoundingMode.DOWN).toString(), null, DefaultPeriod, null);
 
                 final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
                 System.out.println("allowance:");
                 System.out.println(String.format(
                         "  funds: %s SC",
                         new BigDecimal(allowance.getFunds()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format("  host: %d", allowance.getHosts()));
                 System.out.println(String.format("  period: %d blocks", allowance.getPeriod()));
                 System.out.println(String.format("  renew-window: %d blocks", allowance.getRenewwindow()));

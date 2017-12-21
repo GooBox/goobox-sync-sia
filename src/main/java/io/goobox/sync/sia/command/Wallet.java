@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.nio.file.Path;
 
@@ -170,12 +171,12 @@ public final class Wallet implements Runnable {
                 System.out.println(String.format(
                         "balance: %s SC",
                         new BigDecimal(wallet.getConfirmedsiacoinbalance()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "unconfirmed delta: %s SC",
                         new BigDecimal(wallet.getUnconfirmedincomingsiacoins()).
                                 subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
 
                 final RenterApi renter = new RenterApi(apiClient);
                 final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
@@ -183,38 +184,38 @@ public final class Wallet implements Runnable {
                 System.out.println(String.format(
                         "  download: %s SC",
                         new BigDecimal(spendings.getDownloadspending()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  upload: %s SC",
                         new BigDecimal(spendings.getUploadspending()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  storage: %s SC",
                         new BigDecimal(spendings.getStoragespending()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  fee: %s SC",
                         new BigDecimal(spendings.getContractspending()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
 
                 final InlineResponse20012 prices = renter.renterPricesGet();
                 System.out.println("current prices:");
                 System.out.println(String.format(
                         "  download: %s SC/TB",
                         new BigDecimal(prices.getDownloadterabyte()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  upload: %s SC/TB",
                         new BigDecimal(prices.getUploadterabyte()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  storage: %s SC/TB*Month",
                         new BigDecimal(prices.getStorageterabytemonth()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
                 System.out.println(String.format(
                         "  fee: %s SC/contract",
                         new BigDecimal(prices.getFormcontracts()).
-                                divide(CmdUtils.Hasting, 4, BigDecimal.ROUND_HALF_UP)));
+                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
 
                 break;
 

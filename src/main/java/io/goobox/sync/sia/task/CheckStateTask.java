@@ -71,7 +71,7 @@ public class CheckStateTask implements Callable<Void> {
         final Set<String> processedFiles = new HashSet<>();
         try {
 
-            logger.trace("Processing files stored in the cloud netwrok");
+            logger.trace("Processing files stored in the cloud network");
             for (final SiaFile file : this.takeNewestFiles(api.renterFilesGet().getFiles())) {
 
                 try {
@@ -174,16 +174,11 @@ public class CheckStateTask implements Callable<Void> {
                 }
                 // This file is not stored in the cloud network and modified from the local directory.
                 // It should be uploaded.
-                final Path localPath = this.ctx.config.getSyncDir().resolve(syncFile.getName());
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(localPath);
+                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
-                    if (!localPath.toFile().exists()) {
-                        logger.info("File {} was deleted", syncFile.getName());
-                        DB.remove(syncFile.getName());
-                    }
                 }
                 processedFiles.add(syncFile.getName());
             });
@@ -290,8 +285,16 @@ public class CheckStateTask implements Callable<Void> {
 
         final Path name = this.ctx.config.getSyncDir().relativize(localPath);
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
-        DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
-        executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
+        try {
+            DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
+            executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
+        } catch (final IOException e) {
+            if (localPath.toFile().exists()) {
+                throw e;
+            }
+            logger.info("File {} was deleted", name);
+            DB.setDeleted(this.ctx.getName(localPath));
+        }
 
     }
 

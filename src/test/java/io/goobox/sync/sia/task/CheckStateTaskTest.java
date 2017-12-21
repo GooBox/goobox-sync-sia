@@ -53,9 +53,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
@@ -559,7 +557,48 @@ public class CheckStateTaskTest {
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.context, executor).call();
 
-        assertFalse(DB.get(name).isPresent());
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.DELETED, DB.get(name).get().getState());
+        assertEquals(0, executor.queue.size());
+
+    }
+
+    @Test
+    public void toBeUploadedFileIsDeleted() throws IOException, ApiException {
+
+        final List<InlineResponse20011Files> files = new ArrayList<>();
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        file.setSiapath(remotePath.toString());
+        file.setAvailable(true);
+        file.setFilesize(0L);
+        files.add(file);
+
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final Path localPath = siaFile.getLocalPath();
+        final File localFile = localPath.toFile();
+        assertTrue(localFile.createNewFile());
+        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        DB.setSynced(siaFile, localPath);
+
+        assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
+        Files.write(localPath, "new data".getBytes());
+        DB.setModified(name, localPath);
+        assertTrue(localFile.delete());
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(files);
+            api.renterFilesGet();
+            result = res;
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.context, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.DELETED, DB.get(name).get().getState());
         assertEquals(0, executor.queue.size());
 
     }

@@ -624,12 +624,12 @@ public class CheckDownloadStateTaskTest {
         assertEquals(0, res1.secondOfMinute().get());
 
 
-        final String rfc3339tz = "2017-11-23T14:42:59.864874-05:00";
-        final DateTime res2 = (DateTime) parseDateTime.invoke(null, rfc3339tz);
+        final String rfc3339tz = "2017-11-23T14:42:59.864874-07:00";
+        final DateTime res2 = ((DateTime) parseDateTime.invoke(null, rfc3339tz)).toDateTime(DateTimeZone.UTC);
         assertEquals(2017, res2.year().get());
         assertEquals(11, res2.monthOfYear().get());
         assertEquals(23, res2.dayOfMonth().get());
-        assertEquals(14, res2.hourOfDay().get());
+        assertEquals(21, res2.hourOfDay().get());
         assertEquals(42, res2.minuteOfHour().get());
         assertEquals(59, res2.secondOfMinute().get());
 

@@ -1,4 +1,6 @@
 # goobox-sync-sia
+[![Build Status](https://travis-ci.org/GooBox/goobox-sync-sia.svg?branch=master)](https://travis-ci.org/GooBox/goobox-sync-sia)
+
 sync app for [sia](https://sia.tech/).
 
 

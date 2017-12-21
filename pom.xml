@@ -212,7 +212,7 @@
     <dependency>
       <groupId>org.jmockit</groupId>
       <artifactId>jmockit</artifactId>
-      <version>1.36</version>
+      <version>1.37</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
