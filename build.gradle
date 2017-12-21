@@ -71,7 +71,7 @@ dependencies {
     compile 'com.intellij:annotations:12.0'
     compile 'io.goobox:goobox-sync-common:0.0.1'
     testCompile 'junit:junit:4.12'
-    testCompile 'org.jmockit:jmockit:1.36'
+    testCompile 'org.jmockit:jmockit:1.37'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.9.1'
 }
 
@@ -92,6 +92,10 @@ run {
     if (project.hasProperty('args')) {
         args project.args.split('\\s+')
     }
+}
+
+test {
+    jvmArgs "-Djdk.attach.allowAttachSelf"
 }
 
 def siaVersion = 'v1.3.1'
