@@ -23,7 +23,7 @@ apply plugin: 'findbugs'
 apply plugin: "jacoco"
 apply plugin: "com.github.hierynomus.license"
 
-version = '0.0.12'
+version = '0.0.13'
 mainClassName = 'io.goobox.sync.sia.App'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
