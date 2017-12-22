@@ -32,6 +32,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2009;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
+import io.goobox.sync.sia.command.DumpDB;
 import io.goobox.sync.sia.command.GatewayConnect;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.CloudFile;
@@ -81,9 +82,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(JMockit.class)
 public class AppTest {
@@ -223,16 +222,20 @@ public class AppTest {
         builder.append("\nCommands:\n");
         builder.append(" ");
         builder.append(Wallet.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(Wallet.Description);
         builder.append("\n ");
         builder.append(CreateAllowance.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(CreateAllowance.Description);
-        builder.append("\n  ");
+        builder.append("\n ");
         builder.append(GatewayConnect.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(GatewayConnect.Description);
+        builder.append("\n ");
+        builder.append(DumpDB.CommandName);
+        builder.append("\n   ");
+        builder.append(DumpDB.Description);
 
         final Options opt = new Options();
         new Expectations() {{
