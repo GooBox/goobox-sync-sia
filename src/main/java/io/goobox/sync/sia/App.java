@@ -28,6 +28,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
+import io.goobox.sync.sia.command.DumpDB;
 import io.goobox.sync.sia.command.GatewayConnect;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
@@ -146,6 +147,10 @@ public final class App {
 
                 case GatewayConnect.CommandName:
                     GatewayConnect.main(Arrays.copyOfRange(args, 1, args.length));
+                    return;
+
+                case DumpDB.CommandName:
+                    DumpDB.main(Arrays.copyOfRange(args, 1, args.length));
                     return;
 
             }
@@ -590,16 +595,20 @@ public final class App {
         builder.append("\nCommands:\n");
         builder.append(" ");
         builder.append(Wallet.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(Wallet.Description);
         builder.append("\n ");
         builder.append(CreateAllowance.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(CreateAllowance.Description);
-        builder.append("\n  ");
+        builder.append("\n ");
         builder.append(GatewayConnect.CommandName);
-        builder.append("\n  ");
+        builder.append("\n   ");
         builder.append(GatewayConnect.Description);
+        builder.append("\n ");
+        builder.append(DumpDB.CommandName);
+        builder.append("\n   ");
+        builder.append(DumpDB.Description);
 
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(Name, Description, opts, builder.toString(), true);
