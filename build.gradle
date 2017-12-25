@@ -107,7 +107,7 @@ def siaArchives = [
 
 siaArchives.each { type ->
 
-    Task download = tasks.create(name: "sia-$type.key") {
+    def download = tasks.create(name: "sia-$type.key") {
         description "Download SIA daemon for $type.key"
         group 'distribution'
 
