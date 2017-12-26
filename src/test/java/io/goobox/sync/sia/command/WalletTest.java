@@ -139,13 +139,22 @@ public class WalletTest {
 
         }};
 
-        Wallet.main(new String[]{});
+        final Wallet cmd = new Wallet();
+        final Config cfg = new Config();
+        final String primarySeed = "sample primary seed";
+        cfg.setPrimarySeed(primarySeed);
+        Deencapsulation.setField(cmd, "cfg", cfg);
+
+        cmd.run();
 
         final String outputs = out.toString();
         System.err.println(outputs);
         assertTrue(
                 String.format("wallet address: %s", address),
                 outputs.contains(String.format("wallet address: %s", address)));
+        assertTrue(
+                String.format("primary seed: %s", primarySeed),
+                outputs.contains(String.format("primary seed: %s", primarySeed)));
         assertTrue(
                 String.format("balance: %.4f SC", balance),
                 outputs.contains(String.format("balance: %.4f SC", balance)));
@@ -245,6 +254,9 @@ public class WalletTest {
         assertTrue(
                 String.format("wallet address: %s", address),
                 outputs.contains(String.format("wallet address: %s", address)));
+        assertTrue(
+                String.format("primary seed: %s", primarySeed),
+                outputs.contains(String.format("primary seed: %s", primarySeed)));
         assertTrue(
                 String.format("balance: %.4f SC", balance),
                 outputs.contains(String.format("balance: %.4f SC", balance)));
@@ -357,43 +369,36 @@ public class WalletTest {
             assertTrue(
                     String.format("wallet address: %s", address),
                     outputs.contains(String.format("wallet address: %s", address)));
-
+            assertTrue(
+                    String.format("primary seed: %s", primarySeed),
+                    outputs.contains(String.format("primary seed: %s", primarySeed)));
             assertTrue(
                     String.format("balance: %.4f SC", balance),
                     outputs.contains(String.format("balance: %.4f SC", balance)));
-
             assertTrue(
                     String.format("unconfirmed delta: %.4f SC", income - outcome),
                     outputs.contains(String.format("unconfirmed delta: %.4f SC", income - outcome)));
-
             assertTrue(
                     String.format("download: %.4f SC", downloadSpending),
                     outputs.contains(String.format("download: %.4f SC", downloadSpending)));
-
             assertTrue(
                     String.format("upload: %.4f SC", uploadSpending),
                     outputs.contains(String.format("upload: %.4f SC", uploadSpending)));
-
             assertTrue(
                     String.format("storage: %.4f SC", storageSpending),
                     outputs.contains(String.format("storage: %.4f SC", storageSpending)));
-
             assertTrue(
                     String.format("fee: %.4f SC", contractSpending),
                     outputs.contains(String.format("fee: %.4f SC", contractSpending)));
-
             assertTrue(
                     String.format("download: %.4f SC/TB", downloadPrice),
                     outputs.contains(String.format("download: %.4f SC/TB", downloadPrice)));
-
             assertTrue(
                     String.format("upload: %.4f SC/TB", uploadPrice),
                     outputs.contains(String.format("upload: %.4f SC/TB", uploadPrice)));
-
             assertTrue(
                     String.format("storage: %.4f SC/TB", storagePrice),
                     outputs.contains(String.format("storage: %.4f SC/TB*Month", storagePrice)));
-
             assertTrue(
                     String.format("fee: %.4f SC", contractPrice),
                     outputs.contains(String.format("fee: %.4f SC", contractPrice)));
@@ -422,7 +427,10 @@ public class WalletTest {
         final double contractPrice = 1.123;
 
         final Wallet cmd = new Wallet();
-        Deencapsulation.setField(cmd, "cfg", new Config());
+        final Config cfg = new Config();
+        final String primarySeed = "sample primary seed";
+        cfg.setPrimarySeed(primarySeed);
+        Deencapsulation.setField(cmd, "cfg", cfg);
 
         new Expectations(cmd) {{
 
@@ -473,6 +481,9 @@ public class WalletTest {
         assertTrue(
                 String.format("wallet address: %s", address),
                 outputs.contains(String.format("wallet address: %s", address)));
+        assertTrue(
+                String.format("primary seed: %s", primarySeed),
+                outputs.contains(String.format("primary seed: %s", primarySeed)));
         assertTrue(
                 String.format("balance: %.4f SC", balance),
                 outputs.contains(String.format("balance: %.4f SC", balance)));
