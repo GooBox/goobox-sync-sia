@@ -179,7 +179,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     @Test
-    public void downloadingNewerFile() throws IOException, ApiException {
+    public void downloadingNewerFile() throws ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
@@ -218,7 +218,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     @Test
-    public void stillDownloadingFile() throws IOException, ApiException {
+    public void stillDownloadingFile() throws ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
@@ -251,7 +251,7 @@ public class CheckDownloadStateTaskTest {
      * This test checks such files are ignored and their state is kept to FOR_DOWNLOAD.
      */
     @Test
-    public void toBeDownloadedFile() throws IOException, ApiException {
+    public void toBeDownloadedFile() throws ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
@@ -331,7 +331,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     @Test
-    public void failedDownloads() throws IOException, ApiException {
+    public void failedDownloads() throws ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
@@ -366,7 +366,7 @@ public class CheckDownloadStateTaskTest {
      * to FOR_DOWNLOAD.
      */
     @Test
-    public void failedPendingDownloads() throws IOException, ApiException {
+    public void failedPendingDownloads() throws ApiException {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
@@ -496,7 +496,8 @@ public class CheckDownloadStateTaskTest {
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().resolve(String.valueOf(System.currentTimeMillis())).toString());
+        file.setSiapath(syncFile.getCloudPath().get().resolve(
+                String.valueOf(System.currentTimeMillis() + 10000)).toString());
         file.setDestination(syncFile.getTemporaryPath().get().toString());
         file.setFilesize(syncFile.getCloudSize().get());
         file.setReceived(syncFile.getCloudSize().get());
@@ -508,7 +509,7 @@ public class CheckDownloadStateTaskTest {
         final String dummyData = "dummy data";
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name, localPath);
-        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 10000));
+        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -521,7 +522,9 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
-        assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(
+                syncFile.getTemporaryPath().get().toString(),
+                syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -544,7 +547,8 @@ public class CheckDownloadStateTaskTest {
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
         final Path name = Paths.get("sub-dir", "file");
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis()));
+        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(
+                String.valueOf(System.currentTimeMillis() + 10000));
         final Path localPath = Utils.getSyncDir().resolve(name);
         final CloudFile cloudFile = new CloudFile() {
             @Override
@@ -583,7 +587,7 @@ public class CheckDownloadStateTaskTest {
         }
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name.toString(), localPath);
-        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 10000));
+        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -596,7 +600,9 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name.toString()).get().getState());
-        assertFalse(syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(
+                syncFile.getTemporaryPath().get().toString(),
+                syncFile.getTemporaryPath().get().toFile().exists());
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(

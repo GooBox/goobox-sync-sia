@@ -47,10 +47,7 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 @RunWith(JMockit.class)
@@ -96,7 +93,12 @@ public class SiaDaemonTest {
                 SystemUtils.getUserDir();
                 result = fixture.wd;
             }};
-            assertEquals(fixture.result, daemon.getDaemonPath());
+
+            String cmd = fixture.result.toString();
+            if (SystemUtils.IS_OS_WINDOWS) {
+                cmd += ".exe";
+            }
+            assertEquals(cmd, daemon.getDaemonPath().toString());
         }
 
     }

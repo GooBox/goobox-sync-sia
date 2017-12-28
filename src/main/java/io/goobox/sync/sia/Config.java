@@ -200,6 +200,10 @@ public class Config {
     public static Config load(@NotNull final Path path) throws IOException {
 
         logger.info("Loading config file {}", path);
+        if (!path.toFile().exists()) {
+            throw new IOException(String.format("file %s doesn't exist", path));
+        }
+
         final Properties props = new Properties();
         try (final InputStream in = Files.newInputStream(path)) {
             props.load(in);

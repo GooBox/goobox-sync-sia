@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.mocks;
 
 import io.goobox.sync.sia.db.DB;
+import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.dizitart.no2.Nitrite;
@@ -35,7 +36,8 @@ public class DBMock extends MockUp<DB> {
 
     @SuppressWarnings("unused")
     @Mock
-    public synchronized static void commit() {
+    public synchronized static void commit(Invocation invocation) {
         committed = true;
+        invocation.proceed();
     }
 }

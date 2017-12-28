@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.command;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiException;
@@ -521,7 +522,9 @@ public class WalletTest {
     public void helpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
+            formatter.printHelp(
+                    String.format("%s %s", App.Name, Wallet.CommandName),
+                    Wallet.Description, withNotNull(), "", true);
         }};
         Wallet.main(new String[]{"-h"});
 
@@ -531,7 +534,9 @@ public class WalletTest {
     public void longHelpOption(@Mocked HelpFormatter formatter) {
 
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
+            formatter.printHelp(
+                    String.format("%s %s", App.Name, Wallet.CommandName),
+                    Wallet.Description, withNotNull(), "", true);
         }};
         Wallet.main(new String[]{"--help"});
 
@@ -542,7 +547,9 @@ public class WalletTest {
 
         new SystemMock();
         new Expectations() {{
-            formatter.printHelp("goobox-sync-sia wallet", Wallet.Description, withNotNull(), "", true);
+            formatter.printHelp(
+                    String.format("%s %s", App.Name, Wallet.CommandName),
+                    Wallet.Description, withNotNull(), "", true);
         }};
         Wallet.main(new String[]{"-something"});
         assertEquals(1, SystemMock.statusCode);

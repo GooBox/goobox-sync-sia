@@ -47,7 +47,7 @@ public class SyncFile implements Serializable {
      * Thus, it must be declared as a string and getter/setter convert.
      */
     @Nullable
-    private String cloudPath;
+    private String cloudPath = "";
 
     /**
      * File size of the cloud file.
