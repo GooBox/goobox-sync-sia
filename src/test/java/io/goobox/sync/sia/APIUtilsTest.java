@@ -20,11 +20,13 @@ package io.goobox.sync.sia;
 import com.google.gson.Gson;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 public class APIUtilsTest {
 
@@ -77,6 +79,11 @@ public class APIUtilsTest {
     public void fromSlash() {
         assertEquals(Paths.get("path"), APIUtils.fromSlash("path"));
         assertEquals(Paths.get("path", "to", "somefile"), APIUtils.fromSlash("path/to/somefile"));
+    }
+
+    @Test
+    public void fromSlashOfAbsolutePaths() {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         assertEquals(Paths.get("/path"), APIUtils.fromSlash("/path"));
         assertEquals(Paths.get("/path", "to", "somefile"), APIUtils.fromSlash("/path/to/somefile"));
     }
