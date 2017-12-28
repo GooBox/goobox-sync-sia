@@ -96,6 +96,7 @@ run {
 
 test {
     jvmArgs "-Djdk.attach.allowAttachSelf"
+    jvmArgs "-Djna.nosys=true"
 }
 
 def siaVersion = 'v1.3.1'
