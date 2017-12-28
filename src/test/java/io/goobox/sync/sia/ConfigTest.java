@@ -19,21 +19,25 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import mockit.Deencapsulation;
 import mockit.integration.junit4.JMockit;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 @RunWith(JMockit.class)
 public class ConfigTest {
@@ -151,7 +155,9 @@ public class ConfigTest {
         Deencapsulation.setField(cfg, "dataDir", dataDir.toAbsolutePath());
 
         assertEquals(cfg, Config.load(tmpPath));
+
         // Absolute path has to be written.
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(syncDir.toAbsolutePath().toString())));
         assertTrue(Files.readAllLines(tmpPath).stream().anyMatch(line -> line.contains(dataDir.toAbsolutePath().toString())));
 
@@ -180,41 +186,23 @@ public class ConfigTest {
 
     private String getPropertiesString() {
 
-        final StringBuilder buf = new StringBuilder();
-        buf.append(Config.UserName);
-        buf.append(" = ");
-        buf.append(userName);
-        buf.append("\n");
+        final ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        final PrintWriter writer = new PrintWriter(buf);
 
-        buf.append(Config.PrimarySeed);
-        buf.append(" = ");
-        buf.append(primarySeed);
-        buf.append("\n");
-
-        buf.append(Config.DataPieces);
-        buf.append(" = ");
-        buf.append(dataPieces);
-        buf.append("\n");
-
-        buf.append(Config.ParityPieces);
-        buf.append(" = ");
-        buf.append(parityPieces);
-        buf.append("\n");
+        writer.println(String.format("%s = %s", Config.UserName, userName));
+        writer.println(String.format("%s = %s", Config.PrimarySeed, primarySeed));
+        writer.println(String.format("%s = %s", Config.DataPieces, dataPieces));
+        writer.println(String.format("%s = %s", Config.ParityPieces, parityPieces));
 
         if (syncDir != null) {
-            buf.append(Config.SyncDir);
-            buf.append(" = ");
-            buf.append(syncDir);
-            buf.append("\n");
+            writer.println(String.format("%s = %s", Config.SyncDir, syncDir));
         }
 
         if (dataDir != null) {
-            buf.append(Config.DataDir);
-            buf.append(" = ");
-            buf.append(dataDir);
-            buf.append("\n");
+            writer.println(String.format("%s = %s", Config.DataDir, dataDir));
         }
 
+        writer.flush();
         System.out.println(buf.toString());
         return buf.toString();
 

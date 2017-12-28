@@ -27,14 +27,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("ConstantConditions")
 public class SyncFileTest {
@@ -188,9 +187,10 @@ public class SyncFileTest {
             assertEquals(localPath, syncFile.getLocalPath().get());
             assertEquals((Long) Files.getLastModifiedTime(localPath).toMillis(), syncFile.getLocalModificationTime().get());
             assertEquals((Long) Files.size(localPath), syncFile.getLocalSize().get());
-            final String digest = DigestUtils.sha512Hex(new FileInputStream(localPath.toFile()));
-            assertEquals(digest, syncFile.getLocalDigest().get());
-
+            try (final InputStream in = new FileInputStream(localPath.toFile())) {
+                final String digest = DigestUtils.sha512Hex(in);
+                assertEquals(digest, syncFile.getLocalDigest().get());
+            }
         } finally {
             Files.deleteIfExists(localPath);
         }

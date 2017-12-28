@@ -82,7 +82,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class AppTest {
@@ -106,13 +108,13 @@ public class AppTest {
 
         new DBMock();
 
+        UtilsMock.dataDir = Files.createTempDirectory("data");
+        UtilsMock.syncDir = Files.createTempDirectory("sync");
+        new UtilsMock();
+
         final Config cfg = new Config();
         cfg.setUserName("test-user");
         this.ctx = new Context(cfg, null);
-
-        UtilsMock.dataDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = Files.createTempDirectory(null);
-        new UtilsMock();
 
     }
 
@@ -120,7 +122,11 @@ public class AppTest {
     public void tearDown() throws IOException {
         DB.close();
         FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
-        FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
+        try {
+            FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
+        } catch (IOException e) {
+            System.err.println("Cannot delete sync folder: " + e.getMessage());
+        }
     }
 
     @Test

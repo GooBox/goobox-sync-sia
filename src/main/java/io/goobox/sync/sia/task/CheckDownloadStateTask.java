@@ -129,6 +129,9 @@ public class CheckDownloadStateTask implements Callable<Void> {
                                 final long cloudCreationTime = file.getCreationTime().orElse(0L);
                                 final long localCreationTime = localPath.toFile().lastModified();
                                 final long syncTime = syncFile.getLocalModificationTime().orElse(0L);
+                                logger.trace(
+                                        "name = {}, cloudCreationTime = {}, localCreationTime = {}, syncTime = {}",
+                                        syncFile.getName(), cloudCreationTime, localCreationTime, syncTime);
                                 if (cloudCreationTime > localCreationTime) {
 
                                     logger.info("File {} has been downloaded", file.getName());
@@ -147,7 +150,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
 
                                 } else if (cloudCreationTime < localCreationTime) {
 
-                                    if (cloudCreationTime > syncTime) {
+                                    if (cloudCreationTime >= syncTime) {
 
                                         final Path conflictedCopy = Utils.conflictedCopyPath(localPath);
                                         Files.move(tempPath, conflictedCopy, StandardCopyOption.REPLACE_EXISTING);

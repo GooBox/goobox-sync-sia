@@ -167,6 +167,7 @@ public final class Wallet implements Runnable {
                 }
 
                 System.out.println(String.format("wallet address: %s", walletApi.walletAddressGet().getAddress()));
+                System.out.println(String.format("primary seed: %s", cfg.getPrimarySeed()));
 
                 System.out.println(String.format(
                         "balance: %s SC",

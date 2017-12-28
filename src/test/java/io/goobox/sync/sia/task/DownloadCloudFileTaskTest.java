@@ -75,7 +75,7 @@ public class DownloadCloudFileTaskTest {
         this.context = new Context(cfg, null);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
-        this.remotePath = this.context.pathPrefix.resolve(this.name).toAbsolutePath();
+        this.remotePath = this.context.pathPrefix.resolve(this.name);
         this.localPath = Utils.getSyncDir().resolve(this.name);
 
         DB.addForDownload(new CloudFile() {

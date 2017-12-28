@@ -243,13 +243,14 @@ public class SiaDaemon extends Thread implements Closeable {
             conn.setRequestProperty("Accept-Encoding", "identity");
             conn.connect();
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            return reader.lines().
-                    filter((line) -> line.contains(ConsensusDBPath.getFileName().toString())).
-                    map((line) -> line.split(" ")).
-                    filter((items) -> items.length > 0).
-                    map((items) -> items[0]).
-                    findFirst();
+            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                return reader.lines().
+                        filter((line) -> line.contains(ConsensusDBPath.getFileName().toString())).
+                        map((line) -> line.split(" ")).
+                        filter((items) -> items.length > 0).
+                        map((items) -> items[0]).
+                        findFirst();
+            }
 
         } catch (final MalformedURLException e) {
             logger.error("The URL of the check sum file is invalid: {}", e.getMessage());

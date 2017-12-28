@@ -44,7 +44,7 @@ public class AbstractSiaFileTest {
     @Before
     public void setUp() {
         this.user = "testuser";
-        this.path = "foo/bar.txt";
+        this.path = Paths.get("foo", "bar.txt").toString();
         this.created = System.currentTimeMillis();
 
         final Config cfg = new Config();
@@ -53,7 +53,6 @@ public class AbstractSiaFileTest {
 
         APIUtilsMock.fromSlashPaths.clear();
         new APIUtilsMock();
-
     }
 
 

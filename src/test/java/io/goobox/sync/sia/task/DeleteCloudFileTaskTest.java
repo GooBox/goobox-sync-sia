@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -106,7 +107,7 @@ public class DeleteCloudFileTaskTest {
         IntStream.range(1, 3).forEach(i -> {
 
             final InlineResponse20011Files file = new InlineResponse20011Files();
-            final String siaPath = cloudPath.resolve(String.valueOf(new Date(i * 10000).getTime())).toString();
+            final String siaPath = APIUtils.toSlash(cloudPath.resolve(String.valueOf(new Date(i * 10000).getTime())));
             file.setSiapath(siaPath);
             file.setLocalpath(localPath.toString());
             file.setAvailable(true);
@@ -148,6 +149,8 @@ public class DeleteCloudFileTaskTest {
                 }
             });
         }};
+
+        APIUtilsMock.toSlashPaths.clear();
 
         new DeleteCloudFileTask(ctx, name).call();
         assertTrue(DBMock.committed);

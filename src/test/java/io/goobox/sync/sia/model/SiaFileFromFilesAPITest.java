@@ -37,7 +37,7 @@ public class SiaFileFromFilesAPITest {
     public void test() {
 
         final String user = "test-user";
-        final String name = "foo/bar.txt";
+        final String name = Paths.get("foo", "bar.txt").toString();
         final Long created = new Date().getTime();
         final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
 
