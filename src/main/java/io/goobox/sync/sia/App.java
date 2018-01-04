@@ -58,6 +58,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -158,6 +159,7 @@ public final class App {
 
         final Options opts = new Options();
         opts.addOption(null, "reset-db", false, "reset sync DB");
+        opts.addOption(null, "sync-dir", true, "set the sync dir");
         opts.addOption("h", "help", false, "show this help");
         opts.addOption("v", "version", false, "print version");
         try {
@@ -185,8 +187,13 @@ public final class App {
 
             }
 
+            if (cmd.hasOption("sync-dir")) {
+                App.app = new App(Paths.get(cmd.getParsedOptionValue("sync-dir").toString()));
+            } else {
+                App.app = new App();
+            }
+
             // Start the app.
-            App.app = new App();
             App.app.init();
 
         } catch (ParseException e) {
@@ -212,6 +219,11 @@ public final class App {
         final ApiClient apiClient = CmdUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
 
+    }
+
+    public App(final Path syncDir) {
+        this();
+        this.cfg.setSyncDir(syncDir);
     }
 
     @Nullable

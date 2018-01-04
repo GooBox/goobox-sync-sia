@@ -51,6 +51,7 @@ import io.goobox.sync.sia.task.DownloadCloudFileTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import mockit.Deencapsulation;
 import mockit.Expectations;
+import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
@@ -84,6 +85,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
@@ -102,6 +104,19 @@ public class AppTest {
     private RenterApi renter;
 
     private Context ctx;
+
+    @SuppressWarnings("unused")
+    class SimpleAppMock extends MockUp<App> {
+        private boolean initialized = false;
+        private App app = null;
+
+        @Mock
+        private void init(Invocation invocation) {
+            this.app = invocation.getInvokedInstance();
+            this.initialized = true;
+        }
+
+    }
 
     @Before
     public void setUp() throws IOException {
@@ -129,39 +144,25 @@ public class AppTest {
         }
     }
 
+    /**
+     * Test App.main without any options invokes app.init.
+     */
     @Test
     public void testMain() {
 
-        class AppMock extends MockUp<App> {
-            private boolean initialized = false;
-
-            @SuppressWarnings("unused")
-            @Mock
-            private void init() {
-                this.initialized = true;
-            }
-        }
-
-        final AppMock mock = new AppMock();
+        final SimpleAppMock mock = new SimpleAppMock();
         App.main(new String[]{});
         assertTrue(mock.initialized);
 
     }
 
+    /**
+     * Test App.main with reset-db flag deletes the sync db if exists.
+     */
     @Test
     public void testMainWithResetDB() throws IOException {
 
-        class AppMock extends MockUp<App> {
-            private boolean initialized = false;
-
-            @SuppressWarnings("unused")
-            @Mock
-            private void init() {
-                this.initialized = true;
-            }
-        }
-
-        final AppMock mock = new AppMock();
+        final SimpleAppMock mock = new SimpleAppMock();
         try {
 
             final File dbFile = Utils.getDataDir().resolve(DB.DatabaseFileName).toFile();
@@ -176,6 +177,22 @@ public class AppTest {
             FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
 
         }
+
+    }
+
+    /**
+     * Test App.main with sync-dir flag updates cfg.syncDir.
+     */
+    @Test
+    public void testMainWithSyncDir() {
+
+        final SimpleAppMock mock = new SimpleAppMock();
+        final Path tmpPath = Paths.get("sync-dir");
+        App.main(new String[]{"--sync-dir", tmpPath.toString()});
+        assertNotNull(mock.app);
+
+        final Config cfg = Deencapsulation.getField(mock.app, "cfg");
+        assertEquals(tmpPath.toAbsolutePath(), cfg.getSyncDir());
 
     }
 
