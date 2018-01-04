@@ -147,7 +147,7 @@ public class ConfigTest {
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        Deencapsulation.setField(cfg, "syncDir", syncDir);
+        cfg.setSyncDir(syncDir);
         Deencapsulation.setField(cfg, "dataDir", dataDir);
 
         cfg.save(tmpPath);
@@ -171,7 +171,7 @@ public class ConfigTest {
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
-        Deencapsulation.setField(cfg, "syncDir", Paths.get("sync-dir").toAbsolutePath());
+        cfg.setSyncDir(Paths.get("sync-dir"));
         Deencapsulation.setField(cfg, "dataDir", Paths.get("data-dir").toAbsolutePath());
 
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
@@ -205,6 +205,25 @@ public class ConfigTest {
         writer.flush();
         System.out.println(buf.toString());
         return buf.toString();
+
+    }
+
+    @Test
+    public void setSyncDir() throws IOException {
+
+        final Path syncDir = Paths.get("sync-dir");
+        final Config cfg = new Config();
+        cfg.setUserName("testuser@sample.com");
+        cfg.setPrimarySeed("a b c d e f g");
+        cfg.setDataPieces(5);
+        cfg.setParityPieces(12);
+        cfg.setSyncDir(syncDir);
+
+        cfg.save(tmpPath);
+
+        final Config res = Config.load(tmpPath);
+        assertEquals(cfg, res);
+        assertEquals(syncDir.toAbsolutePath(), res.getSyncDir());
 
     }
 

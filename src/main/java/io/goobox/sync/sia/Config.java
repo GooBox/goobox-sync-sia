@@ -115,6 +115,10 @@ public class Config {
         return syncDir;
     }
 
+    void setSyncDir(@NotNull Path path) {
+        this.syncDir = path.toAbsolutePath();
+    }
+
     @NotNull
     public Path getDataDir() {
         return dataDir;
