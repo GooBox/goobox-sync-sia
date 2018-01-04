@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -29,7 +28,6 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.ExecutorMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import mockit.Deencapsulation;
@@ -53,7 +51,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
@@ -63,8 +63,8 @@ public class CheckStateTaskTest {
     @Mocked
     private RenterApi api;
 
-    private Path tempDir;
-    private Context context;
+    private Path tmpDir;
+    private Context ctx;
     private String name;
     private Date oldTimeStamp;
     private Date newTimeStamp;
@@ -73,14 +73,12 @@ public class CheckStateTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
-
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "test-user");
-        this.context = new Context(cfg, null);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.oldTimeStamp = new Date(100000);
@@ -91,7 +89,7 @@ public class CheckStateTaskTest {
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     /**
@@ -105,12 +103,12 @@ public class CheckStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
@@ -118,7 +116,7 @@ public class CheckStateTaskTest {
         files.add(file);
 
         final InlineResponse20011Files newerFile = new InlineResponse20011Files();
-        final Path newerRemotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path newerRemotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         newerFile.setSiapath(newerRemotePath.toString());
         newerFile.setAvailable(true);
         newerFile.setFilesize(10L);
@@ -133,7 +131,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
         assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
@@ -156,13 +154,13 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -182,11 +180,11 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
-        final Path expected = this.context.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
+        final Path expected = this.ctx.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
         assertEquals(expected.getParent(), DB.get(siaFile).get().getCloudPath().get().getParent());
 
         final long time1 = Long.valueOf(expected.getFileName().toString());
@@ -210,13 +208,13 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(10L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
 
         DB.commit();
         new Expectations() {{
@@ -228,7 +226,7 @@ public class CheckStateTaskTest {
 
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(siaFile).get().getState());
         assertTrue(DB.get(siaFile).get().getTemporaryPath().get().startsWith(Paths.get(System.getProperty("java.io.tmpdir"))));
@@ -248,7 +246,7 @@ public class CheckStateTaskTest {
     @Test
     public void newLocalFile() throws IOException, ApiException {
 
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
@@ -264,7 +262,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(name).get().getState());
 
@@ -285,12 +283,12 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
@@ -309,7 +307,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_CLOUD_DELETE, DB.get(siaFile).get().getState());
 
@@ -329,7 +327,7 @@ public class CheckStateTaskTest {
     @Test
     public void toBeDeletedFromLocalFile() throws IOException, ApiException {
 
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
         assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
@@ -362,7 +360,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_LOCAL_DELETE, DB.get(name).get().getState());
 
@@ -384,12 +382,12 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path cloudPath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path cloudPath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(cloudPath.toString());
         file.setAvailable(false);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = siaFile.getLocalPath().toFile();
         assertTrue(localFile.createNewFile());
@@ -408,7 +406,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
 
         // Check enqueued task.
@@ -424,7 +422,7 @@ public class CheckStateTaskTest {
     @Test
     public void deletedLocalFile() throws ApiException, IOException {
 
-        final Path localPath = Utils.getSyncDir().resolve("file");
+        final Path localPath = this.tmpDir.resolve("file");
         assertTrue(localPath.toFile().createNewFile());
         DB.addNewFile(name, localPath);
 
@@ -440,7 +438,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(name).isPresent());
         assertEquals(0, executor.queue.size());
@@ -458,12 +456,12 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -482,7 +480,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
@@ -499,13 +497,13 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         assertTrue(localPath.toFile().createNewFile());
         assertTrue(localPath.toFile().setLastModified(this.oldTimeStamp.getTime()));
@@ -523,7 +521,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
 
@@ -548,14 +546,14 @@ public class CheckStateTaskTest {
             result = res;
         }};
 
-        final Path localPath = tempDir.resolve(name);
+        final Path localPath = tmpDir.resolve(name);
         assertTrue(localPath.toFile().createNewFile());
         DB.addNewFile(name, localPath);
         DB.setModified(name, localPath);
 
         assertTrue(localPath.toFile().delete());
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
 
         assertTrue(DB.get(name).isPresent());
         assertEquals(SyncState.DELETED, DB.get(name).get().getState());
@@ -568,13 +566,13 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.context.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(this.context, file);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         final File localFile = localPath.toFile();
         assertTrue(localFile.createNewFile());
@@ -595,7 +593,7 @@ public class CheckStateTaskTest {
         }};
 
         final ExecutorMock executor = new ExecutorMock();
-        new CheckStateTask(this.context, executor).call();
+        new CheckStateTask(this.ctx, executor).call();
         assertTrue(DBMock.committed);
         assertTrue(DB.get(name).isPresent());
         assertEquals(SyncState.DELETED, DB.get(name).get().getState());

@@ -17,14 +17,13 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
+import mockit.Deencapsulation;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JMockit.class)
 public class DeleteLocalFileTaskTest {
 
-    private Path tempDir;
+    private Path tmpDir;
     private Context ctx;
     private String name;
     private Path localPath;
@@ -52,16 +51,15 @@ public class DeleteLocalFileTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
         final Config cfg = new Config();
-        ctx = new Context(cfg, null);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
 
-        name = String.format("file-%x", System.currentTimeMillis());
-        localPath = Utils.getSyncDir().resolve(name);
-        assertTrue(localPath.toFile().createNewFile());
+        this.name = String.format("file-%x", System.currentTimeMillis());
+        this.localPath = this.tmpDir.resolve(this.name);
+        assertTrue(this.localPath.toFile().createNewFile());
         DB.setSynced(new CloudFile() {
             @Override
             public String getName() {
@@ -77,37 +75,37 @@ public class DeleteLocalFileTaskTest {
             public long getFileSize() {
                 return 0;
             }
-        }, localPath);
-        DB.setForLocalDelete(name);
+        }, this.localPath);
+        DB.setForLocalDelete(this.name);
 
     }
 
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     @Test
-    public void deleteExistingFile() throws IOException {
+    public void deleteExistingFile() {
 
-        new DeleteLocalFileTask(ctx, localPath).run();
+        new DeleteLocalFileTask(this.ctx, this.localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(name).isPresent());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(DB.get(this.name).isPresent());
+        assertFalse(this.localPath.toFile().exists());
 
     }
 
     @Test
-    public void deleteNotExistingFile() throws IOException {
+    public void deleteNotExistingFile() {
 
         // Delete the target file in advance.
-        assertTrue(localPath.toFile().delete());
-        assertFalse(localPath.toFile().exists());
+        assertTrue(this.localPath.toFile().delete());
+        assertFalse(this.localPath.toFile().exists());
 
-        new DeleteLocalFileTask(ctx, localPath).run();
+        new DeleteLocalFileTask(this.ctx, this.localPath).run();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(name).isPresent());
+        assertFalse(DB.get(this.name).isPresent());
 
     }
 
@@ -120,17 +118,17 @@ public class DeleteLocalFileTaskTest {
     public void toBeDeletedFileModified() throws IOException {
 
         // Task is enqueued.
-        final Runnable task = new DeleteLocalFileTask(ctx, localPath);
+        final Runnable task = new DeleteLocalFileTask(this.ctx, this.localPath);
 
         // then, the file is modified.
-        DB.setModified(name, localPath);
+        DB.setModified(this.name, this.localPath);
 
         // and, the task is executed.
         task.run();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
-        assertTrue(localPath.toFile().exists());
+        assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
+        assertTrue(this.localPath.toFile().exists());
 
     }
 

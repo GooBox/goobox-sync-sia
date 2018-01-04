@@ -53,6 +53,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
 
     @Override
     public Void call() throws ApiException {
+        logger.traceEntry();
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {

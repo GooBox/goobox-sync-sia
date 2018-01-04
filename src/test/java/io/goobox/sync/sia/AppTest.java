@@ -103,8 +103,40 @@ public class AppTest {
     @Mocked
     private RenterApi renter;
 
+    private Path tmpDir;
     private Context ctx;
 
+    @Before
+    public void setUp() throws IOException {
+
+        new DBMock();
+        UtilsMock.dataDir = Files.createTempDirectory("data");
+//        UtilsMock.syncDir = Files.createTempDirectory("sync");
+        new UtilsMock();
+
+        this.tmpDir = Files.createTempDirectory("sync");
+        final Config cfg = new Config();
+        cfg.setUserName("test-user");
+        cfg.setSyncDir(this.tmpDir);
+        this.ctx = new Context(cfg, null);
+
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        DB.close();
+        FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
+        try {
+//            FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
+            FileUtils.deleteDirectory(this.tmpDir.toFile());
+        } catch (IOException e) {
+            System.err.println("Cannot delete sync folder: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mock class used for App.main tests.
+     */
     @SuppressWarnings("unused")
     class SimpleAppMock extends MockUp<App> {
         private boolean initialized = false;
@@ -116,32 +148,6 @@ public class AppTest {
             this.initialized = true;
         }
 
-    }
-
-    @Before
-    public void setUp() throws IOException {
-
-        new DBMock();
-
-        UtilsMock.dataDir = Files.createTempDirectory("data");
-        UtilsMock.syncDir = Files.createTempDirectory("sync");
-        new UtilsMock();
-
-        final Config cfg = new Config();
-        cfg.setUserName("test-user");
-        this.ctx = new Context(cfg, null);
-
-    }
-
-    @After
-    public void tearDown() throws IOException {
-        DB.close();
-        FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
-        try {
-            FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
-        } catch (IOException e) {
-            System.err.println("Cannot delete sync folder: " + e.getMessage());
-        }
     }
 
     /**
@@ -312,7 +318,7 @@ public class AppTest {
     public void testInit(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
             throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
 
-        final Config cfg = new Config();
+        final Config cfg = this.ctx.config;
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath("http://localhost:9980");
         final OkHttpClient httpClient = apiClient.getHttpClient();
@@ -399,7 +405,7 @@ public class AppTest {
 
         // Enqueue basic tasks.
         new Expectations() {{
-            new FileWatcher(Utils.getSyncDir(), withNotNull());
+            new FileWatcher(tmpDir, withNotNull());
         }};
 
         final AppMock mock = new AppMock();
@@ -549,12 +555,12 @@ public class AppTest {
         }
 
         final AppMock mock = new AppMock();
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method checkAndCreateSyncDir = App.class.getDeclaredMethod("checkAndCreateSyncDir");
         checkAndCreateSyncDir.setAccessible(true);
         checkAndCreateSyncDir.invoke(app);
 
-        assertEquals(Utils.getSyncDir(), mock.arg);
+        assertEquals(this.tmpDir, mock.arg);
 
     }
 
@@ -889,7 +895,7 @@ public class AppTest {
     public void synchronizeNewFile() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
 
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         assertTrue(localPath.toFile().createNewFile());
 
@@ -905,7 +911,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -937,7 +943,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -967,10 +973,10 @@ public class AppTest {
     }
 
     private void invokeSynchronizeModifiedFiles() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method synchronizeModifiedFiles = App.class.getDeclaredMethod("synchronizeModifiedFiles", Path.class);
         synchronizeModifiedFiles.setAccessible(true);
-        synchronizeModifiedFiles.invoke(app, Utils.getSyncDir());
+        synchronizeModifiedFiles.invoke(app, this.tmpDir);
     }
 
     @Test
@@ -978,7 +984,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -1000,7 +1006,7 @@ public class AppTest {
 
         assertTrue(localPath.toFile().delete());
 
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method synchronizeDeletedFiles = App.class.getDeclaredMethod("synchronizeDeletedFiles");
         synchronizeDeletedFiles.setAccessible(true);
         synchronizeDeletedFiles.invoke(app);
@@ -1039,7 +1045,7 @@ public class AppTest {
             throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         final String name = String.format("test-%s", state);
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         assertTrue(localPath.toFile().createNewFile());
 
         DB.setSynced(new CloudFile() {

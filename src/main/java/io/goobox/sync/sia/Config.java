@@ -90,6 +90,8 @@ public class Config {
         this.primarySeed = "";
         this.syncDir = Utils.getSyncDir().toAbsolutePath();
         this.dataDir = Utils.getDataDir().toAbsolutePath();
+        this.dataPieces = DefaultDataPieces;
+        this.parityPieces = DefaultParityPieces;
     }
 
     @NotNull
@@ -214,37 +216,31 @@ public class Config {
         }
 
         final Config cfg = new Config();
-        cfg.userName = props.getProperty(UserName, "");
-        cfg.primarySeed = props.getProperty(PrimarySeed, "");
+        cfg.setUserName(props.getProperty(UserName, ""));
+        cfg.setPrimarySeed(props.getProperty(PrimarySeed, ""));
 
         if (props.getProperty(SyncDir) != null) {
-            cfg.syncDir = Paths.get(props.getProperty(SyncDir)).toAbsolutePath();
-        } else {
-            cfg.syncDir = Utils.getSyncDir().toAbsolutePath();
+            cfg.setSyncDir(Paths.get(props.getProperty(SyncDir)));
         }
-
         if (props.getProperty(DataDir) != null) {
             cfg.dataDir = Paths.get(props.getProperty(DataDir)).toAbsolutePath();
-        } else {
-            cfg.dataDir = Utils.getDataDir().toAbsolutePath();
         }
 
         try {
-            cfg.dataPieces = Integer.valueOf(props.getProperty(DataPieces, String.valueOf(DefaultDataPieces)));
-        } catch (NumberFormatException e) {
+            cfg.setDataPieces(Integer.valueOf(props.getProperty(DataPieces, String.valueOf(DefaultDataPieces))));
+        } catch (final NumberFormatException e) {
             logger.warn("Invalid data pieces {}", props.getProperty(DataPieces));
-            cfg.dataPieces = DefaultDataPieces;
         }
 
         try {
-            cfg.parityPieces = Integer.valueOf(props.getProperty(ParityPieces, String.valueOf(DefaultParityPieces)));
-            if (cfg.parityPieces < MinimumParityPieces) {
+            final int parityPieces = Integer.valueOf(props.getProperty(ParityPieces, String.valueOf(DefaultParityPieces)));
+            if (parityPieces >= MinimumParityPieces) {
+                cfg.setParityPieces(parityPieces);
+            } else {
                 logger.warn("Invalid parity pieces {}, minimum {} pieces are required", cfg.parityPieces, MinimumParityPieces);
-                cfg.parityPieces = DefaultParityPieces;
             }
-        } catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
             logger.warn("Invalid parity pieces {}", props.getProperty(ParityPieces));
-            cfg.parityPieces = DefaultParityPieces;
         }
 
         logger.info("Sync directory: {}", cfg.getSyncDir());

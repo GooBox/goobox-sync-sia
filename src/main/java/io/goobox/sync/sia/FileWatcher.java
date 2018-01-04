@@ -59,7 +59,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
      */
     private final Map<Path, Long> trackingFiles = new HashMap<>();
 
-    public FileWatcher(@NotNull final Path target, @NotNull final ScheduledExecutorService executor) throws IOException {
+    FileWatcher(@NotNull final Path target, @NotNull final ScheduledExecutorService executor) throws IOException {
 
         logger.info("Start watching {}", target);
         this.target = target;

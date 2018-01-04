@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -30,7 +29,6 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import mockit.Deencapsulation;
@@ -64,7 +62,7 @@ public class DeleteCloudFileTaskTest {
     @Mocked
     private RenterApi api;
 
-    private Path tempDir;
+    private Path tmpDir;
     private Context ctx;
     private String name;
     private Path localPath;
@@ -74,18 +72,17 @@ public class DeleteCloudFileTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "test-user");
-        ctx = new Context(cfg, null);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
 
-        name = String.format("test-file-%x", System.currentTimeMillis());
-        localPath = Utils.getSyncDir().resolve(name);
-        assertTrue(localPath.toFile().createNewFile());
-        cloudPath = ctx.pathPrefix.resolve(name);
+        this.name = String.format("test-file-%x", System.currentTimeMillis());
+        this.localPath = this.tmpDir.resolve(this.name);
+        assertTrue(this.localPath.toFile().createNewFile());
+        this.cloudPath = this.ctx.pathPrefix.resolve(this.name);
 
         APIUtilsMock.toSlashPaths.clear();
         new APIUtilsMock();
@@ -95,7 +92,7 @@ public class DeleteCloudFileTaskTest {
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(tmpDir.toFile());
     }
 
     @Test
@@ -132,8 +129,8 @@ public class DeleteCloudFileTaskTest {
                 return 0;
             }
         };
-        DB.setSynced(cloudFile, localPath);
-        assertTrue(localPath.toFile().delete());
+        DB.setSynced(cloudFile, this.localPath);
+        assertTrue(this.localPath.toFile().delete());
         DB.setForCloudDelete(cloudFile);
 
         new Expectations() {{
@@ -152,11 +149,12 @@ public class DeleteCloudFileTaskTest {
 
         APIUtilsMock.toSlashPaths.clear();
 
-        new DeleteCloudFileTask(ctx, name).call();
+        new DeleteCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(name).isPresent());
+        assertFalse(DB.get(this.name).isPresent());
 
         assertEquals(siaPaths.size(), APIUtilsMock.toSlashPaths.size());
+
         for (int i = 0; i != siaPaths.size(); i++) {
             assertEquals(Paths.get(siaPaths.get(i)), APIUtilsMock.toSlashPaths.get(i));
         }
@@ -167,12 +165,12 @@ public class DeleteCloudFileTaskTest {
     public void deleteNotExistingFile() throws IOException, ApiException {
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file.setLocalpath(localPath.toString());
+        file.setSiapath(this.cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+        file.setLocalpath(this.localPath.toString());
         file.setAvailable(true);
         file.setFilesize(1234L);
-        final SiaFile siaFile = new SiaFileFromFilesAPI(ctx, file);
-        DB.setSynced(siaFile, localPath);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
 
         new Expectations() {{
@@ -182,7 +180,7 @@ public class DeleteCloudFileTaskTest {
             result = list;
         }};
 
-        new DeleteCloudFileTask(ctx, siaFile.getName()).call();
+        new DeleteCloudFileTask(this.ctx, siaFile.getName()).call();
 
     }
 
@@ -192,14 +190,14 @@ public class DeleteCloudFileTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file.setLocalpath(localPath.toString());
+        file.setSiapath(this.cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
+        file.setLocalpath(this.localPath.toString());
         file.setAvailable(true);
         file.setFilesize(1234L);
         files.add(file);
 
-        final SiaFile siaFile = new SiaFileFromFilesAPI(ctx, file);
-        DB.setSynced(siaFile, localPath);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
 
         // expecting the api won't be called.
@@ -212,16 +210,16 @@ public class DeleteCloudFileTaskTest {
         }};
 
         // a delete task is enqueued.
-        final Callable<Void> task = new DeleteCloudFileTask(ctx, siaFile.getName());
+        final Callable<Void> task = new DeleteCloudFileTask(this.ctx, siaFile.getName());
 
         // the target is modified.
-        DB.setModified(name, localPath);
+        DB.setModified(this.name, this.localPath);
 
         // the task is executed.
         task.call();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
 
     }
 

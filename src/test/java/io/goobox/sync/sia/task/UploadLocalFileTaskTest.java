@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -26,7 +25,6 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -38,7 +36,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -54,8 +51,8 @@ public class UploadLocalFileTaskTest {
     @Mocked
     private RenterApi api;
 
-    private Path tempDir;
-    private Config config;
+    private Path tmpDir;
+    private Config cfg;
     private Context context;
     private String name;
     private Path localPath;
@@ -70,23 +67,21 @@ public class UploadLocalFileTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
-
-        this.config = new Config();
-        Deencapsulation.setField(this.config, "userName", "test-user");
-        Deencapsulation.setField(this.config, "dataPieces", 120);
-        Deencapsulation.setField(this.config, "parityPieces", 50);
-        this.context = new Context(this.config, null);
+        this.cfg = new Config();
+        Deencapsulation.setField(this.cfg, "userName", "test-user");
+        Deencapsulation.setField(this.cfg, "dataPieces", 120);
+        Deencapsulation.setField(this.cfg, "parityPieces", 50);
+        Deencapsulation.setField(this.cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.context = new Context(this.cfg, null);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
-        this.localPath = Utils.getSyncDir().resolve(name);
-        this.cloudPath = this.context.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis()));
-        assertTrue(localPath.toFile().createNewFile());
-        DB.addNewFile(name, localPath);
-        DB.setForUpload(name, localPath, cloudPath);
+        this.localPath = this.tmpDir.resolve(this.name);
+        this.cloudPath = this.context.pathPrefix.resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
+        assertTrue(this.localPath.toFile().createNewFile());
+        DB.addNewFile(this.name, this.localPath);
+        DB.setForUpload(this.name, this.localPath, this.cloudPath);
 
         APIUtilsMock.toSlashPaths.clear();
         new APIUtilsMock();
@@ -101,41 +96,41 @@ public class UploadLocalFileTaskTest {
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     @Test
-    public void uploadFile() throws IOException, ApiException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void uploadFile() throws ApiException {
 
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), config.getDataPieces(), config.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
         }};
-        new UploadLocalFileTask(this.context, localPath).call();
+        new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(name).get().getState());
+        assertEquals(SyncState.UPLOADING, DB.get(this.name).get().getState());
 
         // check toSlash is used.
         assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(cloudPath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(localPath, APIUtilsMock.toSlashPaths.get(1));
+        assertEquals(this.cloudPath, APIUtilsMock.toSlashPaths.get(0));
+        assertEquals(this.localPath, APIUtilsMock.toSlashPaths.get(1));
 
     }
 
     @Test
-    public void failedToUpload() throws ApiException, IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void failedToUpload() throws ApiException {
 
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), config.getDataPieces(), config.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
             result = new ApiException();
         }};
-        new UploadLocalFileTask(this.context, localPath).call();
+        new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOAD_FAILED, DB.get(name).get().getState());
+        assertEquals(SyncState.UPLOAD_FAILED, DB.get(this.name).get().getState());
 
         // check toSlash is used.
         assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(cloudPath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(localPath, APIUtilsMock.toSlashPaths.get(1));
+        assertEquals(this.cloudPath, APIUtilsMock.toSlashPaths.get(0));
+        assertEquals(this.localPath, APIUtilsMock.toSlashPaths.get(1));
 
     }
 
@@ -144,25 +139,25 @@ public class UploadLocalFileTaskTest {
      * In this case, upload should be canceled and delegate CheckStateTask to decide uploading the new file or not.
      */
     @Test
-    public void toBeUploadedFileModified() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, IOException, ApiException {
+    public void toBeUploadedFileModified() throws IOException, ApiException {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), config.getDataPieces(), config.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
             times = 0;
         }};
 
         // Create a upload local file task.
-        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
+        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, this.localPath);
 
         // then, the target file is modified.
-        DB.setModified(name, localPath);
+        DB.setModified(this.name, this.localPath);
 
         // and, the task is executed.
         task.call();
 
         // check after conditions.
-        assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
+        assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
 
         // check toSlash is used.
         assertEquals(0, APIUtilsMock.toSlashPaths.size());
@@ -174,26 +169,26 @@ public class UploadLocalFileTaskTest {
      * In this case, upload must be canceled.
      */
     @Test
-    public void toBeUploadedFileDeleted() throws NoSuchMethodException, IOException, IllegalAccessException, InvocationTargetException, ApiException {
+    public void toBeUploadedFileDeleted() throws ApiException {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), config.getDataPieces(), config.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
             times = 0;
         }};
 
         // Create a upload local file task.
-        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, localPath);
+        final UploadLocalFileTask task = new UploadLocalFileTask(this.context, this.localPath);
 
         // then, the target file is modified.
-        DB.setDeleted(name);
+        DB.setDeleted(this.name);
 
         // and, the task is executed.
         task.call();
 
         // check after conditions.
         assertFalse(DBMock.committed);
-        assertEquals(SyncState.DELETED, DB.get(name).get().getState());
+        assertEquals(SyncState.DELETED, DB.get(this.name).get().getState());
 
         // check toSlash is used.
         assertEquals(0, APIUtilsMock.toSlashPaths.size());
