@@ -141,11 +141,34 @@ siaArchives.each { type ->
         }
     }
 
+    tasks.create(name: "distTar-$type.key", type: Tar, dependsOn: [test, installDist, startScripts, download]) {
+        description "Bundles the project as a distribution for $type.key"
+        group 'distribution'
+        classifier = "$type.key"
+        extension "tar.gz"
+        compression = Compression.GZIP
+
+        inputs.dir file("$buildDir/install")
+        inputs.file file("$buildDir/sia/Sia-$siaVersion-${type.value}.zip")
+        outputs.file file("$buildDir/distributions/goobox-sync-sia-$version-${type.key}")
+
+        into("$baseName-$version-$classifier") {
+            from "$buildDir/install/$baseName"
+        }
+
+        into("$baseName-$version-$classifier/sia") {
+            from "$buildDir/sia/Sia-$siaVersion-$type.value"
+        }
+    }
+
 }
 
 task distZip(overwrite: true, dependsOn: siaArchives.collect { "distZip-$it.key" }) {
     group 'distribution'
+}
 
+task distTar(overwrite: true, dependsOn: siaArchives.collect { "distTar-$it.key" }) {
+    group 'distribution'
 }
 
 pmd {
