@@ -51,6 +51,7 @@ public class DeleteLocalFileTask implements Runnable {
 
     @Override
     public void run() {
+        logger.traceEntry();
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
         if (!syncFileOpt.isPresent()) {

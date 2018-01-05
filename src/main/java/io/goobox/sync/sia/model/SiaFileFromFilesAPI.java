@@ -34,7 +34,6 @@ public class SiaFileFromFilesAPI extends AbstractSiaFile {
     @NotNull
     private final InlineResponse20011Files rawFile;
 
-
     /**
      * Create a new SiaFile object with a path prefix.
      */

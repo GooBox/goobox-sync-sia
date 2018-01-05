@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -28,7 +27,6 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -49,7 +47,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
 @RunWith(JMockit.class)
@@ -59,8 +59,8 @@ public class CheckUploadStateTaskTest {
     @Mocked
     private RenterApi api;
 
-    private Path tempDir;
-    private Context context;
+    private Path tmpDir;
+    private Context ctx;
     private String name;
     private Path cloudPath;
     private Path localPath;
@@ -69,18 +69,16 @@ public class CheckUploadStateTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
-
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "test-user");
-        this.context = new Context(cfg, null);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
-        this.cloudPath = this.context.pathPrefix.resolve(name).resolve(String.valueOf(System.currentTimeMillis()));
-        this.localPath = Utils.getSyncDir().resolve(name);
+        this.cloudPath = this.ctx.pathPrefix.resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
+        this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
 
     }
@@ -88,7 +86,7 @@ public class CheckUploadStateTaskTest {
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     @Test
@@ -97,8 +95,8 @@ public class CheckUploadStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file1 = new InlineResponse20011Files();
-        file1.setSiapath(cloudPath.toString());
-        file1.setLocalpath(localPath.toString());
+        file1.setSiapath(this.cloudPath.toString());
+        file1.setLocalpath(this.localPath.toString());
         file1.setFilesize(1234L);
         file1.setUploadprogress(new BigDecimal(100));
 
@@ -113,9 +111,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).call();
+        new CheckUploadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertEquals(SyncState.SYNCED, DB.get(this.name).get().getState());
 
     }
 
@@ -125,12 +123,12 @@ public class CheckUploadStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file2 = new InlineResponse20011Files();
-        file2.setSiapath(cloudPath.toString());
-        file2.setLocalpath(localPath.toString());
+        file2.setSiapath(this.cloudPath.toString());
+        file2.setLocalpath(this.localPath.toString());
         file2.setFilesize(1234L);
         file2.setUploadprogress(new BigDecimal(95.2));
-        DB.addNewFile(name, localPath);
-        DB.setUploading(name);
+        DB.addNewFile(this.name, this.localPath);
+        DB.setUploading(this.name);
         files.add(file2);
 
         new Expectations() {{
@@ -140,9 +138,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).call();
+        new CheckUploadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
-        assertEquals(SyncState.UPLOADING, DB.get(name).get().getState());
+        assertEquals(SyncState.UPLOADING, DB.get(this.name).get().getState());
 
     }
 
@@ -191,11 +189,11 @@ public class CheckUploadStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(cloudPath.toString());
-        file.setLocalpath(localPath.toString());
+        file.setSiapath(this.cloudPath.toString());
+        file.setLocalpath(this.localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100L));
-        DB.addNewFile(name, localPath);
+        DB.addNewFile(this.name, this.localPath);
 
         final SyncFile syncFile = DB.get(name).get();
         Deencapsulation.setField(syncFile, "state", before);
@@ -213,9 +211,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).call();
+        new CheckUploadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
-        assertEquals(expected, DB.get(name).get().getState());
+        assertEquals(expected, DB.get(this.name).get().getState());
 
     }
 
@@ -225,8 +223,8 @@ public class CheckUploadStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(cloudPath.toString());
-        file.setLocalpath(localPath.toString());
+        file.setSiapath(this.cloudPath.toString());
+        file.setLocalpath(this.localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100));
 
@@ -239,9 +237,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).call();
+        new CheckUploadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(name).isPresent());
+        assertFalse(DB.get(this.name).isPresent());
 
     }
 
@@ -251,8 +249,8 @@ public class CheckUploadStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(cloudPath.toString());
-        file.setLocalpath(localPath.toString());
+        file.setSiapath(this.cloudPath.toString());
+        file.setLocalpath(this.localPath.toString());
         file.setFilesize(1234L);
         file.setUploadprogress(new BigDecimal(100));
 
@@ -265,9 +263,9 @@ public class CheckUploadStateTaskTest {
             result = res;
         }};
 
-        new CheckUploadStateTask(this.context).call();
+        new CheckUploadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
-        assertFalse(DB.get(name).isPresent());
+        assertFalse(DB.get(this.name).isPresent());
 
     }
 

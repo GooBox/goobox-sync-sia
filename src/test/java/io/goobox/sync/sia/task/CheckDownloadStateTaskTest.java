@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -29,7 +28,6 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -72,7 +70,7 @@ public class CheckDownloadStateTaskTest {
     @Mocked
     private RenterApi api;
 
-    private Path tempDir;
+    private Path tmpDir;
     private Context ctx;
     private String name;
     private Path localPath;
@@ -82,18 +80,16 @@ public class CheckDownloadStateTaskTest {
     public void setUp() throws IOException {
 
         new DBMock();
-
-        tempDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = tempDir;
-        new UtilsMock();
+        this.tmpDir = Files.createTempDirectory(null);
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", "test-user");
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name);
-        this.localPath = Utils.getSyncDir().resolve(name);
+        final Path cloudPath = this.ctx.pathPrefix.resolve(this.name);
+        this.localPath = this.tmpDir.resolve(this.name);
         DB.addForDownload(new CloudFile() {
             @Override
             public String getName() {
@@ -110,14 +106,14 @@ public class CheckDownloadStateTaskTest {
                 return 1234L;
             }
         }, localPath);
-        this.syncFile = DB.get(name).get();
+        this.syncFile = DB.get(this.name).get();
 
     }
 
     @After
     public void tearDown() throws IOException {
         DB.close();
-        FileUtils.deleteDirectory(tempDir.toFile());
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
     }
 
     @Test
@@ -283,7 +279,7 @@ public class CheckDownloadStateTaskTest {
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
         final Path name = Paths.get("sub-dir", "file");
         final Path cloudPath = this.ctx.pathPrefix.resolve(name);
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {
             @Override
             public String getName() {
@@ -401,7 +397,7 @@ public class CheckDownloadStateTaskTest {
 
         final String name = String.format("file-%x", System.currentTimeMillis());
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(targetDate));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
 
         final CloudFile cloudFile = new CloudFile() {
             @Override
@@ -549,7 +545,7 @@ public class CheckDownloadStateTaskTest {
         final Path name = Paths.get("sub-dir", "file");
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(
                 String.valueOf(System.currentTimeMillis() + 10000));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {
             @Override
             public String getName() {

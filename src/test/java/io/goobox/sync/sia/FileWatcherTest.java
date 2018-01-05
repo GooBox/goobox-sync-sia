@@ -23,7 +23,6 @@ import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.SystemMock;
-import io.goobox.sync.sia.mocks.UtilsMock;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryWatcher;
 import mockit.Deencapsulation;
@@ -69,12 +68,10 @@ public class FileWatcherTest {
     public void setUp() throws IOException {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
-        UtilsMock.syncDir = this.tmpDir;
-        new UtilsMock();
         this.now = System.currentTimeMillis();
 
         this.name = String.format("test-name-%x", this.now);
-        this.localPath = Utils.getSyncDir().resolve(this.name);
+        this.localPath = this.tmpDir.resolve(this.name);
 
     }
 
@@ -98,7 +95,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
         assertTrue(localPath.toFile().createNewFile());
 
         new SystemMock();
@@ -140,7 +137,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
         Files.createDirectory(localPath);
 
         new SystemMock();
@@ -167,7 +164,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
         Files.createDirectory(localPath);
 
         new SystemMock();
@@ -193,7 +190,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
         assertTrue(localPath.toFile().createNewFile());
 
         new SystemMock();
@@ -295,12 +292,16 @@ public class FileWatcherTest {
         }};
 
         final String dummyData = "this is a sample file body";
-        for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
+        final DirectoryChangeEvent.EventType[] events = new DirectoryChangeEvent.EventType[]{
+                DirectoryChangeEvent.EventType.CREATE,
+                DirectoryChangeEvent.EventType.MODIFY
+        };
+        for (DirectoryChangeEvent.EventType event : events) {
 
-            try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+            try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
 
                 final String name = String.format("test-%s-%x", event, System.currentTimeMillis());
-                final Path localPath = Utils.getSyncDir().resolve(name);
+                final Path localPath = this.tmpDir.resolve(name);
                 assertTrue(localPath.toFile().createNewFile());
                 DB.addNewFile(name, localPath);
                 this.updateStatus(name, before);
@@ -346,7 +347,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
         new SystemMock();
 
         SystemMock.currentTime = now;
@@ -418,7 +419,7 @@ public class FileWatcherTest {
         }};
 
         // Directory deleted.
-        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+        try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
 
             assertTrue(localPath.toFile().createNewFile());
             DB.addNewFile(name, localPath);
@@ -435,10 +436,10 @@ public class FileWatcherTest {
         DBMock.committed = false;
 
         // Modified and deleted.
-        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+        try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
 
             final String name = String.format("test-file-2-%x", System.currentTimeMillis());
-            final Path localPath = Utils.getSyncDir().resolve(name);
+            final Path localPath = this.tmpDir.resolve(name);
             assertTrue(localPath.toFile().createNewFile());
             DB.addNewFile(name, localPath);
             this.updateStatus(name, before);
@@ -479,10 +480,10 @@ public class FileWatcherTest {
 
         for (DirectoryChangeEvent.EventType event : new DirectoryChangeEvent.EventType[]{DirectoryChangeEvent.EventType.CREATE, DirectoryChangeEvent.EventType.MODIFY}) {
 
-            try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+            try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
 
                 final String name = String.format("test-%s-%x", event, System.currentTimeMillis());
-                final Path localPath = Utils.getSyncDir().resolve(name);
+                final Path localPath = this.tmpDir.resolve(name);
                 Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
                 DB.addNewFile(name, localPath);
                 this.updateStatus(name, SyncState.SYNCED);
@@ -514,13 +515,13 @@ public class FileWatcherTest {
     @Test
     public void onEventChecksExcludedFiles() throws IOException {
 
-        final Path target = Utils.getSyncDir().resolve("some-file");
+        final Path target = this.tmpDir.resolve("some-file");
         new Expectations(Utils.class) {{
             Utils.isExcluded(target);
             result = true;
         }};
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        try (final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor)) {
+        try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
             watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, target, 2));
         }
 
@@ -537,7 +538,7 @@ public class FileWatcherTest {
             watchService.watchAsync(executor);
         }};
 
-        final FileWatcher watcher = new FileWatcher(Utils.getSyncDir(), executor);
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
 
         new SystemMock();
 

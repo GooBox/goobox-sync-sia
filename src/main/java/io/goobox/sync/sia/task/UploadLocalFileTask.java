@@ -54,6 +54,7 @@ public class UploadLocalFileTask implements Callable<Void> {
 
     @Override
     public Void call() throws ApiException {
+        logger.traceEntry();
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
         if (!syncFileOpt.isPresent()) {

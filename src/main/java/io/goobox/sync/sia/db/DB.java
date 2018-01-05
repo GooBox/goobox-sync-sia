@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
+import static org.dizitart.no2.objects.filters.ObjectFilters.not;
 
 public class DB {
 
@@ -207,6 +208,10 @@ public class DB {
 
     public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
         return repo().find(eq("state", state));
+    }
+
+    public synchronized static boolean isSynced() {
+        return repo().find(not(eq("state", SyncState.SYNCED))).size() == 0;
     }
 
     public static void main(String[] args) {

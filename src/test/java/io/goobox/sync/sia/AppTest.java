@@ -48,9 +48,11 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.NotifyTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import mockit.Deencapsulation;
 import mockit.Expectations;
+import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
@@ -84,6 +86,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
@@ -101,20 +104,29 @@ public class AppTest {
     @Mocked
     private RenterApi renter;
 
+    private Path tmpDir;
     private Context ctx;
 
     @Before
     public void setUp() throws IOException {
 
         new DBMock();
-
         UtilsMock.dataDir = Files.createTempDirectory("data");
-        UtilsMock.syncDir = Files.createTempDirectory("sync");
         new UtilsMock();
 
+        this.tmpDir = Files.createTempDirectory("sync");
         final Config cfg = new Config();
         cfg.setUserName("test-user");
-        this.ctx = new Context(cfg, null);
+        cfg.setSyncDir(this.tmpDir);
+
+        final ApiClient apiClient = new ApiClient();
+        apiClient.setBasePath("http://localhost:9980");
+
+        final OkHttpClient httpClient = apiClient.getHttpClient();
+        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
+        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+
+        this.ctx = new Context(cfg, apiClient);
 
     }
 
@@ -123,45 +135,125 @@ public class AppTest {
         DB.close();
         FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
         try {
-            FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
+            FileUtils.deleteDirectory(this.tmpDir.toFile());
         } catch (IOException e) {
             System.err.println("Cannot delete sync folder: " + e.getMessage());
         }
     }
 
+    /**
+     * Mock class used for App.main tests.
+     */
+    @SuppressWarnings("unused")
+    class SimpleAppMock extends MockUp<App> {
+        private boolean initialized = false;
+        private App app = null;
+
+        @Mock
+        private void init(Invocation invocation) {
+            this.app = invocation.getInvokedInstance();
+            this.initialized = true;
+        }
+
+    }
+
+    /**
+     * A simple mock of App class which only records which methods are invoked.
+     */
+    @SuppressWarnings("unused")
+    class RecordingAppMock extends MockUp<App> {
+        private boolean checkedSyncDir = false;
+        private boolean checkedDataDir = false;
+        private boolean preparedWallet = false;
+        private boolean waitedSynchronization = false;
+        private boolean waitedContracts = false;
+        private boolean calledResumeTasks = false;
+        private boolean calledSynchronizeModifiedFiles = false;
+        private boolean calledSynchronizeDeletedFiles = false;
+
+        @Mock
+        private Config loadConfig(Path path) {
+            assertEquals(Utils.getDataDir().resolve(App.ConfigFileName), path);
+            return ctx.config;
+        }
+
+        @Mock
+        private boolean checkAndCreateSyncDir() {
+            this.checkedSyncDir = true;
+            return true;
+        }
+
+        @Mock
+        private boolean checkAndCreateDataDir() {
+            this.checkedDataDir = true;
+            return true;
+        }
+
+        @Mock
+        void prepareWallet() {
+            this.preparedWallet = true;
+        }
+
+        @Mock
+        void waitSynchronization() {
+            this.waitedSynchronization = true;
+        }
+
+        @Mock
+        void waitContracts() {
+            this.waitedContracts = true;
+        }
+
+        @Mock
+        private void resumeTasks(final Context context, final Executor executor) {
+            assertEquals(ctx, context);
+            this.calledResumeTasks = true;
+        }
+
+        @Mock
+        private void synchronizeModifiedFiles(Path root) {
+            this.calledSynchronizeModifiedFiles = true;
+        }
+
+        @Mock
+        private void synchronizeDeletedFiles() {
+            this.calledSynchronizeDeletedFiles = true;
+        }
+
+    }
+
+    /**
+     * A mock of ScheduledThreadPoolExecutor which just puts tasks to a list.
+     */
+    @SuppressWarnings("unused")
+    class ScheduledThreadPoolExecutorMock extends MockUp<ScheduledThreadPoolExecutor> {
+        private List<Runnable> queue = new ArrayList<>();
+
+        @Mock
+        void scheduleWithFixedDelay(Runnable task, long start, long delay, TimeUnit unit) {
+            queue.add(task);
+        }
+    }
+
+    /**
+     * Test App.main without any options invokes app.init.
+     */
     @Test
     public void testMain() {
 
-        class AppMock extends MockUp<App> {
-            private boolean initialized = false;
-
-            @SuppressWarnings("unused")
-            @Mock
-            private void init() {
-                this.initialized = true;
-            }
-        }
-
-        final AppMock mock = new AppMock();
+        final SimpleAppMock mock = new SimpleAppMock();
         App.main(new String[]{});
         assertTrue(mock.initialized);
 
     }
 
+    /**
+     * Test App.main with reset-db flag deletes the sync db if exists.
+     */
     @Test
     public void testMainWithResetDB() throws IOException {
 
-        class AppMock extends MockUp<App> {
-            private boolean initialized = false;
-
-            @SuppressWarnings("unused")
-            @Mock
-            private void init() {
-                this.initialized = true;
-            }
-        }
-
-        final AppMock mock = new AppMock();
+        final SimpleAppMock mock = new SimpleAppMock();
         try {
 
             final File dbFile = Utils.getDataDir().resolve(DB.DatabaseFileName).toFile();
@@ -178,6 +270,36 @@ public class AppTest {
         }
 
     }
+
+    /**
+     * Test App.main with sync-dir flag updates cfg.syncDir.
+     */
+    @Test
+    public void testMainWithSyncDir() {
+
+        final SimpleAppMock mock = new SimpleAppMock();
+        final Path tmpPath = Paths.get("sync-dir");
+        App.main(new String[]{"--sync-dir", tmpPath.toString()});
+        assertNotNull(mock.app);
+
+        final Config cfg = Deencapsulation.getField(mock.app, "cfg");
+        assertEquals(tmpPath.toAbsolutePath(), cfg.getSyncDir());
+
+    }
+
+    /**
+     * Test App.main with output-events flag sets app.outputEvents = true.
+     */
+    @Test
+    public void testMainWithOutputEvents() {
+
+        final SimpleAppMock mock = new SimpleAppMock();
+        App.main(new String[]{"--output-events"});
+        assertNotNull(mock.app);
+        assertTrue(Deencapsulation.getField(mock.app, "outputEvents"));
+
+    }
+
 
     @Test
     public void testMainWithHelp() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -295,97 +417,15 @@ public class AppTest {
     public void testInit(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
             throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
 
-        final Config cfg = new Config();
-        final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
-        final Context ctx = new Context(cfg, apiClient);
+        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
 
         new Expectations() {{
             CmdUtils.getApiClient();
-            result = apiClient;
+            result = ctx.apiClient;
+            new FileWatcher(tmpDir, withNotNull());
         }};
 
-        class AppMock extends MockUp<App> {
-            private boolean checkedSyncDir = false;
-            private boolean checkedDataDir = false;
-            private boolean preparedWallet = false;
-            private boolean waitedSynchronization = false;
-            private boolean waitedContracts = false;
-            private boolean calledResumeTasks = false;
-            private boolean calledSynchronizeModifiedFiles = false;
-            private boolean calledSynchronizeDeletedFiles = false;
-
-            @Mock
-            private Config loadConfig(Path path) {
-                assertEquals(Utils.getDataDir().resolve(App.ConfigFileName), path);
-                return cfg;
-            }
-
-            @Mock
-            private boolean checkAndCreateSyncDir() {
-                this.checkedSyncDir = true;
-                return true;
-            }
-
-            @Mock
-            private boolean checkAndCreateDataDir() {
-                this.checkedDataDir = true;
-                return true;
-            }
-
-            @Mock
-            void prepareWallet() {
-                this.preparedWallet = true;
-            }
-
-            @Mock
-            void waitSynchronization() {
-                this.waitedSynchronization = true;
-            }
-
-            @Mock
-            void waitContracts() {
-                this.waitedContracts = true;
-            }
-
-            @Mock
-            private void resumeTasks(final Context context, final Executor executor) {
-                assertEquals(ctx, context);
-                this.calledResumeTasks = true;
-            }
-
-            @Mock
-            private void synchronizeModifiedFiles(Path root) {
-                this.calledSynchronizeModifiedFiles = true;
-            }
-
-            @Mock
-            private void synchronizeDeletedFiles() {
-                this.calledSynchronizeDeletedFiles = true;
-            }
-
-        }
-
-        class ScheduledThreadPoolExecutorMock extends MockUp<ScheduledThreadPoolExecutor> {
-            private List<Runnable> queue = new ArrayList<>();
-
-            @Mock
-            void scheduleWithFixedDelay(Runnable task, long start, long delay, TimeUnit unit) {
-                queue.add(task);
-            }
-        }
-        ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
-
-
-        // Enqueue basic tasks.
-        new Expectations() {{
-            new FileWatcher(Utils.getSyncDir(), withNotNull());
-        }};
-
-        final AppMock mock = new AppMock();
+        final RecordingAppMock mock = new RecordingAppMock();
         final App app = new App();
         final Method init = App.class.getDeclaredMethod("init");
         init.setAccessible(true);
@@ -403,6 +443,43 @@ public class AppTest {
         assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
         assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
         assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
+
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void testInitWithOutputEvents(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
+
+        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
+
+        new Expectations() {{
+            CmdUtils.getApiClient();
+            result = ctx.apiClient;
+            new FileWatcher(tmpDir, withNotNull());
+        }};
+
+        final RecordingAppMock mock = new RecordingAppMock();
+        final App app = new App();
+        Deencapsulation.setField(app, "outputEvents", true);
+
+        final Method init = App.class.getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(app);
+
+        assertTrue(mock.checkedSyncDir);
+        assertTrue(mock.checkedDataDir);
+        assertTrue(mock.preparedWallet);
+        assertTrue(mock.waitedSynchronization);
+        assertTrue(mock.waitedContracts);
+        assertTrue(mock.calledSynchronizeModifiedFiles);
+        assertTrue(mock.calledSynchronizeDeletedFiles);
+        assertTrue(mock.calledResumeTasks);
+
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
+        assertTrue(executorMock.queue.get(3) instanceof NotifyTask);
 
     }
 
@@ -532,12 +609,12 @@ public class AppTest {
         }
 
         final AppMock mock = new AppMock();
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method checkAndCreateSyncDir = App.class.getDeclaredMethod("checkAndCreateSyncDir");
         checkAndCreateSyncDir.setAccessible(true);
         checkAndCreateSyncDir.invoke(app);
 
-        assertEquals(Utils.getSyncDir(), mock.arg);
+        assertEquals(this.tmpDir, mock.arg);
 
     }
 
@@ -872,7 +949,7 @@ public class AppTest {
     public void synchronizeNewFile() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
 
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         assertTrue(localPath.toFile().createNewFile());
 
@@ -888,7 +965,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -920,7 +997,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -950,10 +1027,10 @@ public class AppTest {
     }
 
     private void invokeSynchronizeModifiedFiles() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method synchronizeModifiedFiles = App.class.getDeclaredMethod("synchronizeModifiedFiles", Path.class);
         synchronizeModifiedFiles.setAccessible(true);
-        synchronizeModifiedFiles.invoke(app, Utils.getSyncDir());
+        synchronizeModifiedFiles.invoke(app, this.tmpDir);
     }
 
     @Test
@@ -961,7 +1038,7 @@ public class AppTest {
 
         final String dummyData = "sample test";
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
@@ -983,7 +1060,7 @@ public class AppTest {
 
         assertTrue(localPath.toFile().delete());
 
-        final App app = new App();
+        final App app = new App(this.tmpDir);
         final Method synchronizeDeletedFiles = App.class.getDeclaredMethod("synchronizeDeletedFiles");
         synchronizeDeletedFiles.setAccessible(true);
         synchronizeDeletedFiles.invoke(app);
@@ -1022,7 +1099,7 @@ public class AppTest {
             throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         final String name = String.format("test-%s", state);
-        final Path localPath = Utils.getSyncDir().resolve(name);
+        final Path localPath = this.tmpDir.resolve(name);
         assertTrue(localPath.toFile().createNewFile());
 
         DB.setSynced(new CloudFile() {

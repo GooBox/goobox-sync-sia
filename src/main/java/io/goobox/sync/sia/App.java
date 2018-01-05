@@ -39,6 +39,7 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.NotifyTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -58,6 +59,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -124,6 +126,11 @@ public final class App {
     @NotNull
     private final Context ctx;
 
+    /**
+     * If true, this app outputs events to stdout so that the GUI app can obtain them.
+     */
+    private boolean outputEvents = false;
+
     @Nullable
     private SiaDaemon daemon;
 
@@ -158,6 +165,8 @@ public final class App {
 
         final Options opts = new Options();
         opts.addOption(null, "reset-db", false, "reset sync DB");
+        opts.addOption(null, "sync-dir", true, "set the sync dir");
+        opts.addOption(null, "output-events", false, "output events for the GUI app");
         opts.addOption("h", "help", false, "show this help");
         opts.addOption("v", "version", false, "print version");
         try {
@@ -185,8 +194,17 @@ public final class App {
 
             }
 
+            if (cmd.hasOption("sync-dir")) {
+                App.app = new App(Paths.get(cmd.getParsedOptionValue("sync-dir").toString()));
+            } else {
+                App.app = new App();
+            }
+
+            if (cmd.hasOption("output-events")) {
+                App.app.outputEvents = true;
+            }
+
             // Start the app.
-            App.app = new App();
             App.app.init();
 
         } catch (ParseException e) {
@@ -212,6 +230,11 @@ public final class App {
         final ApiClient apiClient = CmdUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
 
+    }
+
+    public App(final Path syncDir) {
+        this();
+        this.cfg.setSyncDir(syncDir);
     }
 
     @Nullable
@@ -304,6 +327,9 @@ public final class App {
         executor.scheduleWithFixedDelay(
                 new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
                 45, 60, TimeUnit.SECONDS);
+        if (this.outputEvents) {
+            executor.scheduleWithFixedDelay(new NotifyTask(), 0, 60, TimeUnit.SECONDS);
+        }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
 
     }

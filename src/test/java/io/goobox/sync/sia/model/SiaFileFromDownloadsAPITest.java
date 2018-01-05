@@ -16,13 +16,17 @@
  */
 package io.goobox.sync.sia.model;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import mockit.Deencapsulation;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -31,18 +35,35 @@ import static org.junit.Assert.assertEquals;
 
 public class SiaFileFromDownloadsAPITest {
 
+    private Path tmpDir;
+    private String user;
+    private Context ctx;
+
+    @Before
+    public void setUp() throws IOException {
+
+        this.tmpDir = Files.createTempDirectory(null);
+
+        this.user = "test-user";
+        final Config cfg = new Config();
+        Deencapsulation.setField(cfg, "userName", this.user);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
+
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
+    }
+
     @SuppressWarnings("ConstantConditions")
     @Test
     public void test() {
 
-        final String user = "testuser";
         final String name = Paths.get("foo", "bar.txt").toString();
         final Long created = new Date().getTime();
         final Path remotePath = Paths.get(user, "Goobox", name, String.valueOf(created));
-
-        final Config cfg = new Config();
-        Deencapsulation.setField(cfg, "userName", user);
-        final Context ctx = new Context(cfg, null);
 
         final long fileSize = 12345;
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
@@ -52,7 +73,7 @@ public class SiaFileFromDownloadsAPITest {
 
         assertEquals(name, siaFile.getName());
         assertEquals(remotePath, siaFile.getCloudPath());
-        assertEquals(Paths.get(Utils.getSyncDir().toString(), name), siaFile.getLocalPath());
+        assertEquals(this.tmpDir.resolve(name), siaFile.getLocalPath());
 
         assertEquals(created, siaFile.getCreationTime().get());
         assertEquals(fileSize, siaFile.getFileSize());

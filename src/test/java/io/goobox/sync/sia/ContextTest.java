@@ -17,7 +17,6 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiClient;
-import mockit.Deencapsulation;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -46,7 +45,7 @@ public class ContextTest {
 
         final Path wd = Paths.get(".").toAbsolutePath();
         final Config cfg = new Config();
-        Deencapsulation.setField(cfg, "syncDir", wd);
+        cfg.setSyncDir(wd);
 
         final Context ctx = new Context(cfg, null);
 
@@ -60,7 +59,7 @@ public class ContextTest {
 
         final Path wd = Paths.get(".").toAbsolutePath();
         final Config cfg = new Config();
-        Deencapsulation.setField(cfg, "syncDir", wd);
+        cfg.setSyncDir(wd);
 
         final Context ctx = new Context(cfg, null);
 

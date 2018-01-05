@@ -17,16 +17,19 @@
 
 package io.goobox.sync.sia.model;
 
-import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.mocks.APIUtilsMock;
 import mockit.Deencapsulation;
 import mockit.integration.junit4.JMockit;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -36,42 +39,50 @@ import static org.junit.Assert.assertFalse;
 @RunWith(JMockit.class)
 public class AbstractSiaFileTest {
 
+    private Path tmpDir;
     private String user;
     private String path;
     private Long created;
     private Context ctx;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
+        this.tmpDir = Files.createTempDirectory(null);
+
         this.user = "testuser";
         this.path = Paths.get("foo", "bar.txt").toString();
         this.created = System.currentTimeMillis();
 
         final Config cfg = new Config();
         Deencapsulation.setField(cfg, "userName", this.user);
-        ctx = new Context(cfg, null);
+        Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
+        this.ctx = new Context(cfg, null);
 
         APIUtilsMock.fromSlashPaths.clear();
         new APIUtilsMock();
     }
 
+    @After
+    public void tearDown() throws IOException {
+        FileUtils.deleteDirectory(this.tmpDir.toFile());
+    }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     public void cloudPathWithCreationTime() {
 
-        final Path inPath = Paths.get(user, "Goobox", path, String.valueOf(created));
-        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
+        final Path inPath = Paths.get(this.user, "Goobox", this.path, String.valueOf(this.created));
+        final SiaFile siaFile = new AbstractSiaFile(this.ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;
             }
         };
 
-        assertEquals(path, siaFile.getName());
+        assertEquals(this.path, siaFile.getName());
         assertEquals(inPath, siaFile.getCloudPath());
-        assertEquals(Utils.getSyncDir().resolve(this.path), siaFile.getLocalPath());
-        assertEquals(created, siaFile.getCreationTime().get());
+        assertEquals(this.tmpDir.resolve(this.path), siaFile.getLocalPath());
+        assertEquals(this.created, siaFile.getCreationTime().get());
 
         assertEquals(1, APIUtilsMock.fromSlashPaths.size());
         assertEquals(inPath.toString(), APIUtilsMock.fromSlashPaths.get(0));
@@ -81,17 +92,17 @@ public class AbstractSiaFileTest {
     @Test
     public void couldPathWithoutCreationTime() {
 
-        final Path inPath = Paths.get(user, "Goobox", path);
-        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
+        final Path inPath = Paths.get(this.user, "Goobox", this.path);
+        final SiaFile siaFile = new AbstractSiaFile(this.ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;
             }
         };
 
-        assertEquals(path, siaFile.getName());
+        assertEquals(this.path, siaFile.getName());
         assertEquals(inPath, siaFile.getCloudPath());
-        assertEquals(Utils.getSyncDir().resolve(this.path), siaFile.getLocalPath());
+        assertEquals(this.tmpDir.resolve(this.path), siaFile.getLocalPath());
         assertFalse(siaFile.getCreationTime().isPresent());
 
         assertEquals(1, APIUtilsMock.fromSlashPaths.size());
@@ -103,8 +114,8 @@ public class AbstractSiaFileTest {
     public void integerNameWithoutTimestamp() {
 
         final String path = "1234567890";
-        final Path inPath = Paths.get(user, "Goobox", path);
-        final SiaFile siaFile = new AbstractSiaFile(ctx, inPath.toString()) {
+        final Path inPath = Paths.get(this.user, "Goobox", path);
+        final SiaFile siaFile = new AbstractSiaFile(this.ctx, inPath.toString()) {
             @Override
             public long getFileSize() {
                 return 0;
@@ -113,7 +124,7 @@ public class AbstractSiaFileTest {
 
         assertEquals(path, siaFile.getName());
         assertEquals(inPath, siaFile.getCloudPath());
-        assertEquals(Utils.getSyncDir().resolve(path), siaFile.getLocalPath());
+        assertEquals(this.tmpDir.resolve(path), siaFile.getLocalPath());
         assertFalse(siaFile.getCreationTime().isPresent());
 
         assertEquals(1, APIUtilsMock.fromSlashPaths.size());
