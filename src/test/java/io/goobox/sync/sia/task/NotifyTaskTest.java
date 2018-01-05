@@ -78,7 +78,7 @@ public class NotifyTaskTest {
         }};
 
         final NotifyTask task = new NotifyTask();
-        task.call();
+        task.run();
         System.err.println(this.out.toString());
 
         final Gson gson = new Gson();
@@ -101,7 +101,7 @@ public class NotifyTaskTest {
         }};
 
         final NotifyTask task = new NotifyTask();
-        task.call();
+        task.run();
         System.err.println(this.out.toString());
 
         final Gson gson = new Gson();

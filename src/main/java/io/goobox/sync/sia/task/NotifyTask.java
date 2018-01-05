@@ -22,9 +22,7 @@ import io.goobox.sync.sia.db.DB;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.Callable;
-
-public class NotifyTask implements Callable<Void> {
+public class NotifyTask implements Runnable {
 
     private static Logger logger = LogManager.getLogger();
 
@@ -59,7 +57,7 @@ public class NotifyTask implements Callable<Void> {
     }
 
     @Override
-    public Void call() {
+    public void run() {
         logger.traceEntry();
 
         EventType e;
@@ -69,7 +67,6 @@ public class NotifyTask implements Callable<Void> {
             e = EventType.Synchronizing;
         }
         System.out.println(this.gson.toJson(new Schema(e)));
-        return null;
 
     }
 
