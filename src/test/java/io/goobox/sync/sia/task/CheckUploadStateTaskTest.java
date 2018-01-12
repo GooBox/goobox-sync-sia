@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,7 +145,7 @@ public class CheckUploadStateTaskTest {
     }
 
     /**
-     * Since renter/files API returns files stored and being uploaded in the SIA network,
+     * Since renter/files API returns files stored and being uploaded in the sia network,
      * results contain files already synced. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */
@@ -155,7 +155,7 @@ public class CheckUploadStateTaskTest {
     }
 
     /**
-     * Since renter/files API returns files stored and being uploaded in the SIA network,
+     * Since renter/files API returns files stored and being uploaded in the sia network,
      * results contain files to be uploaded. This test checks CheckUploadStateTask doesn't modified statuses of such
      * files.
      */

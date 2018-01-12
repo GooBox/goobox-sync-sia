@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ public final class App {
     private static final int WorkerThreadSize = 3;
 
     /**
-     * How many times retrying to start SIA daemon.
+     * How many times retrying to start a sia daemon.
      */
     public static final int MaxRetry = 60 * 24;
 
@@ -234,6 +234,7 @@ public final class App {
 
     public App(final Path syncDir) {
         this();
+        logger.info("Overwrite the sync directory: {}", syncDir);
         this.cfg.setSyncDir(syncDir);
     }
 
@@ -251,10 +252,10 @@ public final class App {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
 
-                logger.info("Starting SIA daemon");
+                logger.info("Starting a sia daemon");
                 this.daemon.start();
             } catch (IOException e) {
-                logger.error("Failed to start SIA daemon: {}", e.getMessage());
+                logger.error("Failed to start the sia daemon: {}", e.getMessage());
             }
 
         }
@@ -289,22 +290,22 @@ public final class App {
             } catch (final ApiException e) {
 
                 if (retry >= App.MaxRetry) {
-                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.error("Failed to communicate with the sia daemon: {}", APIUtils.getErrorMessage(e));
                     System.exit(1);
                     return;
                 }
 
                 if (e.getCause() instanceof ConnectException) {
-                    logger.info("SIA daemon is not running: {}", APIUtils.getErrorMessage(e));
+                    logger.info("Sia daemon is not running: {}", APIUtils.getErrorMessage(e));
                     this.startSiaDaemon();
                 }
                 retry++;
 
-                logger.info("Waiting SIA daemon starts");
+                logger.info("Waiting the daemon starts");
                 try {
                     Thread.sleep(DefaultSleepTime);
                 } catch (InterruptedException e1) {
-                    logger.error("Interrupted while waiting SIA daemon starts: {}", e1.getMessage());
+                    logger.error("Interrupted while waiting for the sia daemon to start: {}", e1.getMessage());
                     System.exit(1);
                     return;
                 }
@@ -369,8 +370,8 @@ public final class App {
      * @return true if the data directory is ready.
      */
     private boolean checkAndCreateDataDir() {
-        logger.info("Checking if Goobox data folder exists: {}", Utils.getDataDir());
-        return checkAndCreateFolder(Utils.getDataDir());
+        logger.info("Checking if Goobox data folder exists: {}", this.ctx.config.getDataDir());
+        return checkAndCreateFolder(this.ctx.config.getDataDir());
     }
 
     /**

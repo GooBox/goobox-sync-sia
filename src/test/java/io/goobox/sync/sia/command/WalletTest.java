@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -435,7 +435,7 @@ public class WalletTest {
 
         new Expectations(cmd) {{
 
-            // Starting SIA daemon.
+            // Starting sia daemon.
             new SiaDaemon(Utils.getDataDir().resolve("sia"));
             result = daemon;
             daemon.start();
@@ -446,7 +446,7 @@ public class WalletTest {
             res1.setUnconfirmedincomingsiacoins(new BigDecimal(income).multiply(CmdUtils.Hasting).toString());
             res1.setUnconfirmedoutgoingsiacoins(new BigDecimal(outcome).multiply(CmdUtils.Hasting).toString());
             wallet.walletGet();
-            // At the first attempt, ApiException will be thrown because no SIA daemon running.
+            // At the first attempt, ApiException will be thrown because no sia daemon running.
             result = new ApiException(new ConnectException());
             result = res1;
 

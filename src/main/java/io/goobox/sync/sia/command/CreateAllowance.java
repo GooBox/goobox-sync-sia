@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -146,7 +146,7 @@ public final class CreateAllowance implements Runnable {
             } catch (final ApiException e) {
 
                 if (retry >= App.MaxRetry) {
-                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.error("Failed to communicate with a sia daemon: {}", APIUtils.getErrorMessage(e));
                     System.exit(1);
                     return;
                 }
@@ -158,10 +158,10 @@ public final class CreateAllowance implements Runnable {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
 
-                        logger.info("Starting SIA daemon");
+                        logger.info("Starting a sia daemon");
                         daemon.start();
                     }
-                    logger.info("Waiting SIA daemon starts");
+                    logger.info("Waiting for the sia daemon to get ready");
 
                 } else {
                     logger.warn("Failed to allocate funds: {}", APIUtils.getErrorMessage(e));
@@ -188,7 +188,7 @@ public final class CreateAllowance implements Runnable {
                 daemon.close();
                 daemon.join();
             } catch (final InterruptedException e) {
-                logger.error("Interrupted while closing SIA daemon: {}", e.getMessage());
+                logger.error("Interrupted while closing the sia daemon: {}", e.getMessage());
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ public class SiaDaemon extends Thread implements Closeable {
     }
 
     /**
-     * Start SIA daemon. This method blocks until the child process ends.
+     * Start sia daemon. This method blocks until the child process ends.
      */
     @Override
     public void run() {
@@ -98,7 +98,7 @@ public class SiaDaemon extends Thread implements Closeable {
                 in.lines().forEach(logger::debug);
             }
         } catch (IOException e) {
-            logger.error("Failed to start SIA daemon: {}", e.getMessage());
+            logger.error("Failed to start sia daemon: {}", e.getMessage());
         }
         synchronized (this) {
             this.process = null;
@@ -110,12 +110,12 @@ public class SiaDaemon extends Thread implements Closeable {
     public synchronized void close() {
 
         if (this.process != null) {
-            logger.info("Closing SIA daemon");
+            logger.info("Closing the sia daemon");
             this.process.destroy();
             try {
                 this.process.waitFor();
             } catch (final InterruptedException e) {
-                logger.warn("Interrupted while waiting SIA daemon ends: {}", e.getMessage());
+                logger.warn("Interrupted while waiting the sia daemon ends: {}", e.getMessage());
             }
         }
 

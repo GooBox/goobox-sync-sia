@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ public class Config {
     private Path syncDir;
 
     /**
-     * Path to the directory where SIA daemon data files are stored.
+     * Path to the directory where sia daemon data files are stored.
      */
     @NotNull
     private Path dataDir;

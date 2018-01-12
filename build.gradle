@@ -109,7 +109,7 @@ def siaArchives = [
 siaArchives.each { type ->
 
     def download = tasks.create(name: "sia-$type.key") {
-        description "Download SIA daemon for $type.key"
+        description "Download sia daemon for $type.key"
         group 'distribution'
 
         def sia = file("$buildDir/sia")
