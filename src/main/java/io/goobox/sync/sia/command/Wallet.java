@@ -29,6 +29,7 @@ import io.goobox.sync.sia.client.api.WalletApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import org.apache.commons.cli.CommandLine;
@@ -105,6 +106,12 @@ public final class Wallet implements Runnable {
      * - confirmed balance (in SC)
      * - confirmed delta (in SC)
      * (from /renter)
+     * - allowance
+     * - funds (in SC)
+     * - hosts
+     * - period
+     * - renew window
+     * - current period
      * - current spending
      * - download
      * - storage
@@ -175,14 +182,16 @@ public final class Wallet implements Runnable {
                                 .subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())))));
 
                 final RenterApi renter = new RenterApi(apiClient);
-                final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
+                final InlineResponse2008 info = renter.renterGet();
+                final InlineResponse2008SettingsAllowance allowance = info.getSettings().getAllowance();
                 System.out.println("allowance:");
                 System.out.println(String.format("  funds: %s SC", CmdUtils.toSC(allowance.getFunds())));
                 System.out.println(String.format("  hosts: %d", allowance.getHosts()));
                 System.out.println(String.format("  period: %d", allowance.getPeriod()));
                 System.out.println(String.format("  renew window: %d", allowance.getRenewwindow()));
+                System.out.println(String.format("  start height: %s", info.getCurrentperiod()));
 
-                final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
+                final InlineResponse2008Financialmetrics spendings = info.getFinancialmetrics();
                 System.out.println("current spending:");
                 System.out.println(String.format("  download: %s SC", CmdUtils.toSC(spendings.getDownloadspending())));
                 System.out.println(String.format("  upload: %s SC", CmdUtils.toSC(spendings.getUploadspending())));

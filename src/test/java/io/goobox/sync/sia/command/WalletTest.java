@@ -69,6 +69,7 @@ public class WalletTest {
     //   - hosts
     //   - period
     //   - renew window
+    //   - current period
     // - current spending
     //   - download
     //   - storage
@@ -88,6 +89,7 @@ public class WalletTest {
     private final int hosts = 30;
     private final long period = 6000;
     private final long renewWindow = 1000;
+    private final long currentPeriod = 3000;
     private final double downloadSpending = 1.2345;
     private final double uploadSpending = 0.223;
     private final double storageSpending = 2.3;
@@ -146,6 +148,7 @@ public class WalletTest {
             spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
             spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
+            res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
@@ -207,6 +210,7 @@ public class WalletTest {
             spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
             spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
+            res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
@@ -282,6 +286,7 @@ public class WalletTest {
                 spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
                 spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
                 res3.setFinancialmetrics(spending);
+                res3.setCurrentperiod(String.valueOf(currentPeriod));
                 renter.renterGet();
                 result = res3;
 
@@ -354,6 +359,7 @@ public class WalletTest {
             spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
             spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
+            res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
@@ -400,6 +406,9 @@ public class WalletTest {
         assertTrue(
                 String.format("renew window: %d", renewWindow),
                 outputs.contains(String.format("renew window: %d", renewWindow)));
+        assertTrue(
+                String.format("start height: %d", currentPeriod),
+                outputs.contains(String.format("start height: %d", currentPeriod)));
         assertTrue(
                 String.format("download: %.4f SC", downloadSpending),
                 outputs.contains(String.format("download: %.4f SC", downloadSpending)));
