@@ -30,6 +30,7 @@ import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -42,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.nio.file.Path;
 
@@ -169,54 +169,33 @@ public final class Wallet implements Runnable {
                 System.out.println(String.format("wallet address: %s", walletApi.walletAddressGet().getAddress()));
                 System.out.println(String.format("primary seed: %s", cfg.getPrimarySeed()));
 
-                System.out.println(String.format(
-                        "balance: %s SC",
-                        new BigDecimal(wallet.getConfirmedsiacoinbalance()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "unconfirmed delta: %s SC",
-                        new BigDecimal(wallet.getUnconfirmedincomingsiacoins()).
-                                subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
+                System.out.println(String.format("balance: %s SC", CmdUtils.toSC(wallet.getConfirmedsiacoinbalance())));
+                System.out.println(String.format("unconfirmed delta: %s SC", CmdUtils.toSC(
+                        new BigDecimal(wallet.getUnconfirmedincomingsiacoins())
+                                .subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())))));
 
                 final RenterApi renter = new RenterApi(apiClient);
+                final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
+                System.out.println("allowance:");
+                System.out.println(String.format("  funds: %s SC", CmdUtils.toSC(allowance.getFunds())));
+                System.out.println(String.format("  hosts: %d", allowance.getHosts()));
+                System.out.println(String.format("  period: %d", allowance.getPeriod()));
+                System.out.println(String.format("  renew window: %d", allowance.getRenewwindow()));
+
                 final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
                 System.out.println("current spending:");
-                System.out.println(String.format(
-                        "  download: %s SC",
-                        new BigDecimal(spendings.getDownloadspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  upload: %s SC",
-                        new BigDecimal(spendings.getUploadspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  storage: %s SC",
-                        new BigDecimal(spendings.getStoragespending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  fee: %s SC",
-                        new BigDecimal(spendings.getContractspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
+                System.out.println(String.format("  download: %s SC", CmdUtils.toSC(spendings.getDownloadspending())));
+                System.out.println(String.format("  upload: %s SC", CmdUtils.toSC(spendings.getUploadspending())));
+                System.out.println(String.format("  storage: %s SC", CmdUtils.toSC(spendings.getStoragespending())));
+                System.out.println(String.format("  fee: %s SC", CmdUtils.toSC(spendings.getContractspending())));
 
                 final InlineResponse20012 prices = renter.renterPricesGet();
                 System.out.println("current prices:");
+                System.out.println(String.format("  download: %s SC/TB", CmdUtils.toSC(prices.getDownloadterabyte())));
+                System.out.println(String.format("  upload: %s SC/TB", CmdUtils.toSC(prices.getUploadterabyte())));
                 System.out.println(String.format(
-                        "  download: %s SC/TB",
-                        new BigDecimal(prices.getDownloadterabyte()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  upload: %s SC/TB",
-                        new BigDecimal(prices.getUploadterabyte()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  storage: %s SC/TB*Month",
-                        new BigDecimal(prices.getStorageterabytemonth()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  fee: %s SC/contract",
-                        new BigDecimal(prices.getFormcontracts()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
+                        "  storage: %s SC/TB*Month", CmdUtils.toSC(prices.getStorageterabytemonth())));
+                System.out.println(String.format("  fee: %s SC/contract", CmdUtils.toSC(prices.getFormcontracts())));
 
                 break;
 
