@@ -101,19 +101,28 @@ public class WalletTest {
     private final double contractPrice = 1.123;
     private final String primarySeed = "sample primary seed";
 
+    private Wallet cmd;
     private ByteArrayOutputStream out;
     private PrintStream oldOut;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         out = new ByteArrayOutputStream();
         oldOut = System.out;
         System.setOut(new PrintStream(out));
+
+        cmd = new Wallet();
+        Deencapsulation.setField(cmd, "configPath", Files.createTempFile(null, null));
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @After
     public void tearDown() {
         System.setOut(oldOut);
+        final Path configPath = Deencapsulation.getField(cmd, "configPath");
+        if (configPath.toFile().exists()) {
+            configPath.toFile().delete();
+        }
     }
 
     @Test
@@ -163,7 +172,6 @@ public class WalletTest {
 
         }};
 
-        final Wallet cmd = new Wallet();
         final Config cfg = new Config();
         cfg.setPrimarySeed(primarySeed);
         Deencapsulation.setField(cmd, "cfg", cfg);
@@ -225,7 +233,6 @@ public class WalletTest {
 
         }};
 
-        final Wallet cmd = new Wallet();
         final Config cfg = new Config();
         cfg.setPrimarySeed(primarySeed);
         Deencapsulation.setField(cmd, "cfg", cfg);
@@ -238,79 +245,68 @@ public class WalletTest {
     }
 
     @Test
-    public void withoutInitializedWallet(@Mocked WalletApi wallet, @Mocked RenterApi renter) throws ApiException, IOException {
+    public void withoutInitializedWallet(@Mocked WalletApi wallet, @Mocked RenterApi renter) throws ApiException {
 
-        final Wallet cmd = new Wallet();
-        final Path tmpFile = Files.createTempFile(null, null);
-        try {
+        Deencapsulation.setField(cmd, "cfg", new Config());
+        new Expectations() {{
 
-            Deencapsulation.setField(cmd, "cfg", new Config());
-            Deencapsulation.setField(cmd, "configPath", tmpFile);
+            final InlineResponse20013 res1 = new InlineResponse20013();
+            res1.setUnlocked(false);
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+            res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+            wallet.walletGet();
+            result = res1;
 
-            new Expectations() {{
+            wallet.walletUnlockPost("");
+            result = new ApiException();
 
-                final InlineResponse20013 res1 = new InlineResponse20013();
-                res1.setUnlocked(false);
-                res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
-                res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
-                res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
-                wallet.walletGet();
-                result = res1;
+            final InlineResponse20016 seed = new InlineResponse20016();
+            seed.setPrimaryseed(primarySeed);
+            wallet.walletInitPost(null, null, false);
+            result = seed;
 
-                wallet.walletUnlockPost("");
-                result = new ApiException();
+            wallet.walletUnlockPost(primarySeed);
 
-                final InlineResponse20016 seed = new InlineResponse20016();
-                seed.setPrimaryseed(primarySeed);
-                wallet.walletInitPost(null, null, false);
-                result = seed;
+            final InlineResponse20014 res2 = new InlineResponse20014();
+            res2.setAddress(address);
+            wallet.walletAddressGet();
+            result = res2;
 
-                wallet.walletUnlockPost(primarySeed);
+            final InlineResponse2008 res3 = new InlineResponse2008();
+            final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+            final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+            allowance.setFunds(APIUtils.toHastings(funds).toString());
+            allowance.setHosts(hosts);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
+            settings.setAllowance(allowance);
+            res3.setSettings(settings);
+            final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+            spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+            spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+            spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+            spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+            res3.setFinancialmetrics(spending);
+            res3.setCurrentperiod(String.valueOf(currentPeriod));
+            renter.renterGet();
+            result = res3;
 
-                final InlineResponse20014 res2 = new InlineResponse20014();
-                res2.setAddress(address);
-                wallet.walletAddressGet();
-                result = res2;
+            final InlineResponse20012 res4 = new InlineResponse20012();
+            res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+            res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+            res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+            res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+            renter.renterPricesGet();
+            result = res4;
 
-                final InlineResponse2008 res3 = new InlineResponse2008();
-                final InlineResponse2008Settings settings = new InlineResponse2008Settings();
-                final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-                allowance.setFunds(APIUtils.toHastings(funds).toString());
-                allowance.setHosts(hosts);
-                allowance.setPeriod(period);
-                allowance.setRenewwindow(renewWindow);
-                settings.setAllowance(allowance);
-                res3.setSettings(settings);
-                final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-                spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
-                spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
-                spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
-                spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
-                res3.setFinancialmetrics(spending);
-                res3.setCurrentperiod(String.valueOf(currentPeriod));
-                renter.renterGet();
-                result = res3;
+        }};
 
-                final InlineResponse20012 res4 = new InlineResponse20012();
-                res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
-                res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
-                res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
-                res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
-                renter.renterPricesGet();
-                result = res4;
+        cmd.run();
 
-            }};
-
-
-            cmd.run();
-
-            final String outputs = out.toString();
-            System.err.println(outputs);
-            this.checkOutput(outputs);
-
-        } finally {
-            assertTrue(tmpFile.toFile().delete());
-        }
+        final String outputs = out.toString();
+        System.err.println(outputs);
+        this.checkOutput(outputs);
 
     }
 
@@ -318,7 +314,6 @@ public class WalletTest {
     public void withoutRunningSiaDaemon(
             @Mocked WalletApi wallet, @Mocked RenterApi renter, @Mocked SiaDaemon daemon) throws ApiException {
 
-        final Wallet cmd = new Wallet();
         final Config cfg = new Config();
         cfg.setPrimarySeed(primarySeed);
         Deencapsulation.setField(cmd, "cfg", cfg);
@@ -435,6 +430,70 @@ public class WalletTest {
                 String.format("contract: %.4f SC", contractPrice),
                 outputs.contains(String.format("contract: %.4f SC", contractPrice)));
     }
+
+    /**
+     * If walletApi.walletUnlockPost throws an exception, which means there are no wallet,
+     * but the config has a primary seed, output error message "cannot find the wallet".
+     */
+    @Test
+    public void cannotFindWallet(@Mocked WalletApi wallet) throws ApiException {
+
+        final Config cfg = new Config();
+        cfg.setPrimarySeed(primarySeed);
+        Deencapsulation.setField(cmd, "cfg", cfg);
+
+        new Expectations() {{
+            final InlineResponse20013 res1 = new InlineResponse20013();
+            res1.setUnlocked(false);
+            wallet.walletGet();
+            result = res1;
+
+            wallet.walletUnlockPost(primarySeed);
+            result = new ApiException();
+        }};
+
+        cmd.run();
+
+        final String outputs = out.toString();
+        System.err.println(outputs);
+        assertTrue(outputs.contains("error: cannot find the wallet"));
+
+    }
+
+    /**
+     * If cfg.save throws IOException, output error message "cannot save the wallet".
+     */
+    @Test
+    public void cannotSaveWallet(@Mocked WalletApi wallet) throws ApiException, IOException {
+
+        final Config cfg = new Config();
+        Deencapsulation.setField(cmd, "cfg", cfg);
+        new Expectations(cfg) {{
+            final InlineResponse20013 res1 = new InlineResponse20013();
+            res1.setUnlocked(false);
+            wallet.walletGet();
+            result = res1;
+
+            wallet.walletUnlockPost("");
+            result = new ApiException();
+
+            final InlineResponse20016 seed = new InlineResponse20016();
+            seed.setPrimaryseed(primarySeed);
+            wallet.walletInitPost(null, null, false);
+            result = seed;
+
+            cfg.save(Deencapsulation.getField(cmd, "configPath"));
+            result = new IOException();
+        }};
+
+        cmd.run();
+
+        final String outputs = out.toString();
+        System.err.println(outputs);
+        assertTrue(outputs.contains("error: cannot save the wallet"));
+
+    }
+
 
     @Test
     public void helpOption(@Mocked HelpFormatter formatter) {
