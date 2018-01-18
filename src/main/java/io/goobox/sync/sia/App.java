@@ -39,7 +39,7 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
-import io.goobox.sync.sia.task.NotifyTask;
+import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -329,7 +329,7 @@ public final class App {
                 new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
                 45, 60, TimeUnit.SECONDS);
         if (this.outputEvents) {
-            executor.scheduleWithFixedDelay(new NotifyTask(), 0, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
         }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
 

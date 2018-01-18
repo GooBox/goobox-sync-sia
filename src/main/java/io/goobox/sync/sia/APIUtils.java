@@ -22,11 +22,18 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class APIUtils {
+
+    /**
+     * Defines 1 SC in hastings.
+     */
+    private static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
 
     /**
      * Parse error massages in an APIException.
@@ -66,6 +73,36 @@ public class APIUtils {
 
         return Paths.get(components[0], Arrays.copyOfRange(components, 1, components.length));
 
+    }
+
+    /**
+     * Convert SC to hastings.
+     *
+     * @param sc in double.
+     * @return a big decimal representing the give sc in hastings.
+     */
+    public static BigDecimal toHastings(final double sc) {
+        return new BigDecimal(sc).multiply(Hasting);
+    }
+
+    /**
+     * Convert hastings to SC.
+     *
+     * @param hastings in BigDecimal
+     * @return a big decimal representing the given hastings in sc.
+     */
+    public static BigDecimal toSC(final BigDecimal hastings) {
+        return hastings.divide(Hasting, 4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Convert hastings to SC.
+     *
+     * @param hastings in String
+     * @return a big decimal representing the given hastings in sc.
+     */
+    public static BigDecimal toSC(final String hastings) {
+        return toSC(new BigDecimal(hastings));
     }
 
 }

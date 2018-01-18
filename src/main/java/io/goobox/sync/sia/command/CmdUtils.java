@@ -25,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -78,36 +77,6 @@ public class CmdUtils {
         }
         return cfg;
 
-    }
-
-    /**
-     * Convert SC to hastings.
-     *
-     * @param sc in double.
-     * @return a big decimal representing the give sc in hastings.
-     */
-    static BigDecimal toHastings(final double sc) {
-        return new BigDecimal(sc).multiply(Hasting);
-    }
-
-    /**
-     * Convert hastings to SC.
-     *
-     * @param hastings in BigDecimal
-     * @return a big decimal representing the given hastings in sc.
-     */
-    static BigDecimal toSC(final BigDecimal hastings) {
-        return hastings.divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Convert hastings to SC.
-     *
-     * @param hastings in String
-     * @return a big decimal representing the given hastings in sc.
-     */
-    static BigDecimal toSC(final String hastings) {
-        return CmdUtils.toSC(new BigDecimal(hastings));
     }
 
 }

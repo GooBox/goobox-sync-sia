@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.command;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.SiaDaemon;
@@ -122,9 +123,9 @@ public class WalletTest {
 
             final InlineResponse20013 res1 = new InlineResponse20013();
             res1.setUnlocked(true);
-            res1.setConfirmedsiacoinbalance(CmdUtils.toHastings(balance).toString());
-            res1.setUnconfirmedincomingsiacoins(CmdUtils.toHastings(income).toString());
-            res1.setUnconfirmedoutgoingsiacoins(CmdUtils.toHastings(outcome).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+            res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
             wallet.walletGet();
             result = res1;
 
@@ -136,27 +137,27 @@ public class WalletTest {
             final InlineResponse2008 res3 = new InlineResponse2008();
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(CmdUtils.toHastings(funds).toString());
+            allowance.setFunds(APIUtils.toHastings(funds).toString());
             allowance.setHosts(hosts);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
             settings.setAllowance(allowance);
             res3.setSettings(settings);
             final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-            spending.setDownloadspending(CmdUtils.toHastings(downloadSpending).toString());
-            spending.setUploadspending(CmdUtils.toHastings(uploadSpending).toString());
-            spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
-            spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
+            spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+            spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+            spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+            spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
             res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
             final InlineResponse20012 res4 = new InlineResponse20012();
-            res4.setDownloadterabyte(CmdUtils.toHastings(downloadPrice).toString());
-            res4.setUploadterabyte(CmdUtils.toHastings(uploadPrice).toString());
-            res4.setStorageterabytemonth(CmdUtils.toHastings(storagePrice).toString());
-            res4.setFormcontracts(CmdUtils.toHastings(contractPrice).toString());
+            res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+            res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+            res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+            res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
             renter.renterPricesGet();
             result = res4;
 
@@ -182,9 +183,9 @@ public class WalletTest {
 
             final InlineResponse20013 res1 = new InlineResponse20013();
             res1.setUnlocked(false);
-            res1.setConfirmedsiacoinbalance(CmdUtils.toHastings(balance).toString());
-            res1.setUnconfirmedincomingsiacoins(CmdUtils.toHastings(income).toString());
-            res1.setUnconfirmedoutgoingsiacoins(CmdUtils.toHastings(outcome).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+            res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
             wallet.walletGet();
             result = res1;
 
@@ -198,27 +199,27 @@ public class WalletTest {
             final InlineResponse2008 res3 = new InlineResponse2008();
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(CmdUtils.toHastings(funds).toString());
+            allowance.setFunds(APIUtils.toHastings(funds).toString());
             allowance.setHosts(hosts);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
             settings.setAllowance(allowance);
             res3.setSettings(settings);
             final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-            spending.setDownloadspending(CmdUtils.toHastings(downloadSpending).toString());
-            spending.setUploadspending(CmdUtils.toHastings(uploadSpending).toString());
-            spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
-            spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
+            spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+            spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+            spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+            spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
             res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
             final InlineResponse20012 res4 = new InlineResponse20012();
-            res4.setDownloadterabyte(CmdUtils.toHastings(downloadPrice).toString());
-            res4.setUploadterabyte(CmdUtils.toHastings(uploadPrice).toString());
-            res4.setStorageterabytemonth(CmdUtils.toHastings(storagePrice).toString());
-            res4.setFormcontracts(CmdUtils.toHastings(contractPrice).toString());
+            res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+            res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+            res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+            res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
             renter.renterPricesGet();
             result = res4;
 
@@ -250,9 +251,9 @@ public class WalletTest {
 
                 final InlineResponse20013 res1 = new InlineResponse20013();
                 res1.setUnlocked(false);
-                res1.setConfirmedsiacoinbalance(CmdUtils.toHastings(balance).toString());
-                res1.setUnconfirmedincomingsiacoins(CmdUtils.toHastings(income).toString());
-                res1.setUnconfirmedoutgoingsiacoins(CmdUtils.toHastings(outcome).toString());
+                res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+                res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+                res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
                 wallet.walletGet();
                 result = res1;
 
@@ -274,27 +275,27 @@ public class WalletTest {
                 final InlineResponse2008 res3 = new InlineResponse2008();
                 final InlineResponse2008Settings settings = new InlineResponse2008Settings();
                 final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-                allowance.setFunds(CmdUtils.toHastings(funds).toString());
+                allowance.setFunds(APIUtils.toHastings(funds).toString());
                 allowance.setHosts(hosts);
                 allowance.setPeriod(period);
                 allowance.setRenewwindow(renewWindow);
                 settings.setAllowance(allowance);
                 res3.setSettings(settings);
                 final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-                spending.setDownloadspending(CmdUtils.toHastings(downloadSpending).toString());
-                spending.setUploadspending(CmdUtils.toHastings(uploadSpending).toString());
-                spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
-                spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
+                spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+                spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+                spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+                spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
                 res3.setFinancialmetrics(spending);
                 res3.setCurrentperiod(String.valueOf(currentPeriod));
                 renter.renterGet();
                 result = res3;
 
                 final InlineResponse20012 res4 = new InlineResponse20012();
-                res4.setDownloadterabyte(CmdUtils.toHastings(downloadPrice).toString());
-                res4.setUploadterabyte(CmdUtils.toHastings(uploadPrice).toString());
-                res4.setStorageterabytemonth(CmdUtils.toHastings(storagePrice).toString());
-                res4.setFormcontracts(CmdUtils.toHastings(contractPrice).toString());
+                res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+                res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+                res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+                res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
                 renter.renterPricesGet();
                 result = res4;
 
@@ -331,9 +332,9 @@ public class WalletTest {
 
             final InlineResponse20013 res1 = new InlineResponse20013();
             res1.setUnlocked(true);
-            res1.setConfirmedsiacoinbalance(CmdUtils.toHastings(balance).toString());
-            res1.setUnconfirmedincomingsiacoins(CmdUtils.toHastings(income).toString());
-            res1.setUnconfirmedoutgoingsiacoins(CmdUtils.toHastings(outcome).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+            res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
             wallet.walletGet();
             // At the first attempt, ApiException will be thrown because no sia daemon running.
             result = new ApiException(new ConnectException());
@@ -347,27 +348,27 @@ public class WalletTest {
             final InlineResponse2008 res3 = new InlineResponse2008();
             final InlineResponse2008Settings settings = new InlineResponse2008Settings();
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(CmdUtils.toHastings(funds).toString());
+            allowance.setFunds(APIUtils.toHastings(funds).toString());
             allowance.setHosts(hosts);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
             settings.setAllowance(allowance);
             res3.setSettings(settings);
             final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-            spending.setDownloadspending(CmdUtils.toHastings(downloadSpending).toString());
-            spending.setUploadspending(CmdUtils.toHastings(uploadSpending).toString());
-            spending.setStoragespending(CmdUtils.toHastings(storageSpending).toString());
-            spending.setContractspending(CmdUtils.toHastings(contractSpending).toString());
+            spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+            spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+            spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+            spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
             res3.setFinancialmetrics(spending);
             res3.setCurrentperiod(String.valueOf(currentPeriod));
             renter.renterGet();
             result = res3;
 
             final InlineResponse20012 res4 = new InlineResponse20012();
-            res4.setDownloadterabyte(CmdUtils.toHastings(downloadPrice).toString());
-            res4.setUploadterabyte(CmdUtils.toHastings(uploadPrice).toString());
-            res4.setStorageterabytemonth(CmdUtils.toHastings(storagePrice).toString());
-            res4.setFormcontracts(CmdUtils.toHastings(contractPrice).toString());
+            res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+            res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+            res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+            res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
             renter.renterPricesGet();
             result = res4;
 
@@ -419,8 +420,8 @@ public class WalletTest {
                 String.format("storage: %.4f SC", storageSpending),
                 outputs.contains(String.format("storage: %.4f SC", storageSpending)));
         assertTrue(
-                String.format("fee: %.4f SC", contractSpending),
-                outputs.contains(String.format("fee: %.4f SC", contractSpending)));
+                String.format("contract: %.4f SC", contractSpending),
+                outputs.contains(String.format("contract: %.4f SC", contractSpending)));
         assertTrue(
                 String.format("download: %.4f SC/TB", downloadPrice),
                 outputs.contains(String.format("download: %.4f SC/TB", downloadPrice)));
@@ -431,8 +432,8 @@ public class WalletTest {
                 String.format("storage: %.4f SC/TB", storagePrice),
                 outputs.contains(String.format("storage: %.4f SC/TB*Month", storagePrice)));
         assertTrue(
-                String.format("fee: %.4f SC", contractPrice),
-                outputs.contains(String.format("fee: %.4f SC", contractPrice)));
+                String.format("contract: %.4f SC", contractPrice),
+                outputs.contains(String.format("contract: %.4f SC", contractPrice)));
     }
 
     @Test
