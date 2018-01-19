@@ -34,11 +34,13 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.mocks.SystemMock;
+import io.goobox.sync.sia.mocks.UtilsMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +51,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ConnectException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
@@ -112,18 +113,19 @@ public class WalletTest {
         oldOut = System.out;
         System.setOut(new PrintStream(out));
 
+        final Config cfg = new Config();
+        UtilsMock.dataDir = Files.createTempDirectory(null);
+        cfg.save(UtilsMock.getDataDir().resolve(App.ConfigFileName));
+        new UtilsMock();
+
         cmd = new Wallet();
-        Deencapsulation.setField(cmd, "configPath", Files.createTempFile(null, null));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @After
-    public void tearDown() {
+    public void tearDown() throws IOException {
         System.setOut(oldOut);
-        final Path configPath = Deencapsulation.getField(cmd, "configPath");
-        if (configPath.toFile().exists()) {
-            configPath.toFile().delete();
-        }
+        FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
     }
 
     @Test
@@ -495,6 +497,7 @@ public class WalletTest {
 
     }
 
+    @SuppressWarnings("unused")
     @Test
     public void forceInitializeWallet(@Mocked WalletApi wallet, @Mocked RenterApi renter, @Mocked CmdUtils utils) throws ApiException {
 
