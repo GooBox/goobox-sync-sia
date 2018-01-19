@@ -56,13 +56,13 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
     public static final String Description = "Show your wallet information";
     private static final Logger logger = LogManager.getLogger();
 
-    public class InfoPair {
+    public static class InfoPair {
         @NotNull
         private final WalletInfo walletInfo;
         @NotNull
         private final PriceInfo priceInfo;
 
-        InfoPair(@NotNull final WalletInfo walletInfo, @NotNull final PriceInfo priceInfo) {
+        public InfoPair(@NotNull final WalletInfo walletInfo, @NotNull final PriceInfo priceInfo) {
             this.walletInfo = walletInfo;
             this.priceInfo = priceInfo;
         }
@@ -78,7 +78,7 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
         }
     }
 
-    class WalletException extends Exception {
+    public class WalletException extends Exception {
         WalletException(final String msg) {
             super(msg);
         }

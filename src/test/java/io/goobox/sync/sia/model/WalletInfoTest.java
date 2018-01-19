@@ -77,7 +77,6 @@ public class WalletInfoTest {
 
     }
 
-
     @Test
     public void getAddress() {
         assertEquals(address, walletInfo.getAddress());
@@ -141,6 +140,16 @@ public class WalletInfoTest {
     @Test
     public void getContractSpending() {
         assertEquals(APIUtils.toHastings(contractSpending), walletInfo.getContractSpending());
+    }
+
+    @Test
+    public void getTotalSpending() {
+        assertEquals(
+                APIUtils.toHastings(downloadSpending)
+                        .add(APIUtils.toHastings(uploadSpending))
+                        .add(APIUtils.toHastings(storageSpending))
+                        .add(APIUtils.toHastings(contractSpending)),
+                walletInfo.getTotalSpending());
     }
 
     @Test

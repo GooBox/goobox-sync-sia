@@ -71,7 +71,7 @@ public class PriceInfo {
             writer.println(String.format("  download: %s SC/TB", APIUtils.toSC(this.getDownload())));
             writer.println(String.format("  upload: %s SC/TB", APIUtils.toSC(this.getUpload())));
             writer.println(String.format("  storage: %s SC/TB*Month", APIUtils.toSC(this.getStorage())));
-            writer.println(String.format("  contract: %s SC/contract", APIUtils.toSC(this.getContract())));
+            writer.print(String.format("  contract: %s SC/contract", APIUtils.toSC(this.getContract())));
         }
         return buffer.toString();
     }

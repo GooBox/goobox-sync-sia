@@ -136,6 +136,14 @@ public class WalletInfo {
         return contractSpending;
     }
 
+    @NotNull
+    public BigDecimal getTotalSpending() {
+        return this.getDownloadSpending()
+                .add(this.getUploadSpending())
+                .add(this.getStorageSpending())
+                .add(this.getContractSpending());
+    }
+
     @Override
     public String toString() {
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -158,7 +166,7 @@ public class WalletInfo {
             writer.println(String.format("  download: %s SC", APIUtils.toSC(this.getDownloadSpending())));
             writer.println(String.format("  upload: %s SC", APIUtils.toSC(this.getUploadSpending())));
             writer.println(String.format("  storage: %s SC", APIUtils.toSC(this.getStorageSpending())));
-            writer.println(String.format("  contract: %s SC", APIUtils.toSC(this.getContractSpending())));
+            writer.print(String.format("  contract: %s SC", APIUtils.toSC(this.getContractSpending())));
         }
         return buffer.toString();
 
