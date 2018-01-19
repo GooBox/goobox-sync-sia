@@ -24,10 +24,15 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
+import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.goobox.sync.sia.command.CmdUtils;
@@ -42,12 +47,15 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.ExecutorMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
+import io.goobox.sync.sia.model.PriceInfo;
+import io.goobox.sync.sia.model.WalletInfo;
 import io.goobox.sync.sia.task.CheckDownloadStateTask;
 import io.goobox.sync.sia.task.CheckStateTask;
 import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.NotifyFundInfoTask;
 import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import mockit.Deencapsulation;
@@ -91,6 +99,24 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class AppTest {
+
+    private final String address = "01234567890123456789";
+    private final String primarySeed = "sample primary seed";
+    private final double balance = 12345.02;
+    private final int hosts = 30;
+    private final long period = 6000;
+    private final long renewWindow = 1000;
+    private final double income = 10;
+    private final double outcome = 15;
+    private final long currentPeriod = 3000;
+    private final double downloadSpending = 1.2345;
+    private final double uploadSpending = 0.223;
+    private final double storageSpending = 2.3;
+    private final double contractSpending = 0.001;
+    private final double downloadPrice = 1234.5;
+    private final double uploadPrice = 1234.5;
+    private final double storagePrice = 12345.6;
+    private final double contractPrice = 1.123;
 
     @SuppressWarnings("unused")
     @Mocked
@@ -448,15 +474,50 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testInitWithOutputEvents(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
+    public void testInitWithOutputEvents(@Mocked CmdUtils utils, @Mocked FileWatcher watcher, @Mocked Wallet walletCmd)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException, Wallet.WalletException, ApiException {
+
+        final InlineResponse20013 wallet = new InlineResponse20013();
+        wallet.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+
+        final InlineResponse2008 info = new InlineResponse2008();
+        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+        allowance.setFunds(APIUtils.toHastings(balance).toString());
+        allowance.setHosts(hosts);
+        allowance.setPeriod(period);
+        allowance.setRenewwindow(renewWindow);
+        settings.setAllowance(allowance);
+        info.setSettings(settings);
+        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+        spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+        spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+        spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+        info.setFinancialmetrics(spending);
+        info.setCurrentperiod(String.valueOf(currentPeriod));
+
+        WalletInfo walletInfo = new WalletInfo(address, primarySeed, wallet, info);
+
+        final InlineResponse20012 prices = new InlineResponse20012();
+        prices.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+        prices.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+        prices.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+        prices.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+        PriceInfo priceInfo = new PriceInfo(prices);
 
         final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
-
         new Expectations() {{
             CmdUtils.getApiClient();
             result = ctx.apiClient;
             new FileWatcher(tmpDir, withNotNull());
+
+            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
+            walletCmd.call();
+            result = pair;
+
         }};
 
         final RecordingAppMock mock = new RecordingAppMock();
@@ -480,6 +541,89 @@ public class AppTest {
         assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
         assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
         assertTrue(executorMock.queue.get(3) instanceof NotifySyncStateTask);
+        assertTrue(executorMock.queue.get(4) instanceof NotifyFundInfoTask);
+        final NotifyFundInfoTask task = (NotifyFundInfoTask) executorMock.queue.get(4);
+        assertTrue(Deencapsulation.getField(task, "autoAllocate"));
+
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void testInitWithOutputEventsAndDisableAutoAllocation(
+            @Mocked CmdUtils utils, @Mocked FileWatcher watcher, @Mocked Wallet walletCmd)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException,
+            IOException, Wallet.WalletException, ApiException {
+
+        final InlineResponse20013 wallet = new InlineResponse20013();
+        wallet.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+
+        final InlineResponse2008 info = new InlineResponse2008();
+        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+        allowance.setFunds(APIUtils.toHastings(balance).toString());
+        allowance.setHosts(hosts);
+        allowance.setPeriod(period);
+        allowance.setRenewwindow(renewWindow);
+        settings.setAllowance(allowance);
+        info.setSettings(settings);
+        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+        spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+        spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+        spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+        info.setFinancialmetrics(spending);
+        info.setCurrentperiod(String.valueOf(currentPeriod));
+
+        WalletInfo walletInfo = new WalletInfo(address, primarySeed, wallet, info);
+
+        final InlineResponse20012 prices = new InlineResponse20012();
+        prices.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+        prices.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+        prices.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+        prices.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+        PriceInfo priceInfo = new PriceInfo(prices);
+
+        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
+        new Expectations() {{
+            CmdUtils.getApiClient();
+            result = ctx.apiClient;
+            new FileWatcher(tmpDir, withNotNull());
+
+            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
+            walletCmd.call();
+            result = pair;
+
+        }};
+
+        final RecordingAppMock mock = new RecordingAppMock();
+        final App app = new App();
+        Deencapsulation.setField(app, "outputEvents", true);
+
+        final Config cfg = Deencapsulation.getField(app, "cfg");
+        cfg.setDisableAutoAllocation(true);
+
+        final Method init = App.class.getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(app);
+
+        assertTrue(mock.checkedSyncDir);
+        assertTrue(mock.checkedDataDir);
+        assertTrue(mock.preparedWallet);
+        assertTrue(mock.waitedSynchronization);
+        assertTrue(mock.waitedContracts);
+        assertTrue(mock.calledSynchronizeModifiedFiles);
+        assertTrue(mock.calledSynchronizeDeletedFiles);
+        assertTrue(mock.calledResumeTasks);
+
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
+        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
+        assertTrue(executorMock.queue.get(3) instanceof NotifySyncStateTask);
+        assertTrue(executorMock.queue.get(4) instanceof NotifyFundInfoTask);
+        final NotifyFundInfoTask task = (NotifyFundInfoTask) executorMock.queue.get(4);
+        assertFalse(Deencapsulation.getField(task, "autoAllocate"));
 
     }
 

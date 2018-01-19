@@ -39,6 +39,7 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.NotifyFundInfoTask;
 import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import org.apache.commons.cli.CommandLine;
@@ -330,6 +331,8 @@ public final class App {
                 45, 60, TimeUnit.SECONDS);
         if (this.outputEvents) {
             executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(
+                    new NotifyFundInfoTask(!this.cfg.isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
 

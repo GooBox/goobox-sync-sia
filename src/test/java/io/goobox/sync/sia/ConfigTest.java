@@ -48,6 +48,7 @@ public class ConfigTest {
     private Path dataDir;
     private int dataPieces;
     private int parityPieces;
+    private boolean disableAutoAllocation;
 
     private Path tmpPath;
 
@@ -72,6 +73,7 @@ public class ConfigTest {
         this.dataDir = Paths.get("data-dir");
         this.dataPieces = 5;
         this.parityPieces = 12;
+        this.disableAutoAllocation = false;
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -86,6 +88,7 @@ public class ConfigTest {
         assertEquals(dataDir.toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
+        assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
 
     }
 
@@ -96,6 +99,7 @@ public class ConfigTest {
         this.primarySeed = "a b c d e f g";
         this.dataPieces = 5;
         this.parityPieces = 1;
+        this.disableAutoAllocation = true;
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -108,6 +112,7 @@ public class ConfigTest {
         assertEquals(primarySeed, cfg.getPrimarySeed());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(Config.DefaultParityPieces, cfg.getParityPieces());
+        assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
 
     }
 
@@ -120,6 +125,7 @@ public class ConfigTest {
         this.dataDir = null;
         this.dataPieces = 5;
         this.parityPieces = 12;
+        this.disableAutoAllocation = true;
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -134,6 +140,7 @@ public class ConfigTest {
         assertEquals(Utils.getDataDir().toAbsolutePath(), cfg.getDataDir());
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
+        assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
 
     }
 
@@ -201,6 +208,11 @@ public class ConfigTest {
         if (dataDir != null) {
             writer.println(String.format("%s = %s", Config.DataDir, dataDir));
         }
+
+        if (disableAutoAllocation) {
+            writer.println(String.format("%s = %s", Config.DisableAutoAllocation, true));
+        }
+
 
         writer.flush();
         System.out.println(buf.toString());

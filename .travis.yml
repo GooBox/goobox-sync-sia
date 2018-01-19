@@ -1,6 +1,6 @@
 language: java
 script:
-- gradle test
+- gradle test --info
 after_success:
 - gradle jacocoTestReport coveralls
 before_deploy:
