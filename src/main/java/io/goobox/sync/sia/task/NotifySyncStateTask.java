@@ -23,7 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class NotifyTask implements Runnable {
+public class NotifySyncStateTask implements Runnable {
 
     private static Logger logger = LogManager.getLogger();
 
@@ -54,12 +54,11 @@ public class NotifyTask implements Runnable {
         Event(@NotNull final State state) {
             this.args = new Args(state);
         }
-
     }
 
     private final Gson gson = new Gson();
 
-    public NotifyTask() {
+    public NotifySyncStateTask() {
         System.out.println(this.gson.toJson(new Event(State.startSynchronization)));
     }
 

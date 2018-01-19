@@ -48,7 +48,7 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
-import io.goobox.sync.sia.task.NotifyTask;
+import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import mockit.Deencapsulation;
 import mockit.Expectations;
@@ -479,7 +479,7 @@ public class AppTest {
         assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
         assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
         assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
-        assertTrue(executorMock.queue.get(3) instanceof NotifyTask);
+        assertTrue(executorMock.queue.get(3) instanceof NotifySyncStateTask);
 
     }
 

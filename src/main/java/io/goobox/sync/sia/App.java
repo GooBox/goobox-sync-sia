@@ -89,9 +89,9 @@ public final class App {
     public static final String Version = "0.0.15";
 
     /**
-     * The number of the minimum required contructs.
+     * The number of the minimum required contracts.
      */
-    static final int MinContracts = 20;
+    public static final int MinContracts = 20;
 
     /**
      * Default sleep time to wait synchronization and signing contracts.
