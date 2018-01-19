@@ -1,6 +1,7 @@
 # goobox-sync-sia
 [![Build Status](https://travis-ci.org/GooBox/goobox-sync-sia.svg?branch=master)](https://travis-ci.org/GooBox/goobox-sync-sia)
 [![Build status](https://ci.appveyor.com/api/projects/status/j4lv9lnd07o1qe5n/branch/master?svg=true)](https://ci.appveyor.com/project/jkawamoto/goobox-sync-sia/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/GooBox/goobox-sync-sia/badge.svg?branch=master)](https://coveralls.io/github/GooBox/goobox-sync-sia?branch=master)
 
 sync app for [sia](https://sia.tech/).
 
