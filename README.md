@@ -1,6 +1,7 @@
 # goobox-sync-sia
 [![Build Status](https://travis-ci.org/GooBox/goobox-sync-sia.svg?branch=master)](https://travis-ci.org/GooBox/goobox-sync-sia)
 [![Build status](https://ci.appveyor.com/api/projects/status/j4lv9lnd07o1qe5n/branch/master?svg=true)](https://ci.appveyor.com/project/jkawamoto/goobox-sync-sia/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/GooBox/goobox-sync-sia/badge.svg?branch=master)](https://coveralls.io/github/GooBox/goobox-sync-sia?branch=master)
 
 sync app for [sia](https://sia.tech/).
 
@@ -8,8 +9,6 @@ sync app for [sia](https://sia.tech/).
 ## Prerequisites
 
 - Install Java 8 or later. Make sure to install the 64-bit variant.
-- Run [SIA daemon](https://github.com/NebulousLabs/Sia/releases) and listen on port 9980 (default)
-  - If you're running SIA-UI, it runs SIA daemon with the above requirement.
 - Setup a wallet
   - Initialize the wallet
   - Allocate funds
@@ -30,8 +29,8 @@ This app requires a Java property file `goobox.properties` in the following loca
 
 The property file takes two parameters:
 
-- **username**: Goobox user name (currently any random string is acceptable, but should be unique in the SIA cloud)
-- **primary-seed**: primary seed or encryption password of your SIA wallet
+- **username**: Goobox user name (currently any random string is acceptable, but should be unique in the sia cloud)
+- **primary-seed**: primary seed or encryption password of your sia wallet
 
 ### Example
 
@@ -47,10 +46,10 @@ primary-seed = foo bar baz foo bar baz foo bar baz foo bar baz foo bar baz foo b
 3. Run the batch file, i.e. `goobox-sync-sia.bat` (for Windows), `goobox-sync-sia` (for Mac/Linux)
 
 
-- Currently this app supports basic two-way sync from the `local file system -> SIA cloud` and `SIA cloud -> local file system` on the same machine only.
-- The app will sync each content of which SIA path, which is a file path in the SIA cloud, starts with `<username>/Goobox`
+- Currently this app supports basic two-way sync from the `local file system -> sia cloud` and `sia cloud -> local file system` on the same machine only.
+- The app will sync each content of which sia path, which is a file path in the sia cloud, starts with `<username>/Goobox`
 to the local folder with name `Goobox`, which is a subfolder of the user home folder. If a file is present locally and not in the cloud it will create a file path and entry in the sia cloud and upload the file.
-- The app will poll the SIA cloud and the local Goobox sync folder once per minute for any changes in the content. Aditionally a file watcher is implemented to watch for any changes in the local file system directory. 
+- The app will poll the sia cloud and the local Goobox sync folder once per minute for any changes in the content. Aditionally a file watcher is implemented to watch for any changes in the local file system directory.
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 

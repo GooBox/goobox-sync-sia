@@ -1,6 +1,8 @@
 language: java
 script:
-- gradle test
+- gradle test --info
+after_success:
+- gradle jacocoTestReport coveralls
 before_deploy:
 - mkdir -p build/sia
 - curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v1.3.1/Sia-v1.3.1-darwin-amd64.zip -o build/sia/Sia-v1.3.1-darwin-amd64.zip

@@ -42,4 +42,5 @@ docs
 dist
 repo
 out
-Sia
+sia
+!src/**/sia

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -352,7 +352,7 @@ public class CreateAllowanceTest {
 
         new Expectations() {{
 
-            // Starting SIA daemon.
+            // Starting sia daemon.
             new SiaDaemon(Utils.getDataDir().resolve("sia"));
             result = daemon;
             daemon.start();

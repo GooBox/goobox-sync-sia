@@ -21,52 +21,58 @@ import com.google.gson.Gson;
 import io.goobox.sync.sia.db.DB;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
-public class NotifyTask implements Runnable {
+public class NotifySyncStateTask implements Runnable {
 
     private static Logger logger = LogManager.getLogger();
 
-    public enum EventType {
+    public enum State {
         // Notify when consensus DB is synchronized and start Goobox's synchronization.
-        StartSynchronization,
+        startSynchronization,
         // Notify all files are synchronized.
-        Synchronized,
+        idle,
         // Notify some files are being synchronized.
-        Synchronizing
+        synchronizing
     }
 
-    public class Schema {
-        EventType eventType;
-        String message;
+    public class Args {
+        @NotNull
+        final State newState;
 
-        public Schema(final EventType type, String message) {
-            this.eventType = type;
-            this.message = message;
+        Args(@NotNull final State state) {
+            this.newState = state;
         }
+    }
 
-        public Schema(final EventType type) {
-            this(type, "");
+    public class Event {
+        @SuppressWarnings("unused")
+        final String method = "syncState";
+        @NotNull
+        final Args args;
+
+        Event(@NotNull final State state) {
+            this.args = new Args(state);
         }
-
     }
 
     private final Gson gson = new Gson();
 
-    public NotifyTask() {
-        System.out.println(this.gson.toJson(new Schema(EventType.StartSynchronization)));
+    public NotifySyncStateTask() {
+        System.out.println(this.gson.toJson(new Event(State.startSynchronization)));
     }
 
     @Override
     public void run() {
         logger.traceEntry();
 
-        EventType e;
+        State e;
         if (DB.isSynced()) {
-            e = EventType.Synchronized;
+            e = State.idle;
         } else {
-            e = EventType.Synchronizing;
+            e = State.synchronizing;
         }
-        System.out.println(this.gson.toJson(new Schema(e)));
+        System.out.println(this.gson.toJson(new Event(e)));
 
     }
 

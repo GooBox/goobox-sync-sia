@@ -14,6 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1"
+        classpath "org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2"
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
@@ -22,6 +34,8 @@ apply plugin: 'findbugs'
 //apply plugin: 'checkstyle'
 apply plugin: "jacoco"
 apply plugin: "com.github.hierynomus.license"
+apply plugin: "com.github.kt3k.coveralls"
+
 
 version = '0.0.15'
 mainClassName = 'io.goobox.sync.sia.App'
@@ -33,23 +47,14 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1"
-    }
-}
-
 repositories {
     mavenCentral()
     maven {
         url "https://dl.bintray.com/goobox/maven"
     }
 }
+
+
 
 dependencies {
     compile 'io.swagger:swagger-annotations:1.5.15'
@@ -109,7 +114,7 @@ def siaArchives = [
 siaArchives.each { type ->
 
     def download = tasks.create(name: "sia-$type.key") {
-        description "Download SIA daemon for $type.key"
+        description "Download sia daemon for $type.key"
         group 'distribution'
 
         def sia = file("$buildDir/sia")
@@ -181,4 +186,11 @@ pmd {
 
 findbugs {
     ignoreFailures = true
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
 }

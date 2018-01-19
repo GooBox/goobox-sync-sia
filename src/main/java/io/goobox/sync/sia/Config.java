@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -45,6 +46,7 @@ public class Config {
     static final String DataDir = "data-folder";
     static final String DataPieces = "data-pieces";
     static final String ParityPieces = "parity-pieces";
+    static final String DisableAutoAllocation = "disable-auto-allocation";
     static final Logger logger = LogManager.getLogger();
 
     static final int DefaultDataPieces = 10;
@@ -68,7 +70,7 @@ public class Config {
     private Path syncDir;
 
     /**
-     * Path to the directory where SIA daemon data files are stored.
+     * Path to the directory where sia daemon data files are stored.
      */
     @NotNull
     private Path dataDir;
@@ -85,6 +87,11 @@ public class Config {
      */
     private int parityPieces;
 
+    /**
+     * If true, disable auto funds allocation;
+     */
+    private boolean disableAutoAllocation;
+
     public Config() {
         this.userName = "";
         this.primarySeed = "";
@@ -92,6 +99,7 @@ public class Config {
         this.dataDir = Utils.getDataDir().toAbsolutePath();
         this.dataPieces = DefaultDataPieces;
         this.parityPieces = DefaultParityPieces;
+        this.disableAutoAllocation = false;
     }
 
     @NotNull
@@ -142,36 +150,36 @@ public class Config {
         this.parityPieces = parityPieces;
     }
 
+    void setDisableAutoAllocation(boolean disableAutoAllocation) {
+        this.disableAutoAllocation = disableAutoAllocation;
+    }
+
+    public boolean isDisableAutoAllocation() {
+        return disableAutoAllocation;
+    }
+
     @Override
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();
     }
 
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Config config = (Config) o;
-
-        if (dataPieces != config.dataPieces) return false;
-        if (parityPieces != config.parityPieces) return false;
-        if (userName != null ? !userName.equals(config.userName) : config.userName != null) return false;
-        if (primarySeed != null ? !primarySeed.equals(config.primarySeed) : config.primarySeed != null) return false;
-        if (!syncDir.equals(config.syncDir)) return false;
-        return dataDir.equals(config.dataDir);
+        return dataPieces == config.dataPieces &&
+                parityPieces == config.parityPieces &&
+                disableAutoAllocation == config.disableAutoAllocation &&
+                Objects.equals(userName, config.userName) &&
+                Objects.equals(primarySeed, config.primarySeed) &&
+                Objects.equals(syncDir, config.syncDir) &&
+                Objects.equals(dataDir, config.dataDir);
     }
 
     @Override
     public int hashCode() {
-        int result = userName != null ? userName.hashCode() : 0;
-        result = 31 * result + (primarySeed != null ? primarySeed.hashCode() : 0);
-        result = 31 * result + syncDir.hashCode();
-        result = 31 * result + dataDir.hashCode();
-        result = 31 * result + dataPieces;
-        result = 31 * result + parityPieces;
-        return result;
+        return Objects.hash(userName, primarySeed, syncDir, dataDir, dataPieces, parityPieces, disableAutoAllocation);
     }
 
     /**
@@ -189,6 +197,7 @@ public class Config {
         props.setProperty(DataDir, this.dataDir.toAbsolutePath().toString());
         props.setProperty(DataPieces, String.valueOf(this.dataPieces));
         props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
+        props.setProperty(DisableAutoAllocation, String.valueOf(this.disableAutoAllocation));
 
         try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             props.store(output, "");
@@ -242,6 +251,8 @@ public class Config {
         } catch (final NumberFormatException e) {
             logger.warn("Invalid parity pieces {}", props.getProperty(ParityPieces));
         }
+
+        cfg.setDisableAutoAllocation(Boolean.parseBoolean(props.getProperty(DisableAutoAllocation, "false")));
 
         logger.info("Sync directory: {}", cfg.getSyncDir());
         logger.info(

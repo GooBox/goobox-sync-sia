@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
-import io.goobox.sync.sia.task.NotifyTask;
+import io.goobox.sync.sia.task.NotifyFundInfoTask;
+import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -89,9 +90,9 @@ public final class App {
     public static final String Version = "0.0.15";
 
     /**
-     * The number of the minimum required contructs.
+     * The number of the minimum required contracts.
      */
-    static final int MinContracts = 20;
+    public static final int MinContracts = 20;
 
     /**
      * Default sleep time to wait synchronization and signing contracts.
@@ -109,7 +110,7 @@ public final class App {
     private static final int WorkerThreadSize = 3;
 
     /**
-     * How many times retrying to start SIA daemon.
+     * How many times retrying to start a sia daemon.
      */
     public static final int MaxRetry = 60 * 24;
 
@@ -234,6 +235,7 @@ public final class App {
 
     public App(final Path syncDir) {
         this();
+        logger.info("Overwrite the sync directory: {}", syncDir);
         this.cfg.setSyncDir(syncDir);
     }
 
@@ -251,10 +253,10 @@ public final class App {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
 
-                logger.info("Starting SIA daemon");
+                logger.info("Starting a sia daemon");
                 this.daemon.start();
             } catch (IOException e) {
-                logger.error("Failed to start SIA daemon: {}", e.getMessage());
+                logger.error("Failed to start the sia daemon: {}", e.getMessage());
             }
 
         }
@@ -289,22 +291,22 @@ public final class App {
             } catch (final ApiException e) {
 
                 if (retry >= App.MaxRetry) {
-                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.error("Failed to communicate with the sia daemon: {}", APIUtils.getErrorMessage(e));
                     System.exit(1);
                     return;
                 }
 
                 if (e.getCause() instanceof ConnectException) {
-                    logger.info("SIA daemon is not running: {}", APIUtils.getErrorMessage(e));
+                    logger.info("Sia daemon is not running: {}", APIUtils.getErrorMessage(e));
                     this.startSiaDaemon();
                 }
                 retry++;
 
-                logger.info("Waiting SIA daemon starts");
+                logger.info("Waiting the daemon starts");
                 try {
                     Thread.sleep(DefaultSleepTime);
                 } catch (InterruptedException e1) {
-                    logger.error("Interrupted while waiting SIA daemon starts: {}", e1.getMessage());
+                    logger.error("Interrupted while waiting for the sia daemon to start: {}", e1.getMessage());
                     System.exit(1);
                     return;
                 }
@@ -328,7 +330,9 @@ public final class App {
                 new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
                 45, 60, TimeUnit.SECONDS);
         if (this.outputEvents) {
-            executor.scheduleWithFixedDelay(new NotifyTask(), 0, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(
+                    new NotifyFundInfoTask(!this.cfg.isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
 
@@ -369,8 +373,8 @@ public final class App {
      * @return true if the data directory is ready.
      */
     private boolean checkAndCreateDataDir() {
-        logger.info("Checking if Goobox data folder exists: {}", Utils.getDataDir());
-        return checkAndCreateFolder(Utils.getDataDir());
+        logger.info("Checking if Goobox data folder exists: {}", this.ctx.config.getDataDir());
+        return checkAndCreateFolder(this.ctx.config.getDataDir());
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * SiaFile defines an API representing a file stored in SIA network.
+ * SiaFile defines an API representing a file stored in network.
  */
 public interface SiaFile extends CloudFile {
 
@@ -35,7 +35,7 @@ public interface SiaFile extends CloudFile {
     String getName();
 
     /**
-     * Returns the path where this file located in the blockchain.
+     * Returns the path where this file located in the block chain.
      */
     @NotNull
     @Override

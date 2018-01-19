@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -212,7 +212,7 @@ public class CheckStateTask implements Callable<Void> {
             if (e.getCause() instanceof ConnectException) {
                 throw e;
             }
-            logger.error("Failed to retrieve files stored in the SIA network", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve files stored in sia network", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }

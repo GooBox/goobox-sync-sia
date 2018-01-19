@@ -31,12 +31,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import static io.goobox.sync.sia.task.NotifyTask.EventType;
+import static io.goobox.sync.sia.task.NotifySyncStateTask.State;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("unused")
 @RunWith(JMockit.class)
-public class NotifyTaskTest {
+public class NotifySyncStateTaskTest {
 
     private ByteArrayOutputStream out;
     private PrintStream oldOut;
@@ -56,28 +56,28 @@ public class NotifyTaskTest {
     @Test
     public void notifyStartingSynchronization() {
 
-        final NotifyTask task = new NotifyTask();
+        final NotifySyncStateTask task = new NotifySyncStateTask();
         System.err.println(this.out.toString());
 
         final Gson gson = new Gson();
         assertEquals(
                 1,
                 Arrays.stream(this.out.toString().split("\n"))
-                        .map(line -> gson.fromJson(line, NotifyTask.Schema.class))
-                        .filter(e -> e.eventType == EventType.StartSynchronization)
+                        .map(line -> gson.fromJson(line, NotifySyncStateTask.Event.class))
+                        .filter(e -> e.args.newState == State.startSynchronization)
                         .count()
         );
     }
 
     @Test
-    public void notifySynchronized(@Mocked DB db) {
+    public void notifyIdle(@Mocked DB db) {
 
         new Expectations() {{
             DB.isSynced();
             result = true;
         }};
 
-        final NotifyTask task = new NotifyTask();
+        final NotifySyncStateTask task = new NotifySyncStateTask();
         task.run();
         System.err.println(this.out.toString());
 
@@ -85,8 +85,8 @@ public class NotifyTaskTest {
         assertEquals(
                 1,
                 Arrays.stream(this.out.toString().split("\n"))
-                        .map(line -> gson.fromJson(line, NotifyTask.Schema.class))
-                        .filter(e -> e.eventType == EventType.Synchronized)
+                        .map(line -> gson.fromJson(line, NotifySyncStateTask.Event.class))
+                        .filter(e -> e.args.newState == State.idle)
                         .count()
         );
 
@@ -100,7 +100,7 @@ public class NotifyTaskTest {
             result = false;
         }};
 
-        final NotifyTask task = new NotifyTask();
+        final NotifySyncStateTask task = new NotifySyncStateTask();
         task.run();
         System.err.println(this.out.toString());
 
@@ -108,8 +108,8 @@ public class NotifyTaskTest {
         assertEquals(
                 1,
                 Arrays.stream(this.out.toString().split("\n"))
-                        .map(line -> gson.fromJson(line, NotifyTask.Schema.class))
-                        .filter(e -> e.eventType == EventType.Synchronizing)
+                        .map(line -> gson.fromJson(line, NotifySyncStateTask.Event.class))
+                        .filter(e -> e.args.newState == State.synchronizing)
                         .count()
         );
 

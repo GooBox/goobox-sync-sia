@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@ import io.goobox.sync.sia.client.api.WalletApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20016;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
+import io.goobox.sync.sia.client.api.model.InlineResponse2008;
+import io.goobox.sync.sia.model.PriceInfo;
+import io.goobox.sync.sia.model.WalletInfo;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -41,19 +43,46 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.ConnectException;
 import java.nio.file.Path;
+import java.util.concurrent.Callable;
 
 /**
  * Wallet command shows wallet information.
  */
-public final class Wallet implements Runnable {
+public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
 
     public static final String CommandName = "wallet";
     public static final String Description = "Show your wallet information";
     private static final Logger logger = LogManager.getLogger();
+
+    public static class InfoPair {
+        @NotNull
+        private final WalletInfo walletInfo;
+        @NotNull
+        private final PriceInfo priceInfo;
+
+        public InfoPair(@NotNull final WalletInfo walletInfo, @NotNull final PriceInfo priceInfo) {
+            this.walletInfo = walletInfo;
+            this.priceInfo = priceInfo;
+        }
+
+        @NotNull
+        public WalletInfo getWalletInfo() {
+            return walletInfo;
+        }
+
+        @NotNull
+        public PriceInfo getPriceInfo() {
+            return priceInfo;
+        }
+    }
+
+    public static class WalletException extends Exception {
+        public WalletException(final String msg) {
+            super(msg);
+        }
+    }
 
     @NotNull
     private final Path configPath;
@@ -65,7 +94,10 @@ public final class Wallet implements Runnable {
     public static void main(String[] args) {
 
         final Options opts = new Options();
+        opts.addOption(null, "force", false, "force initialize a wallet if not exists");
         opts.addOption("h", "help", false, "show this help");
+
+        boolean force;
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
@@ -74,8 +106,9 @@ public final class Wallet implements Runnable {
                 help.printHelp(String.format("%s %s", App.Name, CommandName), Description, opts, "", true);
                 return;
             }
+            force = cmd.hasOption("force");
 
-        } catch (ParseException e) {
+        } catch (final ParseException e) {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
@@ -86,13 +119,20 @@ public final class Wallet implements Runnable {
         }
 
         // Run this command.
-        new Wallet().run();
+        new Wallet(force).run();
 
     }
+
+    private boolean force = false;
 
     public Wallet() {
         configPath = Utils.getDataDir().resolve(App.ConfigFileName);
         this.cfg = CmdUtils.loadConfig(configPath);
+    }
+
+    public Wallet(final boolean force) {
+        this();
+        this.force = force;
     }
 
     /**
@@ -105,6 +145,12 @@ public final class Wallet implements Runnable {
      * - confirmed balance (in SC)
      * - confirmed delta (in SC)
      * (from /renter)
+     * - allowance
+     * - funds (in SC)
+     * - hosts
+     * - period
+     * - renew window
+     * - current period
      * - current spending
      * - download
      * - storage
@@ -118,112 +164,76 @@ public final class Wallet implements Runnable {
      * - form contract
      */
     @Override
-    public void run() {
+    public InfoPair call() throws ApiException, WalletException {
 
         final ApiClient apiClient = CmdUtils.getApiClient();
+        final WalletApi walletApi = new WalletApi(apiClient);
+        final InlineResponse20013 wallet = walletApi.walletGet();
+        if (!wallet.getUnlocked()) {
+
+            try {
+
+                logger.info("Unlocking the wallet");
+                walletApi.walletUnlockPost(cfg.getPrimarySeed());
+
+            } catch (final ApiException e) {
+
+                if (e.getCause() instanceof ConnectException) {
+                    throw e;
+                }
+
+                if (!cfg.getPrimarySeed().isEmpty()) {
+                    logger.error("Primary seed is given but the corresponding wallet is not found");
+                    throw new WalletException("cannot find the wallet");
+                }
+
+                // Create a new wallet.
+                logger.info("No wallets are found, initializing a wallet");
+                final InlineResponse20016 seed = walletApi.walletInitPost(null, null, this.force);
+                cfg.setPrimarySeed(seed.getPrimaryseed());
+                try {
+                    cfg.save(configPath);
+                } catch (IOException e1) {
+                    logger.error("Failed to save the wallet information");
+                    throw new WalletException("cannot save the wallet");
+                }
+
+                if (!walletApi.walletGet().getUnlocked()) {
+                    logger.info("Unlocking the wallet again");
+                    walletApi.walletUnlockPost(cfg.getPrimarySeed());
+                }
+
+            }
+
+        }
+
+        final RenterApi renter = new RenterApi(apiClient);
+        final InlineResponse2008 info = renter.renterGet();
+        final WalletInfo walletInfo = new WalletInfo(
+                walletApi.walletAddressGet().getAddress(), cfg.getPrimarySeed(), wallet, info);
+
+        final InlineResponse20012 prices = renter.renterPricesGet();
+        final PriceInfo priceInfo = new PriceInfo(prices);
+
+        return new InfoPair(walletInfo, priceInfo);
+
+    }
+
+    @Override
+    public void run() {
 
         int retry = 0;
         while (true) {
 
             try {
-
-                final WalletApi walletApi = new WalletApi(apiClient);
-                final InlineResponse20013 wallet = walletApi.walletGet();
-                if (!wallet.getUnlocked()) {
-
-                    try {
-
-                        logger.info("Unlocking the wallet");
-                        walletApi.walletUnlockPost(cfg.getPrimarySeed());
-
-                    } catch (final ApiException e) {
-
-                        if (e.getCause() instanceof ConnectException) {
-                            throw e;
-                        }
-
-                        if (!cfg.getPrimarySeed().isEmpty()) {
-                            logger.error("Primary seed is given but the corresponding wallet is not found");
-                            break;
-                        }
-
-                        // Create a new wallet.
-                        logger.info("No wallets are found, initializing a wallet");
-                        final InlineResponse20016 seed = walletApi.walletInitPost(null, null, false);
-                        cfg.setPrimarySeed(seed.getPrimaryseed());
-                        try {
-                            cfg.save(configPath);
-                        } catch (IOException e1) {
-                            logger.error("Failed to save the wallet information");
-                        }
-
-                        if (!walletApi.walletGet().getUnlocked()) {
-                            logger.info("Unlocking the wallet again");
-                            walletApi.walletUnlockPost(cfg.getPrimarySeed());
-                        }
-
-                    }
-
-                }
-
-                System.out.println(String.format("wallet address: %s", walletApi.walletAddressGet().getAddress()));
-                System.out.println(String.format("primary seed: %s", cfg.getPrimarySeed()));
-
-                System.out.println(String.format(
-                        "balance: %s SC",
-                        new BigDecimal(wallet.getConfirmedsiacoinbalance()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "unconfirmed delta: %s SC",
-                        new BigDecimal(wallet.getUnconfirmedincomingsiacoins()).
-                                subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins())).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-
-                final RenterApi renter = new RenterApi(apiClient);
-                final InlineResponse2008Financialmetrics spendings = renter.renterGet().getFinancialmetrics();
-                System.out.println("current spending:");
-                System.out.println(String.format(
-                        "  download: %s SC",
-                        new BigDecimal(spendings.getDownloadspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  upload: %s SC",
-                        new BigDecimal(spendings.getUploadspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  storage: %s SC",
-                        new BigDecimal(spendings.getStoragespending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  fee: %s SC",
-                        new BigDecimal(spendings.getContractspending()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-
-                final InlineResponse20012 prices = renter.renterPricesGet();
-                System.out.println("current prices:");
-                System.out.println(String.format(
-                        "  download: %s SC/TB",
-                        new BigDecimal(prices.getDownloadterabyte()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  upload: %s SC/TB",
-                        new BigDecimal(prices.getUploadterabyte()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  storage: %s SC/TB*Month",
-                        new BigDecimal(prices.getStorageterabytemonth()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format(
-                        "  fee: %s SC/contract",
-                        new BigDecimal(prices.getFormcontracts()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-
+                final InfoPair pair = this.call();
+                System.out.println(pair.getWalletInfo().toString());
+                System.out.println(pair.getPriceInfo().toString());
                 break;
-
             } catch (final ApiException e) {
 
                 if (retry >= App.MaxRetry) {
-                    logger.error("Failed to communicate SIA daemon: {}", APIUtils.getErrorMessage(e));
+                    logger.error("Failed to communicate with the sia daemon: {}", APIUtils.getErrorMessage(e));
                     System.exit(1);
                     return;
                 }
@@ -235,10 +245,10 @@ public final class Wallet implements Runnable {
                         daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
 
-                        logger.info("Starting SIA daemon");
+                        logger.info("Starting a sia daemon");
                         daemon.start();
                     }
-                    logger.info("Waiting SIA daemon starts");
+                    logger.info("Waiting for the sia daemon to get ready");
 
                 } else {
                     logger.warn("Failed to get wallet information: {}", APIUtils.getErrorMessage(e));
@@ -261,6 +271,9 @@ public final class Wallet implements Runnable {
                 logger.error("sia daemon returns invalid responses: {}", e.getMessage());
                 break;
 
+            } catch (final WalletException e) {
+                System.out.println(String.format("error: %s", e.getMessage()));
+                break;
             }
 
         }
@@ -270,7 +283,7 @@ public final class Wallet implements Runnable {
                 daemon.close();
                 daemon.join();
             } catch (InterruptedException e) {
-                logger.error("Interrupted while closing SIA daemon: {}", e.getMessage());
+                logger.error("Interrupted while closing the sia daemon: {}", e.getMessage());
             }
         }
 
