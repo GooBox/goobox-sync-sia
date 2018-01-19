@@ -87,7 +87,7 @@ public final class App {
     /**
      * Version information.
      */
-    public static final String Version = "0.0.15";
+    public static final String Version = "0.0.16";
 
     /**
      * The number of the minimum required contracts.

@@ -18,9 +18,9 @@ deploy:
     secure: bu664xqdPaj+6JomOZJ7ivzIaDrGZXySCApcAYO7AIwBY0KlkbFO/zY/kYb7XRu7DfNYqDM9i2gGsdqneTDlvjg8NmxkpviKjrPMG8Fp8sjQK544ae4kpptMFc9d0eC+z5lv1WjrK9Jzq7Mnv0SKAcdtGguoGkUN1xE3PqK3wmvz7xKSAWSZZM3e5lw9AbBgShQTBfAV3qkE06Ga34Al72mqJ7BS3ZscxnJiLMW+jhlAGE+t+GybE53+QLgMJje2RU6gRJagi+IIem93uQuGAdZ6+eYrd4yqxEQyZpBIQz9kJs6P+WqC4yk46cmEBUZEYA/U8vxPOd7e8UawtOSfBMODvJKLAZoB/GKWXm9u0i0C906DEBZPSMMTVe3Pq1pO4smqiv8aC5cTCxsM3MXqsl1yssnhFX/HDJgu+QAqEoXmXNLUF4OV/1tIdveJXXjvGHOGUhTbC65d0qHA7alSUhql/IQ9Ha7QtSMFKVf3Re8U2IWr9VYfOhgGDw9e3cdARkDwZo+xk7moIfr4XGUMpOWRowZ+i0jZK2rE720T6TvsTjW95G9lXiUkViVex+vbiv/CwXak/msG5P/mkPxu8DACRltdquqAyyVZTZL94HOaL8Ra4g8GjyNOWmQujv4GgPltd0ZjCoEZh6IQ/qiyozRtonLgEwRMNzs7+wz5JOE=
   skip_cleanup: true
   file:
-  - build/distributions/goobox-sync-sia-0.0.15-linux.tar.gz
-  - build/distributions/goobox-sync-sia-0.0.15-mac.tar.gz
-  - build/distributions/goobox-sync-sia-0.0.15-win64.tar.gz
+  - build/distributions/goobox-sync-sia-0.0.16-linux.tar.gz
+  - build/distributions/goobox-sync-sia-0.0.16-mac.tar.gz
+  - build/distributions/goobox-sync-sia-0.0.16-win64.tar.gz
   on:
     tags: true
     repo: GooBox/goobox-sync-sia
