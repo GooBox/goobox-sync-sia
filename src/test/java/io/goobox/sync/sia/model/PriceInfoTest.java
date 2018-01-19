@@ -36,31 +36,31 @@ public class PriceInfoTest {
     @Before
     public void setUp() {
         final InlineResponse20012 info = new InlineResponse20012();
-        info.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
-        info.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
-        info.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
-        info.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+        info.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
+        info.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
+        info.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
+        info.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
         priceInfo = new PriceInfo(info);
     }
 
     @Test
     public void getDownload() {
-        assertEquals(APIUtils.toHastings(downloadPrice), priceInfo.getDownload());
+        assertEquals(APIUtils.toHasting(downloadPrice), priceInfo.getDownload());
     }
 
     @Test
     public void getUpload() {
-        assertEquals(APIUtils.toHastings(uploadPrice), priceInfo.getUpload());
+        assertEquals(APIUtils.toHasting(uploadPrice), priceInfo.getUpload());
     }
 
     @Test
     public void getStorage() {
-        assertEquals(APIUtils.toHastings(storagePrice), priceInfo.getStorage());
+        assertEquals(APIUtils.toHasting(storagePrice), priceInfo.getStorage());
     }
 
     @Test
     public void getContract() {
-        assertEquals(APIUtils.toHastings(contractPrice), priceInfo.getContract());
+        assertEquals(APIUtils.toHasting(contractPrice), priceInfo.getContract());
     }
 
     @Test

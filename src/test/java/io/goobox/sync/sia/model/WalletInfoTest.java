@@ -52,24 +52,24 @@ public class WalletInfoTest {
     public void setUp() {
 
         final InlineResponse20013 wallet = new InlineResponse20013();
-        wallet.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
-        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
-        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+        wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
+        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
+        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
 
         final InlineResponse2008 info = new InlineResponse2008();
         final InlineResponse2008Settings settings = new InlineResponse2008Settings();
         final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHastings(funds).toString());
+        allowance.setFunds(APIUtils.toHasting(funds).toString());
         allowance.setHosts(hosts);
         allowance.setPeriod(period);
         allowance.setRenewwindow(renewWindow);
         settings.setAllowance(allowance);
         info.setSettings(settings);
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-        spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
-        spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
-        spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+        spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
+        spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
+        spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
+        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
         info.setFinancialmetrics(spending);
         info.setCurrentperiod(String.valueOf(currentPeriod));
 
@@ -89,17 +89,17 @@ public class WalletInfoTest {
 
     @Test
     public void getBalance() {
-        assertEquals(APIUtils.toHastings(balance), walletInfo.getBalance());
+        assertEquals(APIUtils.toHasting(balance), walletInfo.getBalance());
     }
 
     @Test
     public void getUnconfirmedDelta() {
-        assertEquals(APIUtils.toHastings(income - outcome), walletInfo.getUnconfirmedDelta());
+        assertEquals(APIUtils.toHasting(income - outcome), walletInfo.getUnconfirmedDelta());
     }
 
     @Test
     public void getFunds() {
-        assertEquals(APIUtils.toHastings(funds), walletInfo.getFunds());
+        assertEquals(APIUtils.toHasting(funds), walletInfo.getFunds());
     }
 
     @Test
@@ -124,31 +124,31 @@ public class WalletInfoTest {
 
     @Test
     public void getDownloadSpending() {
-        assertEquals(APIUtils.toHastings(downloadSpending), walletInfo.getDownloadSpending());
+        assertEquals(APIUtils.toHasting(downloadSpending), walletInfo.getDownloadSpending());
     }
 
     @Test
     public void getUploadSpending() {
-        assertEquals(APIUtils.toHastings(uploadSpending), walletInfo.getUploadSpending());
+        assertEquals(APIUtils.toHasting(uploadSpending), walletInfo.getUploadSpending());
     }
 
     @Test
     public void getStorageSpending() {
-        assertEquals(APIUtils.toHastings(storageSpending), walletInfo.getStorageSpending());
+        assertEquals(APIUtils.toHasting(storageSpending), walletInfo.getStorageSpending());
     }
 
     @Test
     public void getContractSpending() {
-        assertEquals(APIUtils.toHastings(contractSpending), walletInfo.getContractSpending());
+        assertEquals(APIUtils.toHasting(contractSpending), walletInfo.getContractSpending());
     }
 
     @Test
     public void getTotalSpending() {
         assertEquals(
-                APIUtils.toHastings(downloadSpending)
-                        .add(APIUtils.toHastings(uploadSpending))
-                        .add(APIUtils.toHastings(storageSpending))
-                        .add(APIUtils.toHastings(contractSpending)),
+                APIUtils.toHasting(downloadSpending)
+                        .add(APIUtils.toHasting(uploadSpending))
+                        .add(APIUtils.toHasting(storageSpending))
+                        .add(APIUtils.toHasting(contractSpending)),
                 walletInfo.getTotalSpending());
     }
 

@@ -62,7 +62,7 @@ public class AllowanceInfo {
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (final PrintWriter writer = new PrintWriter(buffer)) {
             writer.println("allowance:");
-            writer.println(String.format("  funds: %s SC", APIUtils.toSC(this.getFunds())));
+            writer.println(String.format("  funds: %s SC", APIUtils.toSiacoin(this.getFunds())));
             writer.println(String.format("  host: %d", this.getHosts()));
             writer.println(String.format("  period: %d blocks", this.getPeriod()));
             writer.println(String.format("  renew-window: %d blocks", this.getRenewWindow()));

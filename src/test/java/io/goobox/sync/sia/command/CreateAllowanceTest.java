@@ -121,13 +121,13 @@ public class CreateAllowanceTest {
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
             res1.setUnlocked(true);
             wallet.walletGet();
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(APIUtils.toHastings(fund).toString());
+            allowance.setFunds(APIUtils.toHasting(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -138,7 +138,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigInteger newFund = APIUtils.toHastings(balance);
+            final BigInteger newFund = APIUtils.toHasting(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -179,7 +179,7 @@ public class CreateAllowanceTest {
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(APIUtils.toHastings(fund).toString());
+            allowance.setFunds(APIUtils.toHasting(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -190,12 +190,12 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigInteger newFund = APIUtils.toHastings(param);
+            final BigInteger newFund = APIUtils.toHasting(param);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", APIUtils.toHastings(param).toString()});
+        CreateAllowance.main(new String[]{"--fund", APIUtils.toHasting(param).toString()});
 
         final String output = out.toString();
         System.err.println(output);
@@ -233,7 +233,7 @@ public class CreateAllowanceTest {
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
             res1.setUnlocked(false);
             wallet.walletGet();
             result = res1;
@@ -241,7 +241,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(APIUtils.toHastings(fund).toString());
+            allowance.setFunds(APIUtils.toHasting(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -252,7 +252,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigInteger newFund = APIUtils.toHastings(balance);
+            final BigInteger newFund = APIUtils.toHasting(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -302,7 +302,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(APIUtils.toHastings(fund).toString());
+            allowance.setFunds(APIUtils.toHasting(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -313,12 +313,12 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigInteger newFund = APIUtils.toHastings(param);
+            final BigInteger newFund = APIUtils.toHasting(param);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", APIUtils.toHastings(param).toString()});
+        CreateAllowance.main(new String[]{"--fund", APIUtils.toHasting(param).toString()});
 
         final String output = out.toString();
         System.err.println(output);
@@ -354,14 +354,14 @@ public class CreateAllowanceTest {
             daemon.start();
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
             res1.setUnlocked(true);
             wallet.walletGet();
             result = new ApiException(new ConnectException());
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(APIUtils.toHastings(fund).toString());
+            allowance.setFunds(APIUtils.toHasting(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -372,7 +372,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigInteger newFund = APIUtils.toHastings(balance);
+            final BigInteger newFund = APIUtils.toHasting(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};

@@ -115,7 +115,7 @@ public class NotifyFundInfoTask implements Runnable {
             final Wallet.InfoPair pair = wallet.call();
             WalletInfo info = pair.getWalletInfo();
             logger.info(
-                    "Current balance = {} hastings, funds = {} hastings", info.getBalance(), info.getFunds());
+                    "Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
 
             final PriceInfo prices = pair.getPriceInfo();
             if (this.autoAllocate) {
@@ -124,10 +124,10 @@ public class NotifyFundInfoTask implements Runnable {
                     final AllowanceInfo allowance = createAllowance.call();
                     System.out.println(this.gson.toJson(new Event(
                             EventType.Allocated,
-                            String.format("Allocated %.4f SC", APIUtils.toSC(allowance.getFunds()))))
+                            String.format("Allocated %.4f SC", APIUtils.toSiacoin(allowance.getFunds()))))
                     );
                     info = wallet.call().getWalletInfo();
-                    logger.info("Current balance = {} hastings, funds = {} hastings", info.getBalance(), info.getFunds());
+                    logger.info("Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
                 }
             }
 
@@ -136,7 +136,7 @@ public class NotifyFundInfoTask implements Runnable {
             if (remaining.compareTo(threshold) < 0) {
                 System.out.println(this.gson.toJson(new Event(
                         EventType.InsufficientFunds,
-                        String.format("Should have more than %.4f SC", APIUtils.toSC(threshold))))
+                        String.format("Should have more than %.4f SC", APIUtils.toSiacoin(threshold))))
                 );
             }
 

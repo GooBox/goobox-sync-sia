@@ -84,10 +84,10 @@ public class NotifyFundInfoTaskTest {
         final double contractPrice = 1.123;
 
         final InlineResponse20012 prices = new InlineResponse20012();
-        prices.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
-        prices.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
-        prices.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
-        prices.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+        prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
+        prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
+        prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
+        prices.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
         this.priceInfo = new PriceInfo(prices);
     }
 
@@ -374,24 +374,24 @@ public class NotifyFundInfoTaskTest {
         final double contractSpending = 0.001;
 
         final InlineResponse20013 wallet = new InlineResponse20013();
-        wallet.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
-        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
-        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+        wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
+        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
+        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
 
         final InlineResponse2008 info = new InlineResponse2008();
         final InlineResponse2008Settings settings = new InlineResponse2008Settings();
         final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHastings(balance).toString());
+        allowance.setFunds(APIUtils.toHasting(balance).toString());
         allowance.setHosts(hosts);
         allowance.setPeriod(period);
         allowance.setRenewwindow(renewWindow);
         settings.setAllowance(allowance);
         info.setSettings(settings);
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-        spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
-        spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
-        spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+        spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
+        spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
+        spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
+        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
         info.setFinancialmetrics(spending);
         info.setCurrentperiod(String.valueOf(currentPeriod));
 

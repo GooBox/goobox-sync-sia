@@ -90,21 +90,21 @@ public class APIUtilsTest {
     }
 
     @Test
-    public void toHastings() {
+    public void toHasting() {
         final double input = 123.45;
-        assertEquals(BigDecimal.valueOf(input).multiply(APIUtils.Hasting).toBigInteger(), APIUtils.toHastings(input));
+        assertEquals(BigDecimal.valueOf(input).multiply(APIUtils.Hasting).toBigInteger(), APIUtils.toHasting(input));
     }
 
     @Test
-    public void toSCFromBigInteger() {
+    public void toSiacoinFromBigInteger() {
         final double input = 123.45;
-        assertEquals(input, APIUtils.toSC(APIUtils.toHastings(input)).doubleValue(), 0.0001);
+        assertEquals(input, APIUtils.toSiacoin(APIUtils.toHasting(input)).doubleValue(), 0.0001);
     }
 
     @Test
-    public void toSCFromString() {
+    public void toSiacoinFromString() {
         final double input = 123.45;
-        assertEquals(input, APIUtils.toSC(APIUtils.toHastings(input).toString()).doubleValue(), 0.0001);
+        assertEquals(input, APIUtils.toSiacoin(APIUtils.toHasting(input).toString()).doubleValue(), 0.0001);
     }
 
 }

@@ -152,21 +152,21 @@ public class WalletInfo {
             writer.println(String.format("wallet address: %s", this.getAddress()));
             writer.println(String.format("primary seed: %s", this.getPrimarySeed()));
 
-            writer.println(String.format("balance: %s SC", APIUtils.toSC(this.getBalance())));
-            writer.println(String.format("unconfirmed delta: %s SC", APIUtils.toSC(this.getUnconfirmedDelta())));
+            writer.println(String.format("balance: %s SC", APIUtils.toSiacoin(this.getBalance())));
+            writer.println(String.format("unconfirmed delta: %s SC", APIUtils.toSiacoin(this.getUnconfirmedDelta())));
 
             writer.println("allowance:");
-            writer.println(String.format("  funds: %s SC", APIUtils.toSC(this.getFunds())));
+            writer.println(String.format("  funds: %s SC", APIUtils.toSiacoin(this.getFunds())));
             writer.println(String.format("  hosts: %d", this.getHosts()));
             writer.println(String.format("  period: %d", this.getPeriod()));
             writer.println(String.format("  renew window: %d", this.getRenewWindow()));
             writer.println(String.format("  start height: %s", this.getStartHeight()));
 
             writer.println("current spending:");
-            writer.println(String.format("  download: %s SC", APIUtils.toSC(this.getDownloadSpending())));
-            writer.println(String.format("  upload: %s SC", APIUtils.toSC(this.getUploadSpending())));
-            writer.println(String.format("  storage: %s SC", APIUtils.toSC(this.getStorageSpending())));
-            writer.print(String.format("  contract: %s SC", APIUtils.toSC(this.getContractSpending())));
+            writer.println(String.format("  download: %s SC", APIUtils.toSiacoin(this.getDownloadSpending())));
+            writer.println(String.format("  upload: %s SC", APIUtils.toSiacoin(this.getUploadSpending())));
+            writer.println(String.format("  storage: %s SC", APIUtils.toSiacoin(this.getStorageSpending())));
+            writer.print(String.format("  contract: %s SC", APIUtils.toSiacoin(this.getContractSpending())));
         }
         return buffer.toString();
 

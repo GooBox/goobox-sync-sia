@@ -68,10 +68,10 @@ public class PriceInfo {
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (final PrintWriter writer = new PrintWriter(buffer)) {
             writer.println("current prices:");
-            writer.println(String.format("  download: %s SC/TB", APIUtils.toSC(this.getDownload())));
-            writer.println(String.format("  upload: %s SC/TB", APIUtils.toSC(this.getUpload())));
-            writer.println(String.format("  storage: %s SC/TB*Month", APIUtils.toSC(this.getStorage())));
-            writer.print(String.format("  contract: %s SC/contract", APIUtils.toSC(this.getContract())));
+            writer.println(String.format("  download: %s SC/TB", APIUtils.toSiacoin(this.getDownload())));
+            writer.println(String.format("  upload: %s SC/TB", APIUtils.toSiacoin(this.getUpload())));
+            writer.println(String.format("  storage: %s SC/TB*Month", APIUtils.toSiacoin(this.getStorage())));
+            writer.print(String.format("  contract: %s SC/contract", APIUtils.toSiacoin(this.getContract())));
         }
         return buffer.toString();
     }

@@ -77,33 +77,33 @@ public class APIUtils {
     }
 
     /**
-     * Convert SC to hastings.
+     * Convert Siacoin to hastings.
      *
-     * @param sc in double.
+     * @param siacoin in double.
      * @return a big decimal representing the give sc in hastings.
      */
-    public static BigInteger toHastings(final double sc) {
-        return BigDecimal.valueOf(sc).multiply(Hasting).toBigInteger();
+    public static BigInteger toHasting(final double siacoin) {
+        return BigDecimal.valueOf(siacoin).multiply(Hasting).toBigInteger();
     }
 
     /**
-     * Convert hastings to SC.
+     * Convert hastings to Siacoin.
      *
      * @param hastings in BigInteger
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSC(final BigInteger hastings) {
+    public static BigDecimal toSiacoin(final BigInteger hastings) {
         return new BigDecimal(hastings).divide(Hasting, 4, RoundingMode.HALF_UP);
     }
 
     /**
-     * Convert hastings to SC.
+     * Convert hastings to Siacoin.
      *
      * @param hastings in String
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSC(final String hastings) {
-        return toSC(new BigInteger(hastings));
+    public static BigDecimal toSiacoin(final String hastings) {
+        return toSiacoin(new BigInteger(hastings));
     }
 
 }
