@@ -26,53 +26,53 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class WalletInfo {
 
     @NotNull
-    private String address;
+    private final String address;
     @NotNull
-    private String primarySeed;
+    private final String primarySeed;
     @NotNull
-    private BigDecimal balance;
+    private final BigInteger balance;
     @NotNull
-    private BigDecimal unconfirmedDelta;
+    private final BigInteger unconfirmedDelta;
     @NotNull
-    private BigDecimal funds;
-    private int hosts;
-    private long period;
-    private long renewWindow;
-    private long startHeight;
+    private final BigInteger funds;
+    private final int hosts;
+    private final long period;
+    private final long renewWindow;
+    private final long startHeight;
     @NotNull
-    private BigDecimal downloadSpending;
+    private final BigInteger downloadSpending;
     @NotNull
-    private BigDecimal uploadSpending;
+    private final BigInteger uploadSpending;
     @NotNull
-    private BigDecimal storageSpending;
+    private final BigInteger storageSpending;
     @NotNull
-    private BigDecimal contractSpending;
+    private final BigInteger contractSpending;
 
     @SuppressWarnings("SpellCheckingInspection")
     public WalletInfo(@NotNull String address, @NotNull String primarySeed, @NotNull InlineResponse20013 wallet, @NotNull InlineResponse2008 info) {
         this.address = address;
         this.primarySeed = primarySeed;
-        this.balance = new BigDecimal(wallet.getConfirmedsiacoinbalance());
-        this.unconfirmedDelta = new BigDecimal(wallet.getUnconfirmedincomingsiacoins())
-                .subtract(new BigDecimal(wallet.getUnconfirmedoutgoingsiacoins()));
+        this.balance = new BigInteger(wallet.getConfirmedsiacoinbalance());
+        this.unconfirmedDelta = new BigInteger(wallet.getUnconfirmedincomingsiacoins())
+                .subtract(new BigInteger(wallet.getUnconfirmedoutgoingsiacoins()));
 
         final InlineResponse2008SettingsAllowance allowance = info.getSettings().getAllowance();
-        this.funds = new BigDecimal(allowance.getFunds());
+        this.funds = new BigInteger(allowance.getFunds());
         this.hosts = allowance.getHosts();
         this.period = allowance.getPeriod();
         this.renewWindow = allowance.getRenewwindow();
         this.startHeight = Long.valueOf(info.getCurrentperiod());
 
         final InlineResponse2008Financialmetrics spendings = info.getFinancialmetrics();
-        this.downloadSpending = new BigDecimal(spendings.getDownloadspending());
-        this.uploadSpending = new BigDecimal(spendings.getUploadspending());
-        this.storageSpending = new BigDecimal(spendings.getStoragespending());
-        this.contractSpending = new BigDecimal(spendings.getContractspending());
+        this.downloadSpending = new BigInteger(spendings.getDownloadspending());
+        this.uploadSpending = new BigInteger(spendings.getUploadspending());
+        this.storageSpending = new BigInteger(spendings.getStoragespending());
+        this.contractSpending = new BigInteger(spendings.getContractspending());
     }
 
     @NotNull
@@ -86,17 +86,17 @@ public class WalletInfo {
     }
 
     @NotNull
-    public BigDecimal getBalance() {
+    public BigInteger getBalance() {
         return balance;
     }
 
     @NotNull
-    public BigDecimal getUnconfirmedDelta() {
+    public BigInteger getUnconfirmedDelta() {
         return unconfirmedDelta;
     }
 
     @NotNull
-    public BigDecimal getFunds() {
+    public BigInteger getFunds() {
         return funds;
     }
 
@@ -117,27 +117,27 @@ public class WalletInfo {
     }
 
     @NotNull
-    public BigDecimal getDownloadSpending() {
+    public BigInteger getDownloadSpending() {
         return downloadSpending;
     }
 
     @NotNull
-    public BigDecimal getUploadSpending() {
+    public BigInteger getUploadSpending() {
         return uploadSpending;
     }
 
     @NotNull
-    public BigDecimal getStorageSpending() {
+    public BigInteger getStorageSpending() {
         return storageSpending;
     }
 
     @NotNull
-    public BigDecimal getContractSpending() {
+    public BigInteger getContractSpending() {
         return contractSpending;
     }
 
     @NotNull
-    public BigDecimal getTotalSpending() {
+    public BigInteger getTotalSpending() {
         return this.getDownloadSpending()
                 .add(this.getUploadSpending())
                 .add(this.getStorageSpending())
@@ -152,21 +152,21 @@ public class WalletInfo {
             writer.println(String.format("wallet address: %s", this.getAddress()));
             writer.println(String.format("primary seed: %s", this.getPrimarySeed()));
 
-            writer.println(String.format("balance: %s SC", APIUtils.toSC(this.getBalance())));
-            writer.println(String.format("unconfirmed delta: %s SC", APIUtils.toSC(this.getUnconfirmedDelta())));
+            writer.println(String.format("balance: %s SC", APIUtils.toSiacoin(this.getBalance())));
+            writer.println(String.format("unconfirmed delta: %s SC", APIUtils.toSiacoin(this.getUnconfirmedDelta())));
 
             writer.println("allowance:");
-            writer.println(String.format("  funds: %s SC", APIUtils.toSC(this.getFunds())));
+            writer.println(String.format("  funds: %s SC", APIUtils.toSiacoin(this.getFunds())));
             writer.println(String.format("  hosts: %d", this.getHosts()));
             writer.println(String.format("  period: %d", this.getPeriod()));
             writer.println(String.format("  renew window: %d", this.getRenewWindow()));
             writer.println(String.format("  start height: %s", this.getStartHeight()));
 
             writer.println("current spending:");
-            writer.println(String.format("  download: %s SC", APIUtils.toSC(this.getDownloadSpending())));
-            writer.println(String.format("  upload: %s SC", APIUtils.toSC(this.getUploadSpending())));
-            writer.println(String.format("  storage: %s SC", APIUtils.toSC(this.getStorageSpending())));
-            writer.print(String.format("  contract: %s SC", APIUtils.toSC(this.getContractSpending())));
+            writer.println(String.format("  download: %s SC", APIUtils.toSiacoin(this.getDownloadSpending())));
+            writer.println(String.format("  upload: %s SC", APIUtils.toSiacoin(this.getUploadSpending())));
+            writer.println(String.format("  storage: %s SC", APIUtils.toSiacoin(this.getStorageSpending())));
+            writer.print(String.format("  contract: %s SC", APIUtils.toSiacoin(this.getContractSpending())));
         }
         return buffer.toString();
 

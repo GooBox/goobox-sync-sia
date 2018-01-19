@@ -36,7 +36,7 @@ public class AllowanceInfoTest {
     @Before
     public void setUp() {
         final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHastings(funds).toString());
+        allowance.setFunds(APIUtils.toHasting(funds).toString());
         allowance.setHosts(hosts);
         allowance.setPeriod(period);
         allowance.setRenewwindow(renewWindow);
@@ -45,7 +45,7 @@ public class AllowanceInfoTest {
 
     @Test
     public void getFunds() {
-        assertEquals(APIUtils.toHastings(funds), allowanceInfo.getFunds());
+        assertEquals(APIUtils.toHasting(funds), allowanceInfo.getFunds());
     }
 
     @Test

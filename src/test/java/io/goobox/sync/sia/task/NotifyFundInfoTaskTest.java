@@ -43,7 +43,7 @@ import org.junit.runner.RunWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -76,50 +76,18 @@ public class NotifyFundInfoTaskTest {
         this.oldOut = System.out;
         System.setOut(new PrintStream(out));
 
-        final String address = "01234567890123456789";
-        final String primarySeed = "sample primary seed";
-        final double balance = 12345.02;
-        final double income = 10;
-        final double outcome = 15;
-        final long currentPeriod = 3000;
-        final double downloadSpending = 1.2345;
-        final double uploadSpending = 0.223;
-        final double storageSpending = 2.3;
-        final double contractSpending = 0.001;
+        this.walletInfo = this.createWalletInfo();
+
         final double downloadPrice = 1234.5;
         final double uploadPrice = 1234.5;
         final double storagePrice = 12345.6;
         final double contractPrice = 1.123;
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
-        wallet.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
-        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
-        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
-
-        final InlineResponse2008 info = new InlineResponse2008();
-        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
-        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHastings(balance).toString());
-        allowance.setHosts(hosts);
-        allowance.setPeriod(period);
-        allowance.setRenewwindow(renewWindow);
-        settings.setAllowance(allowance);
-        info.setSettings(settings);
-        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-        spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
-        spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
-        spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
-        info.setFinancialmetrics(spending);
-        info.setCurrentperiod(String.valueOf(currentPeriod));
-
-        this.walletInfo = new WalletInfo(address, primarySeed, wallet, info);
-
         final InlineResponse20012 prices = new InlineResponse20012();
-        prices.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
-        prices.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
-        prices.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
-        prices.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+        prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
+        prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
+        prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
+        prices.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
         this.priceInfo = new PriceInfo(prices);
     }
 
@@ -141,7 +109,7 @@ public class NotifyFundInfoTaskTest {
 
     @Test
     public void constructorNotifiesEmptyFunds() throws Wallet.WalletException, ApiException {
-        Deencapsulation.setField(walletInfo, "balance", BigDecimal.ZERO);
+        Deencapsulation.setField(walletInfo, "balance", BigInteger.ZERO);
         new Expectations() {{
             final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
             walletCmd.call();
@@ -205,10 +173,10 @@ public class NotifyFundInfoTaskTest {
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask();
 
-        final BigDecimal threshold = priceInfo.getContract().multiply(new BigDecimal(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
-                threshold.add(walletInfo.getTotalSpending()).multiply(new BigDecimal(1.1)));
+                threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         new Expectations() {{
             final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
@@ -231,10 +199,10 @@ public class NotifyFundInfoTaskTest {
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask();
 
-        final BigDecimal threshold = priceInfo.getContract().multiply(new BigDecimal(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
-                threshold.add(walletInfo.getTotalSpending()).multiply(new BigDecimal(0.8)));
+                threshold.add(walletInfo.getTotalSpending()).divide(BigInteger.valueOf(2)));
 
         new Expectations() {{
             final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
@@ -256,35 +224,45 @@ public class NotifyFundInfoTaskTest {
      * create a new allowance with the current balance.
      */
     @Test
-    public void autoAllocate() throws Wallet.WalletException, ApiException {
+    public void autoAllocation() throws Wallet.WalletException, ApiException {
+        // Threshold: contract fee * number of min. contracts + current spending.
+        final BigInteger threshold = priceInfo.getContract()
+                .multiply(BigInteger.valueOf(App.MinContracts))
+                .add(walletInfo.getTotalSpending());
+        // Set funds half of sufficient amount.
+        final BigInteger funds = threshold.divide(BigInteger.valueOf(2));
+        // Set balance double of sufficient amount
+        final BigInteger balance = threshold.multiply(BigInteger.valueOf(2));
+        Deencapsulation.setField(walletInfo, "funds", funds);
+        Deencapsulation.setField(walletInfo, "balance", balance);
+
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
+            // Constructor and the first call in run.
+            final Wallet.InfoPair pairBefore = new Wallet.InfoPair(walletInfo, priceInfo);
+
+            // after allocation.
+            final WalletInfo newWalletInfo = createWalletInfo();
+            Deencapsulation.setField(newWalletInfo, "funds", balance);
+            Deencapsulation.setField(newWalletInfo, "balance", balance);
+            final Wallet.InfoPair pairAfter = new Wallet.InfoPair(newWalletInfo, priceInfo);
+
             walletCmd.call();
-            result = pair;
-            times = 2;
+            returns(pairBefore, pairBefore, pairAfter);
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
 
-        final BigDecimal threshold = priceInfo.getContract().multiply(new BigDecimal(App.MinContracts));
-        final BigDecimal newFunds = threshold.add(walletInfo.getTotalSpending()).multiply(new BigDecimal(1.1));
-        final BigDecimal newBalance = newFunds.multiply(new BigDecimal(2));
-        Deencapsulation.setField(walletInfo, "funds", newFunds);
-        Deencapsulation.setField(walletInfo, "balance", newBalance);
-
-        final InlineResponse2008SettingsAllowance info = new InlineResponse2008SettingsAllowance();
-        info.setFunds(newBalance.toString());
-        info.setHosts(hosts);
-        info.setPeriod(period);
-        info.setRenewwindow(renewWindow);
-        final AllowanceInfo allowanceInfo = new AllowanceInfo(info);
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
+            final InlineResponse2008SettingsAllowance info = new InlineResponse2008SettingsAllowance();
+            info.setFunds(balance.toString());
+            info.setHosts(hosts);
+            info.setPeriod(period);
+            info.setRenewwindow(renewWindow);
+            final AllowanceInfo allowanceInfo = new AllowanceInfo(info);
             createAllowanceCmd = new CreateAllowance(null);
             createAllowanceCmd.call();
             result = allowanceInfo;
         }};
+
         task.run();
 
         final String output = this.out.toString();
@@ -293,6 +271,31 @@ public class NotifyFundInfoTaskTest {
         NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
         assertEquals("walletInfo", event.method);
         assertEquals(NotifyFundInfoTask.EventType.Allocated, event.args.eventType);
+    }
+
+    /**
+     * If autoAllocate is true but the current balance is not bigger than the funds,
+     * do not create a new allowance with the current balance.
+     */
+    @Test
+    public void skipAllocation() throws Wallet.WalletException, ApiException {
+        new Expectations() {{
+            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
+            walletCmd.call();
+            result = pair;
+            times = 2;
+        }};
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
+
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger newFunds = threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2));
+        Deencapsulation.setField(walletInfo, "funds", newFunds);
+        Deencapsulation.setField(walletInfo, "balance", newFunds);
+
+        task.run();
+
+        final String output = this.out.toString();
+        assertTrue(output.isEmpty());
     }
 
     @Test
@@ -304,10 +307,10 @@ public class NotifyFundInfoTaskTest {
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask();
 
-        final BigDecimal threshold = priceInfo.getContract().multiply(new BigDecimal(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
-                threshold.add(walletInfo.getTotalSpending()).multiply(new BigDecimal(1.1)));
+                threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         final String err = "expected error";
         new Expectations() {{
@@ -337,10 +340,10 @@ public class NotifyFundInfoTaskTest {
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask();
 
-        final BigDecimal threshold = priceInfo.getContract().multiply(new BigDecimal(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
-                threshold.add(walletInfo.getTotalSpending()).multiply(new BigDecimal(1.1)));
+                threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         final String err = "expected error";
         new Expectations() {{
@@ -356,6 +359,43 @@ public class NotifyFundInfoTaskTest {
         assertEquals("walletInfo", event.method);
         assertEquals(NotifyFundInfoTask.EventType.Error, event.args.eventType);
         assertEquals(err, event.args.message);
+    }
+
+    private WalletInfo createWalletInfo() {
+        final String address = "01234567890123456789";
+        final String primarySeed = "sample primary seed";
+        final double balance = 12345.02;
+        final double income = 10;
+        final double outcome = 15;
+        final long currentPeriod = 3000;
+        final double downloadSpending = 1.2345;
+        final double uploadSpending = 0.223;
+        final double storageSpending = 2.3;
+        final double contractSpending = 0.001;
+
+        final InlineResponse20013 wallet = new InlineResponse20013();
+        wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
+        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
+        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
+
+        final InlineResponse2008 info = new InlineResponse2008();
+        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+        allowance.setFunds(APIUtils.toHasting(balance).toString());
+        allowance.setHosts(hosts);
+        allowance.setPeriod(period);
+        allowance.setRenewwindow(renewWindow);
+        settings.setAllowance(allowance);
+        info.setSettings(settings);
+        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
+        spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
+        spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
+        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
+        info.setFinancialmetrics(spending);
+        info.setCurrentperiod(String.valueOf(currentPeriod));
+
+        return new WalletInfo(address, primarySeed, wallet, info);
     }
 
 }

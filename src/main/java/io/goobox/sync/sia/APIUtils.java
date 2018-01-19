@@ -23,6 +23,7 @@ import io.goobox.sync.sia.client.api.model.StandardError;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,7 +34,7 @@ public class APIUtils {
     /**
      * Defines 1 SC in hastings.
      */
-    private static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
+    static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
 
     /**
      * Parse error massages in an APIException.
@@ -76,33 +77,33 @@ public class APIUtils {
     }
 
     /**
-     * Convert SC to hastings.
+     * Convert Siacoin to hastings.
      *
-     * @param sc in double.
+     * @param siacoin in double.
      * @return a big decimal representing the give sc in hastings.
      */
-    public static BigDecimal toHastings(final double sc) {
-        return new BigDecimal(sc).multiply(Hasting);
+    public static BigInteger toHasting(final double siacoin) {
+        return BigDecimal.valueOf(siacoin).multiply(Hasting).toBigInteger();
     }
 
     /**
-     * Convert hastings to SC.
+     * Convert hastings to Siacoin.
      *
-     * @param hastings in BigDecimal
+     * @param hastings in BigInteger
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSC(final BigDecimal hastings) {
-        return hastings.divide(Hasting, 4, RoundingMode.HALF_UP);
+    public static BigDecimal toSiacoin(final BigInteger hastings) {
+        return new BigDecimal(hastings).divide(Hasting, 4, RoundingMode.HALF_UP);
     }
 
     /**
-     * Convert hastings to SC.
+     * Convert hastings to Siacoin.
      *
      * @param hastings in String
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSC(final String hastings) {
-        return toSC(new BigDecimal(hastings));
+    public static BigDecimal toSiacoin(final String hastings) {
+        return toSiacoin(new BigInteger(hastings));
     }
 
 }

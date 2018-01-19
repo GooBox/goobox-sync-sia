@@ -23,43 +23,43 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class PriceInfo {
 
     @NotNull
-    private final BigDecimal download;
+    private final BigInteger download;
     @NotNull
-    private final BigDecimal upload;
+    private final BigInteger upload;
     @NotNull
-    private final BigDecimal storage;
+    private final BigInteger storage;
     @NotNull
-    private final BigDecimal contract;
+    private final BigInteger contract;
 
     public PriceInfo(@NotNull final InlineResponse20012 prices) {
-        this.download = new BigDecimal(prices.getDownloadterabyte());
-        this.upload = new BigDecimal(prices.getUploadterabyte());
-        this.storage = new BigDecimal(prices.getStorageterabytemonth());
-        this.contract = new BigDecimal(prices.getFormcontracts());
+        this.download = new BigInteger(prices.getDownloadterabyte());
+        this.upload = new BigInteger(prices.getUploadterabyte());
+        this.storage = new BigInteger(prices.getStorageterabytemonth());
+        this.contract = new BigInteger(prices.getFormcontracts());
     }
 
     @NotNull
-    public BigDecimal getDownload() {
+    public BigInteger getDownload() {
         return download;
     }
 
     @NotNull
-    public BigDecimal getUpload() {
+    public BigInteger getUpload() {
         return upload;
     }
 
     @NotNull
-    public BigDecimal getStorage() {
+    public BigInteger getStorage() {
         return storage;
     }
 
     @NotNull
-    public BigDecimal getContract() {
+    public BigInteger getContract() {
         return contract;
     }
 
@@ -68,10 +68,10 @@ public class PriceInfo {
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (final PrintWriter writer = new PrintWriter(buffer)) {
             writer.println("current prices:");
-            writer.println(String.format("  download: %s SC/TB", APIUtils.toSC(this.getDownload())));
-            writer.println(String.format("  upload: %s SC/TB", APIUtils.toSC(this.getUpload())));
-            writer.println(String.format("  storage: %s SC/TB*Month", APIUtils.toSC(this.getStorage())));
-            writer.print(String.format("  contract: %s SC/contract", APIUtils.toSC(this.getContract())));
+            writer.println(String.format("  download: %s SC/TB", APIUtils.toSiacoin(this.getDownload())));
+            writer.println(String.format("  upload: %s SC/TB", APIUtils.toSiacoin(this.getUpload())));
+            writer.println(String.format("  storage: %s SC/TB*Month", APIUtils.toSiacoin(this.getStorage())));
+            writer.print(String.format("  contract: %s SC/contract", APIUtils.toSiacoin(this.getContract())));
         }
         return buffer.toString();
     }
