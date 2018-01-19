@@ -28,6 +28,7 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
+import io.goobox.sync.sia.model.AllowanceInfo;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -35,15 +36,18 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
+import java.util.concurrent.Callable;
 
 /**
  * Creates allowance.
  */
-public final class CreateAllowance implements Runnable {
+public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> {
 
     public static final String CommandName = "create-allowance";
     public static final String Description = "Create allowance";
@@ -52,7 +56,11 @@ public final class CreateAllowance implements Runnable {
 
     private static final Logger logger = LogManager.getLogger();
 
+    @NotNull
     private final Config cfg;
+    @Nullable
+    private BigDecimal fund;
+    @Nullable
     private SiaDaemon daemon = null;
 
     public static void main(final String[] args) {
@@ -94,53 +102,55 @@ public final class CreateAllowance implements Runnable {
 
     }
 
-    private BigDecimal fund;
-
+    /**
+     * Create a create allowance task.
+     *
+     * @param fund to be allocated, if null, all current balance will be allocated.
+     */
     @SuppressWarnings("WeakerAccess")
-    CreateAllowance(final BigDecimal fund) {
+    CreateAllowance(@Nullable final BigDecimal fund) {
         this.fund = fund;
         this.cfg = CmdUtils.loadConfig(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
     }
 
     @Override
-    public void run() {
+    public AllowanceInfo call() throws ApiException {
 
         final ApiClient apiClient = CmdUtils.getApiClient();
+        final WalletApi wallet = new WalletApi(apiClient);
+        final InlineResponse20013 walletInfo = wallet.walletGet();
+
+        // If the wallet is locked, unlock it first.
+        if (!walletInfo.getUnlocked()) {
+            logger.info("Unlocking the wallet");
+            wallet.walletUnlockPost(cfg.getPrimarySeed());
+        }
+
+        // If fund is null, get current balance.
+        final RenterApi renter = new RenterApi(apiClient);
+        if (this.fund == null) {
+            // Allocating the current balance.
+            this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
+        }
+
+        // Allocate new fund.
+        logger.info("Allocating {} hastings", this.fund);
+        renter.renterPost(this.fund.setScale(0, RoundingMode.DOWN).toString(), null, DefaultPeriod, null);
+
+        final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
+        return new AllowanceInfo(allowance);
+
+    }
+
+    @Override
+    public void run() {
 
         int retry = 0;
         while (true) {
 
             try {
-                final WalletApi wallet = new WalletApi(apiClient);
-                final InlineResponse20013 walletInfo = wallet.walletGet();
 
-                // If the wallet is locked, unlock it first.
-                if (!walletInfo.getUnlocked()) {
-                    logger.info("Unlocking the wallet");
-                    wallet.walletUnlockPost(cfg.getPrimarySeed());
-                }
-
-                // If fund is null, get current balance.
-                final RenterApi renter = new RenterApi(apiClient);
-                if (this.fund == null) {
-                    // Allocating new fund.
-                    this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
-                }
-
-                // Allocate new fund.
-                logger.info("Allocating {} hastings", this.fund);
-                renter.renterPost(this.fund.setScale(0, RoundingMode.DOWN).toString(), null, DefaultPeriod, null);
-
-                final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
-                System.out.println("allowance:");
-                System.out.println(String.format(
-                        "  funds: %s SC",
-                        new BigDecimal(allowance.getFunds()).
-                                divide(CmdUtils.Hasting, 4, RoundingMode.HALF_UP)));
-                System.out.println(String.format("  host: %d", allowance.getHosts()));
-                System.out.println(String.format("  period: %d blocks", allowance.getPeriod()));
-                System.out.println(String.format("  renew-window: %d blocks", allowance.getRenewwindow()));
-
+                System.out.println(this.call().toString());
                 break;
 
             } catch (final ApiException e) {
