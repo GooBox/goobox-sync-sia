@@ -23,25 +23,25 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class AllowanceInfo {
 
     @NotNull
-    private final BigDecimal funds;
+    private final BigInteger funds;
     private final int hosts;
     private final long period;
     private final long renewWindow;
 
     public AllowanceInfo(@NotNull final InlineResponse2008SettingsAllowance allowance) {
-        this.funds = new BigDecimal(allowance.getFunds());
+        this.funds = new BigInteger(allowance.getFunds());
         this.hosts = allowance.getHosts();
         this.period = allowance.getPeriod();
         this.renewWindow = allowance.getRenewwindow();
     }
 
     @NotNull
-    public BigDecimal getFunds() {
+    public BigInteger getFunds() {
         return funds;
     }
 

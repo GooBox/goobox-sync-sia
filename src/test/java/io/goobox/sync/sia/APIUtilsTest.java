@@ -23,6 +23,7 @@ import io.goobox.sync.sia.client.api.model.StandardError;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
@@ -86,6 +87,24 @@ public class APIUtilsTest {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         assertEquals(Paths.get("/path"), APIUtils.fromSlash("/path"));
         assertEquals(Paths.get("/path", "to", "somefile"), APIUtils.fromSlash("/path/to/somefile"));
+    }
+
+    @Test
+    public void toHastings() {
+        final double input = 123.45;
+        assertEquals(BigDecimal.valueOf(input).multiply(APIUtils.Hasting).toBigInteger(), APIUtils.toHastings(input));
+    }
+
+    @Test
+    public void toSCFromBigInteger() {
+        final double input = 123.45;
+        assertEquals(input, APIUtils.toSC(APIUtils.toHastings(input)).doubleValue(), 0.0001);
+    }
+
+    @Test
+    public void toSCFromString() {
+        final double input = 123.45;
+        assertEquals(input, APIUtils.toSC(APIUtils.toHastings(input).toString()).doubleValue(), 0.0001);
     }
 
 }

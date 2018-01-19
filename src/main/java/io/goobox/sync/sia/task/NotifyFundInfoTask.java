@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class NotifyFundInfoTask implements Runnable {
 
@@ -82,7 +82,8 @@ public class NotifyFundInfoTask implements Runnable {
         final Wallet wallet = new Wallet();
         try {
             final WalletInfo info = wallet.call().getWalletInfo();
-            if (info.getBalance().equals(BigDecimal.ZERO)) {
+            logger.debug("Current balance: {} hastings", info.getBalance());
+            if (info.getBalance().equals(BigInteger.ZERO)) {
                 System.out.println(this.gson.toJson(new Event(EventType.NoFunds)));
             }
         } catch (final ApiException e) {
@@ -113,19 +114,25 @@ public class NotifyFundInfoTask implements Runnable {
 
             final Wallet.InfoPair pair = wallet.call();
             WalletInfo info = pair.getWalletInfo();
+            logger.info(
+                    "Current balance = {} hastings, funds = {} hastings", info.getBalance(), info.getFunds());
+
             final PriceInfo prices = pair.getPriceInfo();
             if (this.autoAllocate) {
-                final CreateAllowance createAllowance = new CreateAllowance(null);
-                final AllowanceInfo allowance = createAllowance.call();
-                System.out.println(this.gson.toJson(new Event(
-                        EventType.Allocated,
-                        String.format("Allocated %.4f SC", APIUtils.toSC(allowance.getFunds()))))
-                );
-                info = pair.getWalletInfo();
+                if (info.getBalance().compareTo(info.getFunds()) > 0) {
+                    final CreateAllowance createAllowance = new CreateAllowance(null);
+                    final AllowanceInfo allowance = createAllowance.call();
+                    System.out.println(this.gson.toJson(new Event(
+                            EventType.Allocated,
+                            String.format("Allocated %.4f SC", APIUtils.toSC(allowance.getFunds()))))
+                    );
+                    info = wallet.call().getWalletInfo();
+                    logger.info("Current balance = {} hastings, funds = {} hastings", info.getBalance(), info.getFunds());
+                }
             }
 
-            final BigDecimal remaining = info.getFunds().subtract(info.getTotalSpending());
-            final BigDecimal threshold = prices.getContract().multiply(new BigDecimal(App.MinContracts));
+            final BigInteger remaining = info.getFunds().subtract(info.getTotalSpending());
+            final BigInteger threshold = prices.getContract().multiply(BigInteger.valueOf(App.MinContracts));
             if (remaining.compareTo(threshold) < 0) {
                 System.out.println(this.gson.toJson(new Event(
                         EventType.InsufficientFunds,
