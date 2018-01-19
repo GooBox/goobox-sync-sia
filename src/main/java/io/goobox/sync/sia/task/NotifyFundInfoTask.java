@@ -21,7 +21,9 @@ import com.google.gson.Gson;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.client.ApiException;
+import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.Wallet;
+import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +42,10 @@ public class NotifyFundInfoTask implements Runnable {
         NoFunds,
         // Notify when the funds are not enough.
         InsufficientFunds,
+        // Notify when the creating allowance successes.
+        Allocated,
+        // Notify when an error occurs.
+        Error
     }
 
     public class Args {
@@ -69,9 +75,10 @@ public class NotifyFundInfoTask implements Runnable {
         }
     }
 
+    private final boolean autoAllocate;
     private final Gson gson = new Gson();
 
-    public NotifyFundInfoTask() {
+    public NotifyFundInfoTask(final boolean autoAllocate) {
         final Wallet wallet = new Wallet();
         try {
             final WalletInfo info = wallet.call().getWalletInfo();
@@ -80,9 +87,22 @@ public class NotifyFundInfoTask implements Runnable {
             }
         } catch (final ApiException e) {
             logger.error(APIUtils.getErrorMessage(e));
+            System.out.println(this.gson.toJson(new Event(
+                    EventType.Error,
+                    APIUtils.getErrorMessage(e)))
+            );
         } catch (final Wallet.WalletException e) {
             logger.error(e);
+            System.out.println(this.gson.toJson(new Event(
+                    EventType.Error,
+                    e.getMessage()))
+            );
         }
+        this.autoAllocate = autoAllocate;
+    }
+
+    public NotifyFundInfoTask() {
+        this(false);
     }
 
     @Override
@@ -93,19 +113,36 @@ public class NotifyFundInfoTask implements Runnable {
             final Wallet.InfoPair pair = wallet.call();
             final WalletInfo info = pair.getWalletInfo();
             final PriceInfo prices = pair.getPriceInfo();
+            if (this.autoAllocate) {
+                final CreateAllowance createAllowance = new CreateAllowance(null);
+                final AllowanceInfo allowance = createAllowance.call();
+                System.out.println(this.gson.toJson(new Event(
+                        EventType.Allocated,
+                        String.format("Allocated %.4f SC", APIUtils.toSC(allowance.getFunds()))))
+                );
+            }
 
             final BigDecimal remaining = info.getFunds().subtract(info.getTotalSpending());
             final BigDecimal threshold = prices.getContract().multiply(new BigDecimal(App.MinContracts));
             if (remaining.compareTo(threshold) < 0) {
                 System.out.println(this.gson.toJson(new Event(
                         EventType.InsufficientFunds,
-                        String.format("Should have more than %.4f SC", APIUtils.toSC(threshold)))));
+                        String.format("Should have more than %.4f SC", APIUtils.toSC(threshold))))
+                );
             }
 
         } catch (final ApiException e) {
             logger.error(APIUtils.getErrorMessage(e));
+            System.out.println(this.gson.toJson(new Event(
+                    EventType.Error,
+                    APIUtils.getErrorMessage(e)))
+            );
         } catch (final Wallet.WalletException e) {
             logger.error(e);
+            System.out.println(this.gson.toJson(new Event(
+                    EventType.Error,
+                    e.getMessage()))
+            );
         }
     }
 }

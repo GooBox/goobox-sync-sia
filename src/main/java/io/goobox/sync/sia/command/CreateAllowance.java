@@ -108,7 +108,7 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
      * @param fund to be allocated, if null, all current balance will be allocated.
      */
     @SuppressWarnings("WeakerAccess")
-    CreateAllowance(@Nullable final BigDecimal fund) {
+    public CreateAllowance(@Nullable final BigDecimal fund) {
         this.fund = fund;
         this.cfg = CmdUtils.loadConfig(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
     }

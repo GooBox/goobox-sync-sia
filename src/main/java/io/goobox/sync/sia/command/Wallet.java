@@ -78,8 +78,8 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
         }
     }
 
-    public class WalletException extends Exception {
-        WalletException(final String msg) {
+    public static class WalletException extends Exception {
+        public WalletException(final String msg) {
             super(msg);
         }
     }
