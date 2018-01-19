@@ -261,6 +261,7 @@ public class NotifyFundInfoTaskTest {
             final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
             walletCmd.call();
             result = pair;
+            times = 2;
         }};
         final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
 

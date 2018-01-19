@@ -101,6 +101,7 @@ public class NotifyFundInfoTask implements Runnable {
         this.autoAllocate = autoAllocate;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public NotifyFundInfoTask() {
         this(false);
     }
@@ -111,7 +112,7 @@ public class NotifyFundInfoTask implements Runnable {
         try {
 
             final Wallet.InfoPair pair = wallet.call();
-            final WalletInfo info = pair.getWalletInfo();
+            WalletInfo info = pair.getWalletInfo();
             final PriceInfo prices = pair.getPriceInfo();
             if (this.autoAllocate) {
                 final CreateAllowance createAllowance = new CreateAllowance(null);
@@ -120,6 +121,7 @@ public class NotifyFundInfoTask implements Runnable {
                         EventType.Allocated,
                         String.format("Allocated %.4f SC", APIUtils.toSC(allowance.getFunds()))))
                 );
+                info = pair.getWalletInfo();
             }
 
             final BigDecimal remaining = info.getFunds().subtract(info.getTotalSpending());
