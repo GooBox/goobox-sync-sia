@@ -24,7 +24,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -34,11 +33,6 @@ public class CmdUtils {
      * Default config file name.
      */
     static final String ConfigFileName = "goobox.properties";
-
-    /**
-     * Defines 1 SC in hastings.
-     */
-    static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
 
     private static final Logger logger = LogManager.getLogger();
 

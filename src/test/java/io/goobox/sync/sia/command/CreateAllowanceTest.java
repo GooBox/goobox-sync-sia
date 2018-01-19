@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.command;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.SiaDaemon;
@@ -44,8 +45,7 @@ import org.junit.runner.RunWith;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.math.BigInteger;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,13 +121,13 @@ public class CreateAllowanceTest {
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
             res1.setUnlocked(true);
             wallet.walletGet();
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setFunds(APIUtils.toHastings(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -138,8 +138,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
+            final BigInteger newFund = APIUtils.toHastings(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -180,7 +179,7 @@ public class CreateAllowanceTest {
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setFunds(APIUtils.toHastings(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -191,13 +190,12 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(param).
-                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
+            final BigInteger newFund = APIUtils.toHastings(param);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
+        CreateAllowance.main(new String[]{"--fund", APIUtils.toHastings(param).toString()});
 
         final String output = out.toString();
         System.err.println(output);
@@ -235,7 +233,7 @@ public class CreateAllowanceTest {
         new Expectations() {{
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
             res1.setUnlocked(false);
             wallet.walletGet();
             result = res1;
@@ -243,7 +241,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setFunds(APIUtils.toHastings(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -254,8 +252,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
+            final BigInteger newFund = APIUtils.toHastings(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
@@ -305,7 +302,7 @@ public class CreateAllowanceTest {
             wallet.walletUnlockPost(cfg.getPrimarySeed());
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setFunds(APIUtils.toHastings(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -316,13 +313,12 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(param).
-                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
+            final BigInteger newFund = APIUtils.toHastings(param);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
 
-        CreateAllowance.main(new String[]{"--fund", new BigDecimal(param).multiply(CmdUtils.Hasting).toString()});
+        CreateAllowance.main(new String[]{"--fund", APIUtils.toHastings(param).toString()});
 
         final String output = out.toString();
         System.err.println(output);
@@ -358,14 +354,14 @@ public class CreateAllowanceTest {
             daemon.start();
 
             final InlineResponse20013 res1 = new InlineResponse20013();
-            res1.setConfirmedsiacoinbalance(new BigDecimal(balance).multiply(CmdUtils.Hasting).toString());
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
             res1.setUnlocked(true);
             wallet.walletGet();
             result = new ApiException(new ConnectException());
             result = res1;
 
             final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-            allowance.setFunds(new BigDecimal(fund).multiply(CmdUtils.Hasting).toString());
+            allowance.setFunds(APIUtils.toHastings(fund).toString());
             allowance.setHosts(host);
             allowance.setPeriod(period);
             allowance.setRenewwindow(renewWindow);
@@ -376,8 +372,7 @@ public class CreateAllowanceTest {
             renter.renterGet();
             result = res2;
 
-            final BigDecimal newFund = new BigDecimal(balance).
-                    multiply(CmdUtils.Hasting).setScale(0, RoundingMode.DOWN);
+            final BigInteger newFund = APIUtils.toHastings(balance);
             renter.renterPost(newFund.toString(), null, CreateAllowance.DefaultPeriod, null);
 
         }};
