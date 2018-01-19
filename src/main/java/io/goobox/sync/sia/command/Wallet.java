@@ -94,7 +94,10 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
     public static void main(String[] args) {
 
         final Options opts = new Options();
+        opts.addOption(null, "force", false, "force initialize a wallet if not exists");
         opts.addOption("h", "help", false, "show this help");
+
+        boolean force;
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
@@ -103,8 +106,9 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
                 help.printHelp(String.format("%s %s", App.Name, CommandName), Description, opts, "", true);
                 return;
             }
+            force = cmd.hasOption("force");
 
-        } catch (ParseException e) {
+        } catch (final ParseException e) {
             logger.error("Failed to parse command line options: {}", e.getMessage());
 
             final HelpFormatter help = new HelpFormatter();
@@ -115,13 +119,20 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
         }
 
         // Run this command.
-        new Wallet().run();
+        new Wallet(force).run();
 
     }
+
+    private boolean force = false;
 
     public Wallet() {
         configPath = Utils.getDataDir().resolve(App.ConfigFileName);
         this.cfg = CmdUtils.loadConfig(configPath);
+    }
+
+    public Wallet(final boolean force) {
+        this();
+        this.force = force;
     }
 
     /**
@@ -178,7 +189,7 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
 
                 // Create a new wallet.
                 logger.info("No wallets are found, initializing a wallet");
-                final InlineResponse20016 seed = walletApi.walletInitPost(null, null, false);
+                final InlineResponse20016 seed = walletApi.walletInitPost(null, null, this.force);
                 cfg.setPrimarySeed(seed.getPrimaryseed());
                 try {
                     cfg.save(configPath);

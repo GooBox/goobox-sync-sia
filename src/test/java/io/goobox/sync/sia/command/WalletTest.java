@@ -50,6 +50,7 @@ import java.io.PrintStream;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -494,6 +495,72 @@ public class WalletTest {
 
     }
 
+    @Test
+    public void forceInitializeWallet(@Mocked WalletApi wallet, @Mocked RenterApi renter, @Mocked CmdUtils utils) throws ApiException {
+
+        new Expectations() {{
+            CmdUtils.loadConfig(withAny(Paths.get("")));
+            result = new Config();
+
+            final InlineResponse20013 res1 = new InlineResponse20013();
+            res1.setUnlocked(false);
+            res1.setConfirmedsiacoinbalance(APIUtils.toHastings(balance).toString());
+            res1.setUnconfirmedincomingsiacoins(APIUtils.toHastings(income).toString());
+            res1.setUnconfirmedoutgoingsiacoins(APIUtils.toHastings(outcome).toString());
+            wallet.walletGet();
+            result = res1;
+
+            wallet.walletUnlockPost("");
+            result = new ApiException();
+
+            final InlineResponse20016 seed = new InlineResponse20016();
+            seed.setPrimaryseed(primarySeed);
+            wallet.walletInitPost(null, null, true);
+            result = seed;
+
+            wallet.walletUnlockPost(primarySeed);
+
+            final InlineResponse20014 res2 = new InlineResponse20014();
+            res2.setAddress(address);
+            wallet.walletAddressGet();
+            result = res2;
+
+            final InlineResponse2008 res3 = new InlineResponse2008();
+            final InlineResponse2008Settings settings = new InlineResponse2008Settings();
+            final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
+            allowance.setFunds(APIUtils.toHastings(funds).toString());
+            allowance.setHosts(hosts);
+            allowance.setPeriod(period);
+            allowance.setRenewwindow(renewWindow);
+            settings.setAllowance(allowance);
+            res3.setSettings(settings);
+            final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+            spending.setDownloadspending(APIUtils.toHastings(downloadSpending).toString());
+            spending.setUploadspending(APIUtils.toHastings(uploadSpending).toString());
+            spending.setStoragespending(APIUtils.toHastings(storageSpending).toString());
+            spending.setContractspending(APIUtils.toHastings(contractSpending).toString());
+            res3.setFinancialmetrics(spending);
+            res3.setCurrentperiod(String.valueOf(currentPeriod));
+            renter.renterGet();
+            result = res3;
+
+            final InlineResponse20012 res4 = new InlineResponse20012();
+            res4.setDownloadterabyte(APIUtils.toHastings(downloadPrice).toString());
+            res4.setUploadterabyte(APIUtils.toHastings(uploadPrice).toString());
+            res4.setStorageterabytemonth(APIUtils.toHastings(storagePrice).toString());
+            res4.setFormcontracts(APIUtils.toHastings(contractPrice).toString());
+            renter.renterPricesGet();
+            result = res4;
+
+        }};
+
+        Wallet.main(new String[]{"--force"});
+
+        final String outputs = out.toString();
+        System.err.println(outputs);
+        this.checkOutput(outputs);
+
+    }
 
     @Test
     public void helpOption(@Mocked HelpFormatter formatter) {
