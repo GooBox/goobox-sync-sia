@@ -20,8 +20,8 @@ package io.goobox.sync.sia.command;
 import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.client.ApiClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +34,7 @@ public class CmdUtils {
      */
     static final String ConfigFileName = "goobox.properties";
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(CmdUtils.class);
 
     /**
      * Creates an API client.

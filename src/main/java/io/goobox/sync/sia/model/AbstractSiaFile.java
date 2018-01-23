@@ -19,17 +19,17 @@ package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Context;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.Optional;
 
 public abstract class AbstractSiaFile implements SiaFile {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(AbstractSiaFile.class);
 
     @NotNull
     private final Path name;

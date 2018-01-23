@@ -26,16 +26,16 @@ import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 
 public class NotifyFundInfoTask implements Runnable {
 
-    private static Logger logger = LogManager.getLogger();
+    private static Logger logger = LoggerFactory.getLogger(NotifyFundInfoTask.class);
 
     public enum EventType {
         // Notify when the funds are 0.
@@ -93,7 +93,7 @@ public class NotifyFundInfoTask implements Runnable {
                     APIUtils.getErrorMessage(e)))
             );
         } catch (final Wallet.WalletException e) {
-            logger.error(e);
+            logger.error(e.getMessage());
             System.out.println(this.gson.toJson(new Event(
                     EventType.Error,
                     e.getMessage()))
@@ -147,7 +147,7 @@ public class NotifyFundInfoTask implements Runnable {
                     APIUtils.getErrorMessage(e)))
             );
         } catch (final Wallet.WalletException e) {
-            logger.error(e);
+            logger.error(e.getMessage());
             System.out.println(this.gson.toJson(new Event(
                     EventType.Error,
                     e.getMessage()))
