@@ -26,9 +26,9 @@ import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -39,7 +39,7 @@ import java.util.concurrent.Callable;
 
 public class CheckUploadStateTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(CheckUploadStateTask.class);
     private static final BigDecimal Completed = new BigDecimal(100);
 
     @NotNull

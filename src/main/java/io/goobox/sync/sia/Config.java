@@ -18,9 +18,9 @@ package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class Config {
     static final String DataPieces = "data-pieces";
     static final String ParityPieces = "parity-pieces";
     static final String DisableAutoAllocation = "disable-auto-allocation";
-    static final Logger logger = LogManager.getLogger();
+    static final Logger logger = LoggerFactory.getLogger(Config.class);
 
     static final int DefaultDataPieces = 10;
     static final int DefaultParityPieces = 20;

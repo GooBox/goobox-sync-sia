@@ -24,9 +24,9 @@ import io.methvin.watcher.DirectoryChangeListener;
 import io.methvin.watcher.DirectoryWatcher;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.FileInputStream;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(FileWatcher.class);
 
     /**
      * Minimum elapsed time this FileWatcher decides file updates end.
@@ -71,7 +71,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
 
     @Override
     public synchronized void onEvent(final DirectoryChangeEvent event) {
-        logger.traceEntry(new ReflectionToStringBuilder(event).toString());
+        logger.trace(new ReflectionToStringBuilder(event).toString());
         final long now = System.currentTimeMillis();
 
         if (event.eventType() == DirectoryChangeEvent.EventType.OVERFLOW) {

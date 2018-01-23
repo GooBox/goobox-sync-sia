@@ -20,9 +20,9 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,7 +37,7 @@ import java.util.Optional;
  */
 public class DeleteLocalFileTask implements Runnable {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DeleteLocalFileTask.class);
 
     @NotNull
     private final Context ctx;
@@ -51,7 +51,7 @@ public class DeleteLocalFileTask implements Runnable {
 
     @Override
     public void run() {
-        logger.traceEntry();
+        logger.trace("Enter run");
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.ctx.getName(this.localPath));
         if (!syncFileOpt.isPresent()) {

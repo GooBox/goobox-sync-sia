@@ -24,9 +24,9 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 import java.nio.file.Path;
@@ -38,7 +38,7 @@ import java.util.concurrent.Callable;
  */
 public class DownloadCloudFileTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DownloadCloudFileTask.class);
 
     @NotNull
     private final Context ctx;
@@ -53,7 +53,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
 
     @Override
     public Void call() throws ApiException {
-        logger.traceEntry();
+        logger.trace("Enter call");
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
