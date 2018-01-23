@@ -39,6 +39,7 @@ apply plugin: "com.github.kt3k.coveralls"
 
 version = '0.0.17'
 mainClassName = 'io.goobox.sync.sia.App'
+applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.OnErrorConsoleStatusListener"]
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -98,6 +99,7 @@ run {
 test {
     jvmArgs "-Djdk.attach.allowAttachSelf"
     jvmArgs "-Djna.nosys=true"
+    jvmArgs "-Dlogback.statusListenerClass=ch.qos.logback.core.status.OnErrorConsoleStatusListener"
 }
 
 def siaVersion = 'v1.3.1'
