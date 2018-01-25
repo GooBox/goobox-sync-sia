@@ -34,15 +34,17 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
-import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
 
@@ -57,6 +59,7 @@ public class GetWalletInfoTaskTest {
     @Mocked
     private RenterApi renter = new RenterApi();
 
+    private Path configPath;
     private Context ctx;
     private GetWalletInfoTask task;
     private InlineResponse20013 walletGetResponse;
@@ -83,7 +86,8 @@ public class GetWalletInfoTaskTest {
         final double storagePrice = 12345.6;
         final double contractPrice = 1.123;
 
-        final Config cfg = new Config();
+        this.configPath = Files.createTempFile(null, null);
+        final Config cfg = new Config(this.configPath);
         cfg.setPrimarySeed(primarySeed);
         new Expectations(cfg) {{
             cfg.save();
@@ -124,8 +128,14 @@ public class GetWalletInfoTaskTest {
 
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
+    }
+
     /**
-     * This test simulates the senario that the wallet was initialized ant unlocked.
+     * This test simulates the scenario that the wallet was initialized ant unlocked.
      */
     @Test
     public void withInitializedWallet() throws ApiException, GetWalletInfoTask.WalletException {
@@ -154,7 +164,7 @@ public class GetWalletInfoTaskTest {
     }
 
     /**
-     * This test simulates the senario that the wallet was initialized but want't unlocked.
+     * This test simulates the scenario that the wallet was initialized but want't unlocked.
      */
     @Test
     public void withLockedWallet() throws ApiException, GetWalletInfoTask.WalletException {
@@ -184,7 +194,7 @@ public class GetWalletInfoTaskTest {
     }
 
     /**
-     * This test simulates the senario that the wallet isn't initialized but the primary seed is given.
+     * This test simulates the scenario that the wallet isn't initialized but the primary seed is given.
      */
     @SuppressWarnings("unused")
     @Test
@@ -222,13 +232,13 @@ public class GetWalletInfoTaskTest {
     }
 
     /**
-     * This test simulates the senario that the wallet isn't initialized and no primary seed is given.
+     * This test simulates the scenario that the wallet isn't initialized and no primary seed is given.
      */
     @Test
     public void noWalletExists() throws ApiException, GetWalletInfoTask.WalletException, IOException {
 
-        final Config cfg = new Config();
-        Deencapsulation.setField(ctx, "config", cfg);
+        final Config cfg = this.ctx.getConfig();
+        cfg.setPrimarySeed("");
 
         new Expectations(cfg) {{
             wallet.walletGet();
@@ -266,7 +276,7 @@ public class GetWalletInfoTaskTest {
     }
 
     /**
-     * This test simulates the senario that the wallet was initialized and want't unlocked, but primary seed isn't given.
+     * This test simulates the scenario that the wallet was initialized and want't unlocked, but primary seed isn't given.
      * In this case, a wallet exception must be thrown.
      */
     @Test(expected = GetWalletInfoTask.WalletException.class)
@@ -283,20 +293,20 @@ public class GetWalletInfoTaskTest {
             result = new ApiException("Wallet is already initialized with a primary seed");
         }};
 
-        Deencapsulation.setField(ctx, "config", new Config());
+        this.ctx.getConfig().setPrimarySeed("");
         task.call();
     }
 
     /**
-     * This test simulates the senario that the wallet was initialized with a seed but the user wants to overwrite it
+     * This test simulates the scenario that the wallet was initialized with a seed but the user wants to overwrite it
      * and creates a new wallet.
      */
     @Test
     public void forceInitializeWallet() throws ApiException, GetWalletInfoTask.WalletException, IOException {
 
         task = new GetWalletInfoTask(ctx, true);
-        final Config cfg = new Config();
-        Deencapsulation.setField(ctx, "config", cfg);
+        final Config cfg = this.ctx.getConfig();
+        cfg.setPrimarySeed("");
 
         new Expectations() {{
             wallet.walletGet();

@@ -38,11 +38,15 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.cli.HelpFormatter;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,14 +54,16 @@ import static org.junit.Assert.assertEquals;
 @RunWith(JMockit.class)
 public class WalletTest {
 
+    private Path configPath;
     private Config cfg;
     private Wallet cmd;
     private WalletInfo walletInfo;
     private PriceInfo priceInfo;
 
     @Before
-    public void setUp() {
-        cfg = new Config();
+    public void setUp() throws IOException {
+        configPath = Files.createTempFile(null, null);
+        cfg = new Config(configPath);
         cmd = new Wallet();
         Deencapsulation.setField(cmd, "cfg", cfg);
 
@@ -111,6 +117,12 @@ public class WalletTest {
 
         walletInfo = new WalletInfo(address, primarySeed, walletGetResponse, renterGetResponse);
         priceInfo = new PriceInfo(renterPriceGetResponse);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
     }
 
     /**

@@ -88,11 +88,9 @@ public class CreateAllowanceTest {
      */
     @Before
     public void setUpTempSyncDir() throws IOException {
-
         tempDir = Files.createTempDirectory(null);
         UtilsMock.dataDir = tempDir;
         new UtilsMock();
-
     }
 
     /**
@@ -102,11 +100,9 @@ public class CreateAllowanceTest {
      */
     @After
     public void tearDownTempSyncDir() throws IOException {
-
         if (tempDir != null && tempDir.toFile().exists()) {
             FileUtils.deleteDirectory(tempDir.toFile());
         }
-
     }
 
     @Test
@@ -223,12 +219,12 @@ public class CreateAllowanceTest {
         final long period = 1234;
         final long renewWindow = 5;
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tempDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
         Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
-        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save();
 
         new Expectations() {{
 
@@ -285,12 +281,12 @@ public class CreateAllowanceTest {
         final long period = 1234;
         final long renewWindow = 5;
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tempDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "testuser@sample.com");
         Deencapsulation.setField(cfg, "primarySeed", "a b c d e f g");
         Deencapsulation.setField(cfg, "dataPieces", 5);
         Deencapsulation.setField(cfg, "parityPieces", 12);
-        cfg.save(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        cfg.save();
 
         new Expectations() {{
 

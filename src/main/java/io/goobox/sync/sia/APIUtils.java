@@ -23,7 +23,11 @@ import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -34,16 +38,40 @@ import java.util.concurrent.TimeUnit;
 
 public class APIUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(APIUtils.class);
+
     /**
      * Defines 1 SC in hastings.
      */
     static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
 
     /**
+     * Load configuration.
+     *
+     * @param configFilePath to the config file.
+     * @return a Config object.
+     */
+    @NotNull
+    public static Config loadConfig(@NotNull final Path configFilePath) {
+
+        Config cfg;
+        try {
+            cfg = Config.load(configFilePath);
+        } catch (IOException e) {
+            logger.warn("Failed to read config file {}: {}", configFilePath, e.getMessage());
+            logger.info("Loading the default configuration");
+            cfg = new Config(configFilePath);
+        }
+        return cfg;
+
+    }
+
+    /**
      * Creates an API client.
      *
      * @return an ApiClient object.
      */
+    @NotNull
     public static ApiClient getApiClient() {
 
         final ApiClient apiClient = new ApiClient();
@@ -58,6 +86,7 @@ public class APIUtils {
     /**
      * Parse error massages in an APIException.
      */
+    @Nullable
     public static String getErrorMessage(final ApiException e) {
 
         final String body = e.getResponseBody();

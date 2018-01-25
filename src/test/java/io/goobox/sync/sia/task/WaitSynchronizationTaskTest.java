@@ -27,9 +27,14 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2006;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RunWith(JMockit.class)
 public class WaitSynchronizationTaskTest {
@@ -37,11 +42,19 @@ public class WaitSynchronizationTaskTest {
     @Mocked
     private ConsensusApi consensus = new ConsensusApi();
 
+    private Path configPath;
     private WaitSynchronizationTask task;
 
     @Before
-    public void setUp() {
-        task = new WaitSynchronizationTask(new Context(new Config(), new ApiClient()));
+    public void setUp() throws IOException {
+        this.configPath = Files.createTempFile(null, null);
+        this.task = new WaitSynchronizationTask(new Context(new Config(this.configPath), new ApiClient()));
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
     }
 
     @SuppressWarnings("unused")

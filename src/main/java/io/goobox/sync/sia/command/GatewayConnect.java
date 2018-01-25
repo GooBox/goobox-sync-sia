@@ -75,7 +75,7 @@ public final class GatewayConnect implements Runnable {
 
     GatewayConnect(final String addr) {
         final Path configPath = Utils.getDataDir().resolve(App.ConfigFileName);
-        this.cfg = CmdUtils.loadConfig(configPath);
+        this.cfg = APIUtils.loadConfig(configPath);
         this.addr = addr;
     }
 

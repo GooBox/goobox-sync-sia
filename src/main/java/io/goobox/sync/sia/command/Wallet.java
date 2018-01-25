@@ -89,7 +89,7 @@ public final class Wallet implements Runnable {
 
     public Wallet() {
         configPath = Utils.getDataDir().resolve(App.ConfigFileName);
-        this.cfg = CmdUtils.loadConfig(configPath);
+        this.cfg = APIUtils.loadConfig(configPath);
     }
 
     public Wallet(final boolean force) {

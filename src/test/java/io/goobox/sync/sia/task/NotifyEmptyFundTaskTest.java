@@ -34,11 +34,15 @@ import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RunWith(JMockit.class)
 public class NotifyEmptyFundTaskTest {
@@ -46,13 +50,15 @@ public class NotifyEmptyFundTaskTest {
     @Mocked
     private GetWalletInfoTask walletInfoTask;
 
+    private Path configPath;
     private NotifyEmptyFundTask task;
     private PriceInfo priceInfo;
     private WalletInfo walletInfo;
 
     @Before
-    public void setUp() {
-        this.task = new NotifyEmptyFundTask(new Context(new Config(), new ApiClient()));
+    public void setUp() throws IOException {
+        this.configPath = Files.createTempFile(null, null);
+        this.task = new NotifyEmptyFundTask(new Context(new Config(this.configPath), new ApiClient()));
 
         final String address = "01234567890123456789";
         final String primarySeed = "sample primary seed";
@@ -104,6 +110,12 @@ public class NotifyEmptyFundTaskTest {
         prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
         prices.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
         this.priceInfo = new PriceInfo(prices);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
     }
 
     @Test

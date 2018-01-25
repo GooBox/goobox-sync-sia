@@ -226,7 +226,7 @@ public final class App implements Callable<Integer> {
     public App() {
 
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        this.cfg = this.loadConfig(this.configPath);
+        this.cfg = APIUtils.loadConfig(this.configPath);
 
         final ApiClient apiClient = APIUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
@@ -355,25 +355,6 @@ public final class App implements Callable<Integer> {
         }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
         return 0;
-
-    }
-
-    /**
-     * Load configuration.
-     *
-     * @param path to the config file.
-     * @return a Config object.
-     */
-    private Config loadConfig(final Path path) {
-
-        Config cfg;
-        try {
-            cfg = Config.load(path);
-        } catch (IOException e) {
-            logger.error("cannot load config file {}: {}", path, e.getMessage());
-            cfg = new Config();
-        }
-        return cfg;
 
     }
 

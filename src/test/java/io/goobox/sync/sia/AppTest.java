@@ -92,7 +92,7 @@ public class AppTest {
         new UtilsMock();
 
         this.tmpDir = Files.createTempDirectory("sync");
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
 
@@ -613,51 +613,6 @@ public class AppTest {
         }};
 
         assertEquals(Integer.valueOf(1), app.call());
-
-    }
-
-    @Test
-    public void testLoadConfig() throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser@sample.com");
-        cfg.setPrimarySeed("a b c d e f g");
-        cfg.setDataPieces(5);
-        cfg.setParityPieces(12);
-
-        final Path tmpFile = Files.createTempFile(null, null);
-        try {
-
-            cfg.save(tmpFile);
-
-            final App app = new App();
-            final Method loadConfig = App.class.getDeclaredMethod("loadConfig", Path.class);
-            loadConfig.setAccessible(true);
-            final Config res = (Config) loadConfig.invoke(app, tmpFile);
-            assertEquals(cfg, res);
-
-        } finally {
-
-            final File file = tmpFile.toFile();
-            if (file.exists()) {
-                assertTrue(file.delete());
-            }
-
-        }
-
-    }
-
-    @Test
-    public void testLoadConfigWithoutConfigFile() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
-
-        final Path tmpFile = Files.createTempFile(null, null);
-        assertTrue(tmpFile.toFile().delete());
-
-        final App app = new App();
-        final Method loadConfig = App.class.getDeclaredMethod("loadConfig", Path.class);
-        loadConfig.setAccessible(true);
-        final Config res = (Config) loadConfig.invoke(app, tmpFile);
-        assertEquals(new Config(), res);
 
     }
 

@@ -110,7 +110,7 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
     @SuppressWarnings("WeakerAccess")
     public CreateAllowance(@Nullable final BigDecimal fund) {
         this.fund = fund;
-        this.cfg = CmdUtils.loadConfig(Utils.getDataDir().resolve(CmdUtils.ConfigFileName));
+        this.cfg = APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
     }
 
     @Override

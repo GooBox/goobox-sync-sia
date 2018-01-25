@@ -28,10 +28,14 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,13 +46,15 @@ public class WaitContractsTaskTest {
     @Mocked
     private RenterApi renter = new RenterApi();
 
+    private Path configPath;
     private WaitContractsTask task;
     private List<InlineResponse2009Contracts> contracts;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
 
-        this.task = new WaitContractsTask(new Context(new Config(), new ApiClient()));
+        this.configPath = Files.createTempFile(null, null);
+        this.task = new WaitContractsTask(new Context(new Config(this.configPath), new ApiClient()));
         this.contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
             final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
             c.setId(String.valueOf(i));
@@ -57,6 +63,12 @@ public class WaitContractsTaskTest {
             return c;
         }).collect(Collectors.toList());
 
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
     }
 
     @SuppressWarnings("unused")

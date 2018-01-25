@@ -37,11 +37,15 @@ import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RunWith(JMockit.class)
 public class NotifyFundInfoTaskTest {
@@ -55,6 +59,7 @@ public class NotifyFundInfoTaskTest {
     @Mocked
     private CreateAllowance createAllowanceCmd;
 
+    private Path configPath;
     private Context ctx;
     private NotifyFundInfoTask task;
 
@@ -63,8 +68,9 @@ public class NotifyFundInfoTaskTest {
 
     @SuppressWarnings("SpellCheckingInspection")
     @Before
-    public void setUp() {
-        this.ctx = new Context(new Config(), new ApiClient());
+    public void setUp() throws IOException {
+        this.configPath = Files.createTempFile(null, null);
+        this.ctx = new Context(new Config(this.configPath), new ApiClient());
         this.task = new NotifyFundInfoTask(this.ctx);
 
         this.walletInfo = this.createWalletInfo();
@@ -82,6 +88,11 @@ public class NotifyFundInfoTaskTest {
         this.priceInfo = new PriceInfo(prices);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
+    }
 
     @Test
     public void checksRemainingFunds() throws GetWalletInfoTask.WalletException, ApiException {
