@@ -84,7 +84,7 @@ public final class GatewayConnect implements Runnable {
     public void run() {
 
         logger.info("Connect peer {}", this.addr);
-        final ApiClient apiClient = CmdUtils.getApiClient();
+        final ApiClient apiClient = APIUtils.getApiClient();
         final GatewayApi gateway = new GatewayApi(apiClient);
         try {
             gateway.gatewayConnectNetaddressPost(addr);

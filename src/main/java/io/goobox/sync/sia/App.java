@@ -19,7 +19,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
 import io.goobox.sync.sia.command.GatewayConnect;
@@ -228,7 +227,7 @@ public final class App implements Callable<Integer> {
         this.configPath = Utils.getDataDir().resolve(ConfigFileName);
         this.cfg = this.loadConfig(this.configPath);
 
-        final ApiClient apiClient = CmdUtils.getApiClient();
+        final ApiClient apiClient = APIUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
 
     }

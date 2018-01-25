@@ -116,7 +116,7 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
     @Override
     public AllowanceInfo call() throws ApiException {
 
-        final ApiClient apiClient = CmdUtils.getApiClient();
+        final ApiClient apiClient = APIUtils.getApiClient();
         final WalletApi wallet = new WalletApi(apiClient);
         final InlineResponse20013 walletInfo = wallet.walletGet();
 

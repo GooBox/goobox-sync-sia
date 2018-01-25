@@ -18,6 +18,8 @@ package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class APIUtils {
 
@@ -35,6 +38,22 @@ public class APIUtils {
      * Defines 1 SC in hastings.
      */
     static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
+
+    /**
+     * Creates an API client.
+     *
+     * @return an ApiClient object.
+     */
+    public static ApiClient getApiClient() {
+
+        final ApiClient apiClient = new ApiClient();
+        apiClient.setBasePath("http://localhost:9980");
+        final OkHttpClient httpClient = apiClient.getHttpClient();
+        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
+        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        return apiClient;
+
+    }
 
     /**
      * Parse error massages in an APIException.

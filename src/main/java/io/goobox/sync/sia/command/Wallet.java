@@ -100,7 +100,7 @@ public final class Wallet implements Runnable {
     @Override
     public void run() {
 
-        final GetWalletInfoTask task = new GetWalletInfoTask(new Context(this.cfg, CmdUtils.getApiClient()), this.force);
+        final GetWalletInfoTask task = new GetWalletInfoTask(new Context(this.cfg, APIUtils.getApiClient()), this.force);
         int retry = 0;
         while (true) {
 

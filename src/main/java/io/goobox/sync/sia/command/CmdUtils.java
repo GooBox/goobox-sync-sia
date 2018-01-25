@@ -17,15 +17,12 @@
 
 package io.goobox.sync.sia.command;
 
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.Config;
-import io.goobox.sync.sia.client.ApiClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 public class CmdUtils {
 
@@ -35,23 +32,6 @@ public class CmdUtils {
     static final String ConfigFileName = "goobox.properties";
 
     private static final Logger logger = LoggerFactory.getLogger(CmdUtils.class);
-
-    /**
-     * Creates an API client.
-     *
-     * @return an ApiClient object.
-     */
-    public static ApiClient getApiClient() {
-
-        final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
-
-        return apiClient;
-
-    }
 
     /**
      * Load configuration.
