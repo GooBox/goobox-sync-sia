@@ -60,6 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -238,9 +239,17 @@ public final class App implements Callable<Integer> {
         this.cfg.setSyncDir(syncDir);
     }
 
-    @Nullable
-    public static App getInstance() {
-        return App.app;
+    void setOutputEvents(boolean outputEvents) {
+        this.outputEvents = outputEvents;
+    }
+
+    @NotNull
+    public Context getContext() {
+        return ctx;
+    }
+
+    public static Optional<App> getInstance() {
+        return Optional.ofNullable(App.app);
     }
 
     synchronized void startSiaDaemon() {
@@ -260,10 +269,6 @@ public final class App implements Callable<Integer> {
 
         }
 
-    }
-
-    void setOutputEvents(boolean outputEvents) {
-        this.outputEvents = outputEvents;
     }
 
     /**
@@ -320,6 +325,7 @@ public final class App implements Callable<Integer> {
                 }
 
             } catch (GetWalletInfoTask.WalletException e) {
+                // TODO: Should output log and error message to Stdout.
                 e.printStackTrace();
                 return 1;
             }
