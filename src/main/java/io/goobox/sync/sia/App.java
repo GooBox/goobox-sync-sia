@@ -19,13 +19,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.ConsensusApi;
-import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
-import io.goobox.sync.sia.client.api.model.InlineResponse20014;
-import io.goobox.sync.sia.client.api.model.InlineResponse20016;
-import io.goobox.sync.sia.client.api.model.InlineResponse2006;
 import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -39,9 +32,13 @@ import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.GetWalletInfoTask;
+import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
 import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
+import io.goobox.sync.sia.task.WaitContractsTask;
+import io.goobox.sync.sia.task.WaitSynchronizationTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -54,14 +51,17 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -70,7 +70,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The goobox-sync-sia App.
  */
-public final class App {
+public final class App implements Callable<Integer> {
 
     // Constants.
     public static final String Name;
@@ -107,7 +107,7 @@ public final class App {
     /**
      * The number of worker threads.
      */
-    private static final int WorkerThreadSize = 3;
+    static final int WorkerThreadSize = 3;
 
     /**
      * How many times retrying to start a sia daemon.
@@ -202,11 +202,11 @@ public final class App {
             }
 
             if (cmd.hasOption("output-events")) {
-                App.app.outputEvents = true;
+                App.app.setOutputEvents(true);
             }
 
             // Start the app.
-            App.app.init();
+            System.exit(App.app.call());
 
         } catch (ParseException e) {
 
@@ -263,37 +263,47 @@ public final class App {
 
     }
 
+    void setOutputEvents(boolean outputEvents) {
+        this.outputEvents = outputEvents;
+    }
+
     /**
      * Initialize the app and starts an event loop.
      */
-    private void init() throws IOException {
+    public Integer call() throws IOException {
 
         if (!checkAndCreateSyncDir()) {
-            System.exit(1);
-            return;
+            return 1;
         }
         if (!checkAndCreateDataDir()) {
-            System.exit(1);
-            return;
+            return 1;
         }
-
 
         int retry = 0;
         while (true) {
 
             try {
 
-                this.prepareWallet();
-                this.waitSynchronization();
-                this.waitContracts();
+                final GetWalletInfoTask getWalletInfo = new GetWalletInfoTask(this.ctx);
+                getWalletInfo.call();
+
+                final WaitSynchronizationTask waitSynchronizationTask = new WaitSynchronizationTask(this.ctx);
+                waitSynchronizationTask.call();
+
+                if (this.outputEvents) {
+                    final NotifyEmptyFundTask notifyEmptyFundTask = new NotifyEmptyFundTask(this.ctx);
+                    notifyEmptyFundTask.run();
+                }
+
+                final WaitContractsTask waitContractsTask = new WaitContractsTask(this.ctx);
+                waitContractsTask.call();
                 break;
 
             } catch (final ApiException e) {
 
                 if (retry >= App.MaxRetry) {
                     logger.error("Failed to communicate with the sia daemon: {}", APIUtils.getErrorMessage(e));
-                    System.exit(1);
-                    return;
+                    return 1;
                 }
 
                 if (e.getCause() instanceof ConnectException) {
@@ -307,10 +317,12 @@ public final class App {
                     Thread.sleep(DefaultSleepTime);
                 } catch (InterruptedException e1) {
                     logger.error("Interrupted while waiting for the sia daemon to start: {}", e1.getMessage());
-                    System.exit(1);
-                    return;
+                    return 1;
                 }
 
+            } catch (GetWalletInfoTask.WalletException e) {
+                e.printStackTrace();
+                return 1;
             }
 
         }
@@ -320,21 +332,24 @@ public final class App {
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         this.resumeTasks(ctx, executor);
+
+        final RecoveryTask startSiaDaemonTask = new StartSiaDaemonTask();
         executor.scheduleWithFixedDelay(
-                new RetryableTask(new CheckStateTask(ctx, executor), new StartSiaDaemonTask()),
+                new RetryableTask(new CheckStateTask(ctx, executor), startSiaDaemonTask),
                 0, 60, TimeUnit.SECONDS);
         executor.scheduleWithFixedDelay(
-                new RetryableTask(new CheckDownloadStateTask(ctx), new StartSiaDaemonTask()),
+                new RetryableTask(new CheckDownloadStateTask(ctx), startSiaDaemonTask),
                 30, 60, TimeUnit.SECONDS);
         executor.scheduleWithFixedDelay(
-                new RetryableTask(new CheckUploadStateTask(ctx), new StartSiaDaemonTask()),
+                new RetryableTask(new CheckUploadStateTask(ctx), startSiaDaemonTask),
                 45, 60, TimeUnit.SECONDS);
         if (this.outputEvents) {
             executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
             executor.scheduleWithFixedDelay(
-                    new NotifyFundInfoTask(!this.cfg.isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
+                    new NotifyFundInfoTask(ctx, !this.ctx.getConfig().isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
         new FileWatcher(this.ctx.config.getSyncDir(), executor);
+        return 0;
 
     }
 
@@ -362,7 +377,7 @@ public final class App {
      *
      * @return true if the synchronizing directory is ready.
      */
-    private boolean checkAndCreateSyncDir() {
+    boolean checkAndCreateSyncDir() {
         logger.info("Checking if local Goobox sync folder exists: {}", this.ctx.config.getSyncDir());
         return checkAndCreateFolder(this.ctx.config.getSyncDir());
     }
@@ -372,7 +387,7 @@ public final class App {
      *
      * @return true if the data directory is ready.
      */
-    private boolean checkAndCreateDataDir() {
+    boolean checkAndCreateDataDir() {
         logger.info("Checking if Goobox data folder exists: {}", this.ctx.config.getDataDir());
         return checkAndCreateFolder(this.ctx.config.getDataDir());
     }
@@ -398,143 +413,7 @@ public final class App {
         }
     }
 
-    /**
-     * Prepare the wallet.
-     * <p>
-     * If no wallets have been created, it'll initialize a wallet.
-     *
-     * @throws ApiException when an error occurs in Wallet API.
-     */
-    void prepareWallet() throws ApiException {
-
-        final WalletApi api = new WalletApi(ctx.apiClient);
-        final InlineResponse20013 wallet = api.walletGet();
-
-        if (!wallet.getUnlocked()) {
-
-            try {
-
-                logger.info("Unlocking a wallet");
-                api.walletUnlockPost(ctx.config.getPrimarySeed());
-
-            } catch (ApiException e) {
-                logger.info("Failed to unlock the wallet: {}", APIUtils.getErrorMessage(e));
-
-                try {
-
-                    if (!ctx.config.getPrimarySeed().isEmpty()) {
-
-                        // If a primary seed is given but the corresponding wallet doesn't exist,
-                        // initialize a wallet with the seed.
-                        this.waitSynchronization();
-
-                        logger.info("Initializing a wallet with the given seed");
-                        api.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
-
-                    } else {
-
-                        // If there is no information about wallets, create a wallet.
-                        logger.info("Initializing a wallet");
-                        final InlineResponse20016 seed = api.walletInitPost("", null, false);
-                        ctx.config.setPrimarySeed(seed.getPrimaryseed());
-
-                        try {
-                            ctx.config.save(this.configPath);
-                        } catch (IOException e1) {
-                            logger.error("Cannot save configuration: {}, your primary seed is \"{}\"", e1.getMessage(), ctx.config.getPrimarySeed());
-                            System.exit(1);
-                        }
-
-                    }
-
-                    // Try to unlock the wallet, again.
-                    logger.info("Unlocking a wallet");
-                    api.walletUnlockPost(ctx.config.getPrimarySeed());
-
-                } catch (final ApiException e1) {
-                    // Cannot initialize new wallet.
-                    logger.error("Cannot initialize new wallet: {}", APIUtils.getErrorMessage(e1));
-                    System.exit(1);
-                }
-
-            }
-
-            try {
-                final InlineResponse20014 address = api.walletAddressGet();
-                logger.info("Address of the wallet is {}", address.getAddress());
-            } catch (ApiException e) {
-                logger.error("Cannot get a wallet address: {}", APIUtils.getErrorMessage(e));
-            }
-
-        }
-
-    }
-
-    /**
-     * Wait until the consensus DB is synced.
-     *
-     * @throws ApiException when an error occurs in Consensus API.
-     */
-    void waitSynchronization() throws ApiException {
-
-        logger.info("Checking consensus DB");
-        final ConsensusApi api = new ConsensusApi(ctx.apiClient);
-        while (true) {
-
-            final InlineResponse2006 res = api.consensusGet();
-            if (res.getSynced()) {
-
-                logger.info("Consensus DB is synchronized");
-                break;
-
-            } else {
-
-                logger.info("Consensus DB isn't synchronized (block height: {}), wait a minute", res.getHeight());
-                try {
-                    Thread.sleep(DefaultSleepTime);
-                } catch (InterruptedException e) {
-                    logger.trace("Thread {} was interrupted until waiting synchronization: {}", Thread.currentThread().getName(), e.getMessage());
-                }
-
-            }
-
-        }
-
-    }
-
-    /**
-     * Wait until minimum required contracts are signed.
-     *
-     * @throws ApiException when an error occurs in Renter API.
-     */
-    void waitContracts() throws ApiException {
-
-        logger.info("Checking contracts");
-        final RenterApi api = new RenterApi(ctx.apiClient);
-        while (true) {
-
-            final int contracts = api.renterContractsGet().getContracts().size();
-            if (contracts >= MinContracts) {
-
-                logger.info("Sufficient contracts have been signed");
-                break;
-
-            } else {
-
-                logger.info("Signed contracts aren't enough ({} / {}), wait a minute", contracts, MinContracts);
-                try {
-                    Thread.sleep(DefaultSleepTime);
-                } catch (InterruptedException e) {
-                    logger.trace("Thread {} was interrupted until waiting contracts: {}", Thread.currentThread().getName(), e.getMessage());
-                }
-
-            }
-
-        }
-
-    }
-
-    private void resumeTasks(final Context ctx, final Executor executor) {
+    void resumeTasks(final Context ctx, final Executor executor) {
 
         logger.info("Resume pending uploads if exist");
         DB.getFiles(SyncState.FOR_UPLOAD).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
@@ -562,7 +441,7 @@ public final class App {
 
     }
 
-    private void synchronizeModifiedFiles(final Path rootDir) {
+    void synchronizeModifiedFiles(final Path rootDir) {
         logger.debug("Checking modified files in {}", rootDir);
 
         try {
@@ -604,7 +483,7 @@ public final class App {
 
     }
 
-    private void synchronizeDeletedFiles() {
+    void synchronizeDeletedFiles() {
         logger.debug("Checking deleted files");
 
         DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
@@ -621,27 +500,30 @@ public final class App {
     @SuppressWarnings("StringBufferReplaceableByString")
     private static void printHelp(final Options opts) {
 
-        final StringBuilder builder = new StringBuilder();
-        builder.append("\nCommands:\n");
-        builder.append(" ");
-        builder.append(Wallet.CommandName);
-        builder.append("\n   ");
-        builder.append(Wallet.Description);
-        builder.append("\n ");
-        builder.append(CreateAllowance.CommandName);
-        builder.append("\n   ");
-        builder.append(CreateAllowance.Description);
-        builder.append("\n ");
-        builder.append(GatewayConnect.CommandName);
-        builder.append("\n   ");
-        builder.append(GatewayConnect.Description);
-        builder.append("\n ");
-        builder.append(DumpDB.CommandName);
-        builder.append("\n   ");
-        builder.append(DumpDB.Description);
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (final PrintWriter writer = new PrintWriter(buffer)) {
+            writer.println();
+            writer.println("Commands:");
+            writer.print(" ");
+            writer.println(Wallet.CommandName);
+            writer.print("   ");
+            writer.println(Wallet.Description);
+            writer.print(" ");
+            writer.println(CreateAllowance.CommandName);
+            writer.print("   ");
+            writer.println(CreateAllowance.Description);
+            writer.print(" ");
+            writer.println(GatewayConnect.CommandName);
+            writer.print("   ");
+            writer.println(GatewayConnect.Description);
+            writer.print(" ");
+            writer.println(DumpDB.CommandName);
+            writer.print("   ");
+            writer.println(DumpDB.Description);
+        }
 
         final HelpFormatter help = new HelpFormatter();
-        help.printHelp(Name, Description, opts, builder.toString(), true);
+        help.printHelp(Name, Description, opts, buffer.toString(), true);
 
     }
 
