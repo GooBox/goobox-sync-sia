@@ -27,53 +27,14 @@ import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 
-public class NotifyFundInfoTask implements Runnable {
+public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
 
     private static Logger logger = LoggerFactory.getLogger(NotifyFundInfoTask.class);
-
-    public enum EventType {
-        // Notify when the funds are 0.
-        NoFunds,
-        // Notify when the funds are not enough.
-        InsufficientFunds,
-        // Notify when the creating allowance successes.
-        Allocated,
-        // Notify when an error occurs.
-        Error
-    }
-
-    public class Args {
-        @NotNull
-        final EventType eventType;
-        @Nullable
-        final String message;
-
-        Args(@NotNull final EventType eventType, @Nullable final String message) {
-            this.eventType = eventType;
-            this.message = message;
-        }
-    }
-
-    public class Event {
-        @SuppressWarnings("unused")
-        final String method = "walletInfo";
-        @NotNull
-        final Args args;
-
-        Event(@NotNull final EventType eventType, @Nullable final String message) {
-            this.args = new Args(eventType, message);
-        }
-
-        Event(@NotNull final EventType eventType) {
-            this(eventType, null);
-        }
-    }
 
     @NotNull
     private final Context ctx;
@@ -81,26 +42,6 @@ public class NotifyFundInfoTask implements Runnable {
     private final Gson gson = new Gson();
 
     public NotifyFundInfoTask(@NotNull final Context ctx, final boolean autoAllocate) {
-        final GetWalletInfoTask wallet = new GetWalletInfoTask(ctx);
-        try {
-            final WalletInfo info = wallet.call().getWalletInfo();
-            logger.debug("Current balance: {} hastings", info.getBalance());
-            if (info.getBalance().equals(BigInteger.ZERO)) {
-                System.out.println(this.gson.toJson(new Event(EventType.NoFunds)));
-            }
-        } catch (final ApiException e) {
-            logger.error(APIUtils.getErrorMessage(e));
-            System.out.println(this.gson.toJson(new Event(
-                    EventType.Error,
-                    APIUtils.getErrorMessage(e)))
-            );
-        } catch (final GetWalletInfoTask.WalletException e) {
-            logger.error(e.getMessage());
-            System.out.println(this.gson.toJson(new Event(
-                    EventType.Error,
-                    e.getMessage()))
-            );
-        }
         this.ctx = ctx;
         this.autoAllocate = autoAllocate;
     }
@@ -125,9 +66,9 @@ public class NotifyFundInfoTask implements Runnable {
                 if (info.getBalance().compareTo(info.getFunds()) > 0) {
                     final CreateAllowance createAllowance = new CreateAllowance(null);
                     final AllowanceInfo allowance = createAllowance.call();
-                    System.out.println(this.gson.toJson(new Event(
+                    this.sendEvent(
                             EventType.Allocated,
-                            String.format("Allocated %.4f SC", APIUtils.toSiacoin(allowance.getFunds()))))
+                            String.format("Allocated %.4f SC", APIUtils.toSiacoin(allowance.getFunds()))
                     );
                     info = wallet.call().getWalletInfo();
                     logger.info("Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
@@ -137,24 +78,22 @@ public class NotifyFundInfoTask implements Runnable {
             final BigInteger remaining = info.getFunds().subtract(info.getTotalSpending());
             final BigInteger threshold = prices.getContract().multiply(BigInteger.valueOf(App.MinContracts));
             if (remaining.compareTo(threshold) < 0) {
-                System.out.println(this.gson.toJson(new Event(
+                this.sendEvent(
                         EventType.InsufficientFunds,
-                        String.format("Should have more than %.4f SC", APIUtils.toSiacoin(threshold))))
+                        String.format("Should have more than %.4f SC", APIUtils.toSiacoin(threshold))
                 );
             }
 
         } catch (final ApiException e) {
+
             logger.error(APIUtils.getErrorMessage(e));
-            System.out.println(this.gson.toJson(new Event(
-                    EventType.Error,
-                    APIUtils.getErrorMessage(e)))
-            );
+            this.sendEvent(EventType.Error, APIUtils.getErrorMessage(e));
+
         } catch (final GetWalletInfoTask.WalletException e) {
+
             logger.error(e.getMessage());
-            System.out.println(this.gson.toJson(new Event(
-                    EventType.Error,
-                    e.getMessage()))
-            );
+            this.sendEvent(EventType.Error, e.getMessage());
+
         }
     }
 }
