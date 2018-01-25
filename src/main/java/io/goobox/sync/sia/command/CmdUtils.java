@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,6 +68,7 @@ public class CmdUtils {
             logger.warn("Failed to read config file {}: {}", path, e.getMessage());
             logger.info("Loading the default configuration");
             cfg = new Config();
+            cfg.setFilePath(path);
         }
         return cfg;
 

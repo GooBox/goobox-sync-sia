@@ -21,17 +21,10 @@ import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.SiaDaemon;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
-import io.goobox.sync.sia.client.api.model.InlineResponse20016;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008;
-import io.goobox.sync.sia.model.PriceInfo;
-import io.goobox.sync.sia.model.WalletInfo;
+import io.goobox.sync.sia.task.GetWalletInfoTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -42,54 +35,17 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 /**
  * Wallet command shows wallet information.
  */
-public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
+public final class Wallet implements Runnable {
 
     public static final String CommandName = "wallet";
     public static final String Description = "Show your wallet information";
     private static final Logger logger = LoggerFactory.getLogger(Wallet.class);
-
-    public static class InfoPair {
-        @NotNull
-        private final WalletInfo walletInfo;
-        @NotNull
-        private final PriceInfo priceInfo;
-
-        public InfoPair(@NotNull final WalletInfo walletInfo, @NotNull final PriceInfo priceInfo) {
-            this.walletInfo = walletInfo;
-            this.priceInfo = priceInfo;
-        }
-
-        @NotNull
-        public WalletInfo getWalletInfo() {
-            return walletInfo;
-        }
-
-        @NotNull
-        public PriceInfo getPriceInfo() {
-            return priceInfo;
-        }
-    }
-
-    public static class WalletException extends Exception {
-        public WalletException(final String msg) {
-            super(msg);
-        }
-    }
-
-    @NotNull
-    private final Path configPath;
-    @NotNull
-    private final Config cfg;
-    @Nullable
-    private SiaDaemon daemon = null;
 
     public static void main(String[] args) {
 
@@ -123,6 +79,12 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
 
     }
 
+    @NotNull
+    private final Path configPath;
+    @NotNull
+    private final Config cfg;
+    @Nullable
+    private SiaDaemon daemon = null;
     private boolean force = false;
 
     public Wallet() {
@@ -135,98 +97,15 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
         this.force = force;
     }
 
-    /**
-     * Wallet command print wallet and coin spending information.
-     * <p>
-     * The printed information is:
-     * (from /wallet/address)
-     * - the wallet address
-     * (from /wallet)
-     * - confirmed balance (in SC)
-     * - confirmed delta (in SC)
-     * (from /renter)
-     * - allowance
-     * - funds (in SC)
-     * - hosts
-     * - period
-     * - renew window
-     * - current period
-     * - current spending
-     * - download
-     * - storage
-     * - upload
-     * - form contract
-     * (from /renter/prices)
-     * - current prices
-     * - download
-     * - storage
-     * - upload
-     * - form contract
-     */
-    @Override
-    public InfoPair call() throws ApiException, WalletException {
-
-        final ApiClient apiClient = CmdUtils.getApiClient();
-        final WalletApi walletApi = new WalletApi(apiClient);
-        final InlineResponse20013 wallet = walletApi.walletGet();
-        if (!wallet.getUnlocked()) {
-
-            try {
-
-                logger.info("Unlocking the wallet");
-                walletApi.walletUnlockPost(cfg.getPrimarySeed());
-
-            } catch (final ApiException e) {
-
-                if (e.getCause() instanceof ConnectException) {
-                    throw e;
-                }
-
-                if (!cfg.getPrimarySeed().isEmpty()) {
-                    logger.error("Primary seed is given but the corresponding wallet is not found");
-                    throw new WalletException("cannot find the wallet");
-                }
-
-                // Create a new wallet.
-                logger.info("No wallets are found, initializing a wallet");
-                final InlineResponse20016 seed = walletApi.walletInitPost(null, null, this.force);
-                cfg.setPrimarySeed(seed.getPrimaryseed());
-                try {
-                    cfg.save(configPath);
-                } catch (IOException e1) {
-                    logger.error("Failed to save the wallet information");
-                    throw new WalletException("cannot save the wallet");
-                }
-
-                if (!walletApi.walletGet().getUnlocked()) {
-                    logger.info("Unlocking the wallet again");
-                    walletApi.walletUnlockPost(cfg.getPrimarySeed());
-                }
-
-            }
-
-        }
-
-        final RenterApi renter = new RenterApi(apiClient);
-        final InlineResponse2008 info = renter.renterGet();
-        final WalletInfo walletInfo = new WalletInfo(
-                walletApi.walletAddressGet().getAddress(), cfg.getPrimarySeed(), wallet, info);
-
-        final InlineResponse20012 prices = renter.renterPricesGet();
-        final PriceInfo priceInfo = new PriceInfo(prices);
-
-        return new InfoPair(walletInfo, priceInfo);
-
-    }
-
     @Override
     public void run() {
 
+        final GetWalletInfoTask task = new GetWalletInfoTask(new Context(this.cfg, CmdUtils.getApiClient()), this.force);
         int retry = 0;
         while (true) {
 
             try {
-                final InfoPair pair = this.call();
+                final GetWalletInfoTask.InfoPair pair = task.call();
                 System.out.println(pair.getWalletInfo().toString());
                 System.out.println(pair.getPriceInfo().toString());
                 break;
@@ -271,7 +150,7 @@ public final class Wallet implements Runnable, Callable<Wallet.InfoPair> {
                 logger.error("sia daemon returns invalid responses: {}", e.getMessage());
                 break;
 
-            } catch (final WalletException e) {
+            } catch (final GetWalletInfoTask.WalletException e) {
                 System.out.println(String.format("error: %s", e.getMessage()));
                 break;
             }

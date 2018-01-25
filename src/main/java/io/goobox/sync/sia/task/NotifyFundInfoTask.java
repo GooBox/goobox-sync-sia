@@ -20,9 +20,9 @@ package io.goobox.sync.sia.task;
 import com.google.gson.Gson;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
-import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -75,11 +75,13 @@ public class NotifyFundInfoTask implements Runnable {
         }
     }
 
+    @NotNull
+    private final Context ctx;
     private final boolean autoAllocate;
     private final Gson gson = new Gson();
 
-    public NotifyFundInfoTask(final boolean autoAllocate) {
-        final Wallet wallet = new Wallet();
+    public NotifyFundInfoTask(@NotNull final Context ctx, final boolean autoAllocate) {
+        final GetWalletInfoTask wallet = new GetWalletInfoTask(ctx);
         try {
             final WalletInfo info = wallet.call().getWalletInfo();
             logger.debug("Current balance: {} hastings", info.getBalance());
@@ -92,27 +94,28 @@ public class NotifyFundInfoTask implements Runnable {
                     EventType.Error,
                     APIUtils.getErrorMessage(e)))
             );
-        } catch (final Wallet.WalletException e) {
+        } catch (final GetWalletInfoTask.WalletException e) {
             logger.error(e.getMessage());
             System.out.println(this.gson.toJson(new Event(
                     EventType.Error,
                     e.getMessage()))
             );
         }
+        this.ctx = ctx;
         this.autoAllocate = autoAllocate;
     }
 
     @SuppressWarnings("WeakerAccess")
-    public NotifyFundInfoTask() {
-        this(false);
+    public NotifyFundInfoTask(@NotNull final Context ctx) {
+        this(ctx, false);
     }
 
     @Override
     public void run() {
-        final Wallet wallet = new Wallet();
+        final GetWalletInfoTask wallet = new GetWalletInfoTask(this.ctx);
         try {
 
-            final Wallet.InfoPair pair = wallet.call();
+            final GetWalletInfoTask.InfoPair pair = wallet.call();
             WalletInfo info = pair.getWalletInfo();
             logger.info(
                     "Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
@@ -146,7 +149,7 @@ public class NotifyFundInfoTask implements Runnable {
                     EventType.Error,
                     APIUtils.getErrorMessage(e)))
             );
-        } catch (final Wallet.WalletException e) {
+        } catch (final GetWalletInfoTask.WalletException e) {
             logger.error(e.getMessage());
             System.out.println(this.gson.toJson(new Event(
                     EventType.Error,

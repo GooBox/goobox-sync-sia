@@ -20,6 +20,9 @@ package io.goobox.sync.sia.task;
 import com.google.gson.Gson;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
@@ -28,7 +31,6 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.command.CreateAllowance;
-import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -48,7 +50,6 @@ import java.math.BigInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("unused")
 @RunWith(JMockit.class)
 public class NotifyFundInfoTaskTest {
 
@@ -56,14 +57,14 @@ public class NotifyFundInfoTaskTest {
     private final long period = 6000;
     private final long renewWindow = 1000;
 
-    private PriceInfo priceInfo;
-    private WalletInfo walletInfo;
-
     @Mocked
-    private Wallet walletCmd;
+    private GetWalletInfoTask walletInfoTask;
     @Mocked
     private CreateAllowance createAllowanceCmd;
 
+    private Context ctx;
+    private PriceInfo priceInfo;
+    private WalletInfo walletInfo;
     private ByteArrayOutputStream out;
     private PrintStream oldOut;
 
@@ -72,6 +73,9 @@ public class NotifyFundInfoTaskTest {
     @SuppressWarnings("SpellCheckingInspection")
     @Before
     public void setUp() {
+        this.ctx = new Context(new Config(), new ApiClient());
+        this.walletInfoTask = new GetWalletInfoTask(this.ctx);
+
         this.out = new ByteArrayOutputStream();
         this.oldOut = System.out;
         System.setOut(new PrintStream(out));
@@ -97,25 +101,25 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void constructorChecksRemainingFunds() throws Wallet.WalletException, ApiException {
+    public void constructorChecksRemainingFunds() throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        new NotifyFundInfoTask();
+        new NotifyFundInfoTask(this.ctx);
         assertTrue(out.toString().isEmpty());
     }
 
     @Test
-    public void constructorNotifiesEmptyFunds() throws Wallet.WalletException, ApiException {
+    public void constructorNotifiesEmptyFunds() throws GetWalletInfoTask.WalletException, ApiException {
         Deencapsulation.setField(walletInfo, "balance", BigInteger.ZERO);
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        new NotifyFundInfoTask();
+        new NotifyFundInfoTask(this.ctx);
 
         final String output = this.out.toString();
         System.err.println(output);
@@ -126,16 +130,16 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void constructorHandlesAPIError(@Mocked APIUtils utils) throws Wallet.WalletException, ApiException {
+    public void constructorHandlesAPIError(@SuppressWarnings("unused") @Mocked APIUtils utils) throws GetWalletInfoTask.WalletException, ApiException {
         final String err = "expected error";
         new Expectations() {{
             APIUtils.getErrorMessage(withAny(new ApiException()));
             result = err;
 
-            walletCmd.call();
+            walletInfoTask.call();
             result = new ApiException();
         }};
-        new NotifyFundInfoTask();
+        new NotifyFundInfoTask(this.ctx);
 
         final String output = this.out.toString();
         System.err.println(output);
@@ -147,13 +151,13 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void constructorHandlesWalletException() throws Wallet.WalletException, ApiException {
+    public void constructorHandlesWalletException() throws GetWalletInfoTask.WalletException, ApiException {
         final String err = "expected error";
         new Expectations() {{
-            walletCmd.call();
-            result = new Wallet.WalletException(err);
+            walletInfoTask.call();
+            result = new GetWalletInfoTask.WalletException(err);
         }};
-        new NotifyFundInfoTask();
+        new NotifyFundInfoTask(this.ctx);
 
         final String output = this.out.toString();
         System.err.println(output);
@@ -165,13 +169,13 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void runChecksRemainingFunds() throws Wallet.WalletException, ApiException {
+    public void runChecksRemainingFunds() throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx);
 
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
@@ -179,8 +183,8 @@ public class NotifyFundInfoTaskTest {
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
         task.run();
@@ -191,13 +195,13 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void runNotifyInsufficientFunds() throws Wallet.WalletException, ApiException {
+    public void runNotifyInsufficientFunds() throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx);
 
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
@@ -205,8 +209,8 @@ public class NotifyFundInfoTaskTest {
                 threshold.add(walletInfo.getTotalSpending()).divide(BigInteger.valueOf(2)));
 
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
         task.run();
@@ -224,7 +228,7 @@ public class NotifyFundInfoTaskTest {
      * create a new allowance with the current balance.
      */
     @Test
-    public void autoAllocation() throws Wallet.WalletException, ApiException {
+    public void autoAllocation() throws GetWalletInfoTask.WalletException, ApiException {
         // Threshold: contract fee * number of min. contracts + current spending.
         final BigInteger threshold = priceInfo.getContract()
                 .multiply(BigInteger.valueOf(App.MinContracts))
@@ -238,18 +242,18 @@ public class NotifyFundInfoTaskTest {
 
         new Expectations() {{
             // Constructor and the first call in run.
-            final Wallet.InfoPair pairBefore = new Wallet.InfoPair(walletInfo, priceInfo);
+            final GetWalletInfoTask.InfoPair pairBefore = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
 
             // after allocation.
             final WalletInfo newWalletInfo = createWalletInfo();
             Deencapsulation.setField(newWalletInfo, "funds", balance);
             Deencapsulation.setField(newWalletInfo, "balance", balance);
-            final Wallet.InfoPair pairAfter = new Wallet.InfoPair(newWalletInfo, priceInfo);
+            final GetWalletInfoTask.InfoPair pairAfter = new GetWalletInfoTask.InfoPair(newWalletInfo, priceInfo);
 
-            walletCmd.call();
+            walletInfoTask.call();
             returns(pairBefore, pairBefore, pairAfter);
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx, true);
 
         new Expectations() {{
             final InlineResponse2008SettingsAllowance info = new InlineResponse2008SettingsAllowance();
@@ -278,14 +282,14 @@ public class NotifyFundInfoTaskTest {
      * do not create a new allowance with the current balance.
      */
     @Test
-    public void skipAllocation() throws Wallet.WalletException, ApiException {
+    public void skipAllocation() throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
             times = 2;
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx, true);
 
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         final BigInteger newFunds = threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2));
@@ -299,13 +303,13 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void handleAPIError(@Mocked APIUtils utils) throws Wallet.WalletException, ApiException {
+    public void handleAPIError(@SuppressWarnings("unused") @Mocked APIUtils utils) throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx);
 
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
@@ -317,7 +321,7 @@ public class NotifyFundInfoTaskTest {
             APIUtils.getErrorMessage(withAny(new ApiException()));
             result = err;
 
-            walletCmd.call();
+            walletInfoTask.call();
             result = new ApiException();
         }};
         task.run();
@@ -332,13 +336,13 @@ public class NotifyFundInfoTaskTest {
     }
 
     @Test
-    public void handleWalletException() throws Wallet.WalletException, ApiException {
+    public void handleWalletException() throws GetWalletInfoTask.WalletException, ApiException {
         new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx);
 
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
@@ -347,8 +351,8 @@ public class NotifyFundInfoTaskTest {
 
         final String err = "expected error";
         new Expectations() {{
-            walletCmd.call();
-            result = new Wallet.WalletException(err);
+            walletInfoTask.call();
+            result = new GetWalletInfoTask.WalletException(err);
         }};
         task.run();
 
@@ -387,6 +391,7 @@ public class NotifyFundInfoTaskTest {
         allowance.setRenewwindow(renewWindow);
         settings.setAllowance(allowance);
         info.setSettings(settings);
+        //noinspection SpellCheckingInspection
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +72,11 @@ public class Context {
     @NotNull
     public Path getLocalPath(@NotNull final String name) {
         return this.config.getSyncDir().resolve(name);
+    }
+
+    @NotNull
+    public Config getConfig() {
+        return config;
     }
 
     @Override
