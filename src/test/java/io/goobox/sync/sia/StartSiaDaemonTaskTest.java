@@ -17,57 +17,86 @@
 
 package io.goobox.sync.sia;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.common.overlay.OverlayIconProvider;
 import io.goobox.sync.sia.client.ApiException;
+import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
 import io.goobox.sync.sia.task.WaitContractsTask;
 import io.goobox.sync.sia.task.WaitSynchronizationTask;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
 import java.util.Optional;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("unused")
 @RunWith(JMockit.class)
 public class StartSiaDaemonTaskTest {
 
-    @SuppressWarnings("unused")
     @Mocked
     private Thread thread;
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private GetWalletInfoTask getWalletInfoTask;
 
-    @SuppressWarnings("unused")
     @Mocked
     private WaitSynchronizationTask waitSynchronizationTask;
 
-    @SuppressWarnings("unused")
     @Mocked
     private WaitContractsTask waitContractsTask;
+
+    private final long DefaultSleepTime = App.DefaultSleepTime;
+    private final int MaxRetry = App.MaxRetry;
+
+    @Before
+    public void setUp() throws IOException {
+        UtilsMock.syncDir = Files.createTempDirectory("sync");
+        UtilsMock.dataDir = Files.createTempDirectory("data");
+        new UtilsMock();
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        FileUtils.deleteDirectory(UtilsMock.syncDir.toFile());
+        FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
+    }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void recover() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
+        new Expectations() {{
+            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
+        }};
+
         final App app = new App();
         final Context ctx = app.getContext();
         new Expectations(App.class) {{
 
-            Thread.sleep(App.DefaultSleepTime);
-
             App.getInstance();
             result = Optional.of(app);
-            app.startSiaDaemon();
 
             app.getContext();
             result = ctx;
+
+            app.startSiaDaemon();
+
+            Thread.sleep(DefaultSleepTime);
 
             final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
             result = getWalletInfoTask;
@@ -94,24 +123,32 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedAfterMaxRetry() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
+        new Expectations() {{
+            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
+        }};
+
         final App app = new App();
         final Context ctx = app.getContext();
         new Expectations(App.class) {{
-
-            Thread.sleep(App.DefaultSleepTime);
-
             App.getInstance();
             result = Optional.of(app);
-            app.startSiaDaemon();
 
             app.getContext();
             result = ctx;
 
+            app.startSiaDaemon();
+            times = MaxRetry + 1;
+
+            Thread.sleep(DefaultSleepTime);
+            times = MaxRetry + 1;
+
             final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
             result = getWalletInfoTask;
+            times = MaxRetry + 1;
+
             getWalletInfoTask.call();
             result = new ApiException(new ConnectException());
-            times = App.MaxRetry + 1;
+            times = MaxRetry + 1;
 
         }};
         final StartSiaDaemonTask task = new StartSiaDaemonTask();
@@ -123,24 +160,27 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedWithApiException() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
+        new Expectations() {{
+            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
+        }};
+
         final App app = new App();
         final Context ctx = app.getContext();
         new Expectations(App.class) {{
-
-            Thread.sleep(App.DefaultSleepTime);
-
             App.getInstance();
             result = Optional.of(app);
-            app.startSiaDaemon();
 
             app.getContext();
             result = ctx;
 
+            app.startSiaDaemon();
+            Thread.sleep(DefaultSleepTime);
+
             final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
             result = getWalletInfoTask;
+
             getWalletInfoTask.call();
             result = new ApiException();
-
         }};
         final StartSiaDaemonTask task = new StartSiaDaemonTask();
         assertFalse(task.recover(new ApiException(new ConnectException())));
@@ -151,11 +191,15 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedWithWalletException() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
+        new Expectations() {{
+            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
+        }};
+
         final App app = new App();
         final Context ctx = app.getContext();
         new Expectations(App.class) {{
 
-            Thread.sleep(App.DefaultSleepTime);
+            Thread.sleep(DefaultSleepTime);
 
             App.getInstance();
             result = Optional.of(app);

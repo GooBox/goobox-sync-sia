@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -50,17 +51,23 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class CheckStateTaskTest {
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -72,7 +79,6 @@ public class CheckStateTaskTest {
 
     @Before
     public void setUp() throws IOException {
-
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
@@ -84,7 +90,6 @@ public class CheckStateTaskTest {
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.oldTimeStamp = new Date(100000);
         this.newTimeStamp = new Date();
-
     }
 
     @After
@@ -129,6 +134,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localFile.toPath());
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -178,6 +191,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localFile.toPath());
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -223,8 +244,11 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
-        }};
 
+            // Since the local files doesn't exist yet, refresh should be skipped.
+            App.getInstance();
+            times = 0;
+        }};
 
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.ctx, executor).call();
@@ -260,6 +284,14 @@ public class CheckStateTaskTest {
             res.setFiles(new ArrayList<>());
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -305,6 +337,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -358,6 +394,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -478,6 +522,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -519,6 +571,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -545,6 +605,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final Path localPath = tmpDir.resolve(name);
@@ -591,6 +655,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();

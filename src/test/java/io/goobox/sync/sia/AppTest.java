@@ -60,8 +60,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -89,9 +91,10 @@ public class AppTest {
 
         new DBMock();
         UtilsMock.dataDir = Files.createTempDirectory("data");
+        UtilsMock.syncDir = Files.createTempDirectory("sync");
         new UtilsMock();
 
-        this.tmpDir = Files.createTempDirectory("sync");
+        this.tmpDir = UtilsMock.syncDir;
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
@@ -123,17 +126,12 @@ public class AppTest {
      */
     @Test
     public void testMain() throws IOException {
-
-        new Expectations(App.class, System.class) {{
+        new Expectations(App.class) {{
             final App app = new App();
             result = app;
             app.call();
-            result = 0;
-
-            System.exit(0);
         }};
         App.main(new String[]{});
-
     }
 
     /**
@@ -142,13 +140,11 @@ public class AppTest {
     @Test
     public void testMainWithResetDB() throws IOException {
 
-        new Expectations(App.class, System.class) {{
+        new Expectations(App.class) {{
             final App app = new App();
             result = app;
             app.call();
             result = 0;
-
-            System.exit(0);
         }};
 
         try {
@@ -168,13 +164,11 @@ public class AppTest {
     @Test
     public void testMainWithSyncDir() throws IOException {
 
-        new Expectations(App.class, System.class) {{
+        new Expectations(App.class) {{
             final App app = new App(tmpDir);
             result = app;
             app.call();
             result = 0;
-
-            System.exit(0);
         }};
         App.main(new String[]{"--sync-dir", this.tmpDir.toString()});
 
@@ -186,14 +180,12 @@ public class AppTest {
     @Test
     public void testMainWithOutputEvents() throws IOException {
 
-        new Expectations(App.class, System.class) {{
+        new Expectations(App.class) {{
             final App app = new App();
             result = app;
-            app.setOutputEvents(true);
+            app.setOutputEvents();
             app.call();
             result = 0;
-
-            System.exit(0);
         }};
         App.main(new String[]{"--output-events"});
 
@@ -244,29 +236,31 @@ public class AppTest {
     @Test
     public void testPrintHelp(@Mocked HelpFormatter help) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final StringBuilder builder = new StringBuilder();
-        builder.append("\nCommands:\n");
-        builder.append(" ");
-        builder.append(Wallet.CommandName);
-        builder.append("\n   ");
-        builder.append(Wallet.Description);
-        builder.append("\n ");
-        builder.append(CreateAllowance.CommandName);
-        builder.append("\n   ");
-        builder.append(CreateAllowance.Description);
-        builder.append("\n ");
-        builder.append(GatewayConnect.CommandName);
-        builder.append("\n   ");
-        builder.append(GatewayConnect.Description);
-        builder.append("\n ");
-        builder.append(DumpDB.CommandName);
-        builder.append("\n   ");
-        builder.append(DumpDB.Description);
-        builder.append("\n");
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (final PrintWriter writer = new PrintWriter(buffer)) {
+            writer.println();
+            writer.println("Commands:");
+            writer.print(" ");
+            writer.println(Wallet.CommandName);
+            writer.print("   ");
+            writer.println(Wallet.Description);
+            writer.print(" ");
+            writer.println(CreateAllowance.CommandName);
+            writer.print("   ");
+            writer.println(CreateAllowance.Description);
+            writer.print(" ");
+            writer.println(GatewayConnect.CommandName);
+            writer.print("   ");
+            writer.println(GatewayConnect.Description);
+            writer.print(" ");
+            writer.println(DumpDB.CommandName);
+            writer.print("   ");
+            writer.println(DumpDB.Description);
+        }
 
         final Options opt = new Options();
         new Expectations() {{
-            help.printHelp(App.Name, App.Description, opt, builder.toString(), true);
+            help.printHelp(App.Name, App.Description, opt, buffer.toString(), true);
         }};
 
         final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
@@ -312,10 +306,38 @@ public class AppTest {
     }
 
     @Test
+    public void testConstructor() {
+        new Expectations(APIUtils.class) {{
+            APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
+            result = ctx.getConfig();
+
+            APIUtils.getApiClient();
+            result = ctx.getApiClient();
+        }};
+
+        final App app = new App();
+        final Context ctx = app.getContext();
+        assertEquals(this.ctx.getConfig(), ctx.getConfig());
+        assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
+        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
+    }
+
+    @Test
     public void testConstructorWithSyncDir() {
+        new Expectations(APIUtils.class) {{
+            APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
+            result = ctx.getConfig();
+
+            APIUtils.getApiClient();
+            result = ctx.getApiClient();
+        }};
+
         final App app = new App(this.tmpDir);
-        final Config cfg = Deencapsulation.getField(app, "cfg");
-        assertEquals(this.tmpDir, cfg.getSyncDir());
+        final Context ctx = app.getContext();
+        assertEquals(this.ctx.getConfig(), ctx.getConfig());
+        assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
+        assertEquals(this.tmpDir, ctx.getConfig().getSyncDir());
+        assertEquals(this.tmpDir, Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
     }
 
     /**
@@ -565,7 +587,8 @@ public class AppTest {
      * This test simulates the scenario that trying to start a sia daemon couple of times but finally cannot do it.
      */
     @Test
-    public void testCallWithApiException(@SuppressWarnings("unused") @Mocked Thread thread) throws GetWalletInfoTask.WalletException, ApiException, IOException {
+    public void testCallWithApiException(@SuppressWarnings("unused") @Mocked Thread thread)
+            throws GetWalletInfoTask.WalletException, ApiException, IOException, InterruptedException {
 
         final App app = new App();
         Deencapsulation.setField(app, "ctx", this.ctx);
@@ -583,6 +606,8 @@ public class AppTest {
             getWalletInfoTask.call();
             result = new ApiException();
             times = App.MaxRetry + 1;
+            Thread.sleep(App.DefaultSleepTime);
+            times = App.MaxRetry;
         }};
 
         assertEquals(Integer.valueOf(1), app.call());

@@ -17,6 +17,8 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.common.overlay.OverlayIcon;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
@@ -24,6 +26,7 @@ import io.goobox.sync.sia.command.DumpDB;
 import io.goobox.sync.sia.command.GatewayConnect;
 import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.task.CheckDownloadStateTask;
 import io.goobox.sync.sia.task.CheckStateTask;
@@ -117,23 +120,8 @@ public final class App implements Callable<Integer> {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     // Static fields.
-    private static App app;
-
-    // Instance fields.
-//    @NotNull
-//    private final Path configPath;
-    @NotNull
-    private final Config cfg;
-    @NotNull
-    private final Context ctx;
-
-    /**
-     * If true, this app outputs events to stdout so that the GUI app can obtain them.
-     */
-    private boolean outputEvents = false;
-
     @Nullable
-    private SiaDaemon daemon;
+    private static App app;
 
     /**
      * The main function.
@@ -195,18 +183,23 @@ public final class App implements Callable<Integer> {
 
             }
 
+            final App app;
             if (cmd.hasOption("sync-dir")) {
-                App.app = new App(Paths.get(cmd.getParsedOptionValue("sync-dir").toString()));
+                app = new App(Paths.get(cmd.getParsedOptionValue("sync-dir").toString()));
             } else {
-                App.app = new App();
+                app = new App();
             }
+            App.app = app;
 
             if (cmd.hasOption("output-events")) {
-                App.app.setOutputEvents(true);
+                app.setOutputEvents();
             }
 
             // Start the app.
-            System.exit(App.app.call());
+            final int exitCode = app.call();
+            if (exitCode != 0) {
+                System.exit(exitCode);
+            }
 
         } catch (ParseException e) {
 
@@ -223,24 +216,64 @@ public final class App implements Callable<Integer> {
 
     }
 
-    public App() {
+    public static Optional<App> getInstance() {
+        return Optional.ofNullable(App.app);
+    }
 
+    // Instance fields.
+    @NotNull
+    private final Config cfg;
+    @NotNull
+    private final Context ctx;
+
+    /**
+     * If true, this app outputs events to stdout so that the GUI app can obtain them.
+     */
+    private boolean outputEvents = false;
+
+    @Nullable
+    private SiaDaemon daemon;
+
+    @NotNull
+    private final OverlayHelper overlayHelper;
+
+    public App() {
+        this(null);
+    }
+
+    public App(@Nullable final Path syncDir) {
         final Path configPath = Utils.getDataDir().resolve(ConfigFileName);
         this.cfg = APIUtils.loadConfig(configPath);
 
         final ApiClient apiClient = APIUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);
 
+        if (syncDir != null) {
+            logger.info("Overwrite the sync directory: {}", syncDir);
+            this.cfg.setSyncDir(syncDir);
+        }
+
+        this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
+            final String name = cfg.getSyncDir().relativize(path).toString();
+            final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
+                if (state.isSynced()) {
+                    return OverlayIcon.OK;
+                } else if (state.isSynchronizing()) {
+                    return OverlayIcon.SYNCING;
+                } else if (state.isFailed()) {
+                    return OverlayIcon.ERROR;
+                } else {
+                    return OverlayIcon.WARNING;
+                }
+            }).orElse(OverlayIcon.NONE);
+            logger.debug("Updating the icon of {} to {}", name, icon);
+            return icon;
+        });
+        Runtime.getRuntime().addShutdownHook(new Thread(overlayHelper::shutdown));
     }
 
-    public App(final Path syncDir) {
-        this();
-        logger.info("Overwrite the sync directory: {}", syncDir);
-        this.cfg.setSyncDir(syncDir);
-    }
-
-    void setOutputEvents(boolean outputEvents) {
-        this.outputEvents = outputEvents;
+    void setOutputEvents() {
+        this.outputEvents = true;
     }
 
     @NotNull
@@ -248,8 +281,9 @@ public final class App implements Callable<Integer> {
         return ctx;
     }
 
-    public static Optional<App> getInstance() {
-        return Optional.ofNullable(App.app);
+    @NotNull
+    public OverlayHelper getOverlayHelper() {
+        return overlayHelper;
     }
 
     synchronized void startSiaDaemon() {
@@ -324,9 +358,9 @@ public final class App implements Callable<Integer> {
                     return 1;
                 }
 
-            } catch (GetWalletInfoTask.WalletException e) {
+            } catch (final GetWalletInfoTask.WalletException e) {
                 // TODO: Should output log and error message to Stdout.
-                e.printStackTrace();
+                logger.error("Failed to obtain wallet information: {}", e.getMessage());
                 return 1;
             }
 
@@ -456,6 +490,7 @@ public final class App implements Callable<Integer> {
                     try {
                         logger.debug("File {} has been modified", localPath);
                         DB.setModified(name, localPath);
+                        this.getOverlayHelper().refresh(localPath);
                     } catch (IOException e) {
                         logger.error("Failed to update state of {}: {}", localPath, e.getMessage());
                     }
@@ -477,6 +512,7 @@ public final class App implements Callable<Integer> {
             if (!localPath.toFile().exists()) {
                 logger.debug("File {} has been deleted", localPath);
                 DB.setDeleted(ctx.getName(localPath));
+                this.getOverlayHelper().refresh(localPath);
             }
 
         }));

@@ -191,4 +191,9 @@ jacocoTestReport {
         xml.enabled = true
         html.enabled = true
     }
+    classDirectories = fileTree(
+            dir: "./build/classes/java/main",
+            excludes: ["**/sia/client/**/*"]
+    )
+//    sourceDirectories = files("src/main/java")
 }

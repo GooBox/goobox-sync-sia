@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -24,7 +26,6 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
-import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
@@ -39,16 +40,22 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class UploadLocalFileTaskTest {
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -58,6 +65,8 @@ public class UploadLocalFileTaskTest {
     private String name;
     private Path localPath;
     private Path cloudPath;
+    private String slashedLocalPath;
+    private String slashedCloudPath;
 
     /**
      * Creates a temporal directory and sets it as the result of CmdUtils.syncDir().
@@ -84,8 +93,8 @@ public class UploadLocalFileTaskTest {
         DB.addNewFile(this.name, this.localPath);
         DB.setForUpload(this.name, this.localPath, this.cloudPath);
 
-        APIUtilsMock.toSlashPaths.clear();
-        new APIUtilsMock();
+        this.slashedLocalPath = APIUtils.toSlash(this.localPath);
+        this.slashedCloudPath = APIUtils.toSlash(this.cloudPath);
 
     }
 
@@ -103,35 +112,53 @@ public class UploadLocalFileTaskTest {
     @Test
     public void uploadFile() throws ApiException {
 
-        new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(localPath);
+            result = slashedLocalPath;
+
+            APIUtils.toSlash(cloudPath);
+            result = slashedCloudPath;
+
+            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOADING, DB.get(this.name).get().getState());
-
-        // check toSlash is used.
-        assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(this.cloudPath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(this.localPath, APIUtilsMock.toSlashPaths.get(1));
 
     }
 
     @Test
     public void failedToUpload() throws ApiException {
 
-        new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(cloudPath);
+            result = slashedCloudPath;
+
+            APIUtils.toSlash(localPath);
+            result = slashedLocalPath;
+
+            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
             result = new ApiException();
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.UPLOAD_FAILED, DB.get(this.name).get().getState());
-
-        // check toSlash is used.
-        assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(this.cloudPath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(this.localPath, APIUtilsMock.toSlashPaths.get(1));
 
     }
 
@@ -144,7 +171,10 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            times = 0;
+
+            App.getInstance();
             times = 0;
         }};
 
@@ -160,9 +190,6 @@ public class UploadLocalFileTaskTest {
         // check after conditions.
         assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
 
-        // check toSlash is used.
-        assertEquals(0, APIUtilsMock.toSlashPaths.size());
-
     }
 
     /**
@@ -174,7 +201,10 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(toSlash(cloudPath), cfg.getDataPieces(), cfg.getParityPieces(), toSlash(localPath));
+            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            times = 0;
+
+            App.getInstance();
             times = 0;
         }};
 
@@ -191,13 +221,6 @@ public class UploadLocalFileTaskTest {
         assertFalse(DBMock.committed);
         assertEquals(SyncState.DELETED, DB.get(this.name).get().getState());
 
-        // check toSlash is used.
-        assertEquals(0, APIUtilsMock.toSlashPaths.size());
-
-    }
-
-    private String toSlash(final Path path) {
-        return path.toString().replace("\\", "/");
     }
 
 }

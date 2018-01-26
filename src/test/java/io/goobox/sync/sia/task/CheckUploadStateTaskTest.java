@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -47,16 +48,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class CheckUploadStateTaskTest {
 
-    @SuppressWarnings("unused")
     @Mocked
     private RenterApi api;
 
@@ -91,7 +92,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void uploadFile() throws ApiException, IOException {
+    public void uploadFile(@Mocked App app, @Mocked OverlayHelper overlayHelper) throws ApiException, IOException {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
@@ -110,6 +111,14 @@ public class CheckUploadStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckUploadStateTask(this.ctx).call();

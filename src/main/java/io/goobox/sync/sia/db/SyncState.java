@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,9 +54,11 @@ public enum SyncState {
         return this == SYNCED;
     }
 
-    public boolean isPending() {
+    public boolean isSynchronizing() {
         return this == FOR_DOWNLOAD
+                || this == DOWNLOADING
                 || this == FOR_UPLOAD
+                || this == UPLOADING
                 || this == FOR_LOCAL_DELETE
                 || this == FOR_CLOUD_DELETE;
     }
@@ -69,6 +71,5 @@ public enum SyncState {
     public boolean isConflict() {
         return this == CONFLICT;
     }
-
 
 }

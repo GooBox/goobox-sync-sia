@@ -79,6 +79,11 @@ public class Context {
         return config;
     }
 
+    @Nullable
+    public ApiClient getApiClient() {
+        return apiClient;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

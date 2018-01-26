@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
@@ -86,6 +87,7 @@ public class CheckUploadStateTask implements Callable<Void> {
                             logger.error("Failed to update the sync db: {}", e.getMessage());
                             DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
                         }
+                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(siaFile.getLocalPath()));
                     } else {
                         logger.info(
                                 "File {} is now being uploaded ({}%)", siaFile.getName(),

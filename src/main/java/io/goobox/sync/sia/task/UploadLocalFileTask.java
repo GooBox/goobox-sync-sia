@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
@@ -72,6 +73,7 @@ public class UploadLocalFileTask implements Callable<Void> {
             logger.debug("File {} was enqueued but it doesn't cloud path", syncFile.getName());
             return null;
         }
+
         final Path cloudPath = syncFile.getCloudPath().get();
         final RenterApi api = new RenterApi(this.ctx.apiClient);
         try {
@@ -91,10 +93,11 @@ public class UploadLocalFileTask implements Callable<Void> {
             DB.setUploadFailed(this.ctx.getName(this.localPath));
 
         } finally {
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(this.localPath));
             DB.commit();
         }
-
         return null;
+
     }
 
 }

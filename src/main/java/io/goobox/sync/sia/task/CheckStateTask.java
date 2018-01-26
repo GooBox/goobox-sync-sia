@@ -17,6 +17,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.RetryableTask;
 import io.goobox.sync.sia.StartSiaDaemonTask;
@@ -29,6 +30,7 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,7 +228,8 @@ public class CheckStateTask implements Callable<Void> {
      * @param files returned by renterFilesGet.
      * @return a collection of SiaFile instances.
      */
-    private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
+    @NotNull
+    private Collection<SiaFile> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
 
         // Key: file name, Value: file object.
         final Map<String, SiaFile> fileMap = new HashMap<>();
@@ -281,18 +284,20 @@ public class CheckStateTask implements Callable<Void> {
      * @param localPath to the file to be uploaded.
      * @throws IOException if failed to access the local file.
      */
-    private void enqueueForUpload(final Path localPath) throws IOException {
+    private void enqueueForUpload(@NotNull final Path localPath) throws IOException {
 
         final Path name = this.ctx.config.getSyncDir().relativize(localPath);
         final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
             if (localPath.toFile().exists()) {
                 throw e;
             }
             logger.info("File {} was deleted", name);
+            // For now, marks the file was deleted, next round of CheckStateTask will update it to FOR_CLOUD_DELETE, etc.
             DB.setDeleted(this.ctx.getName(localPath));
         }
 
@@ -303,9 +308,12 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param file to be downloaded.
      */
-    private void enqueueForDownload(final SiaFile file) throws IOException {
+    private void enqueueForDownload(@NotNull final SiaFile file) throws IOException {
 
         DB.addForDownload(file, file.getLocalPath());
+        if (file.getLocalPath().toFile().exists()) {
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+        }
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
     }
@@ -315,7 +323,7 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param file to be deleted from the cloud network.
      */
-    private void enqueueForCloudDelete(final SiaFile file) {
+    private void enqueueForCloudDelete(@NotNull final SiaFile file) {
 
         DB.setForCloudDelete(file);
         this.executor.execute(new RetryableTask(new DeleteCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
@@ -327,9 +335,10 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param localPath to the file to be deleted from the local directory.
      */
-    private void enqueueForLocalDelete(final Path localPath) {
+    private void enqueueForLocalDelete(@NotNull final Path localPath) {
 
         DB.setForLocalDelete(this.ctx.getName(localPath));
+        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
         this.executor.execute(new DeleteLocalFileTask(this.ctx, localPath));
 
     }

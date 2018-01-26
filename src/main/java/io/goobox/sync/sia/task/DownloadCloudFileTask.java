@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
@@ -92,6 +93,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
             DB.setDownloadFailed(this.name);
 
         } finally {
+            App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(localPath -> app.getOverlayHelper().refresh(localPath)));
             DB.commit();
         }
         return null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -43,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +57,12 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JMockit.class)
 public class FileWatcherTest {
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private DirectoryWatcher watchService;
 
@@ -72,7 +79,6 @@ public class FileWatcherTest {
 
         this.name = String.format("test-name-%x", this.now);
         this.localPath = this.tmpDir.resolve(this.name);
-
     }
 
     @After
@@ -179,6 +185,7 @@ public class FileWatcherTest {
     /**
      * Test FileWatcher adds files not modified in the last MinElapsedTime seconds to the sync DB and marks it MODIFIED.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void testFoundNewFile() throws IOException {
 
@@ -188,6 +195,14 @@ public class FileWatcherTest {
         }};
         new Expectations() {{
             watchService.watchAsync(executor);
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
@@ -280,6 +295,7 @@ public class FileWatcherTest {
     }
 
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void checkStatusAfterModifyEvent(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
@@ -307,6 +323,15 @@ public class FileWatcherTest {
                 this.updateStatus(name, before);
 
                 new SystemMock();
+                new Expectations() {{
+                    App.getInstance();
+                    result = Optional.of(app);
+
+                    app.getOverlayHelper();
+                    result = overlayHelper;
+
+                    overlayHelper.refresh(localPath);
+                }};
 
                 Files.write(localPath, dummyData.getBytes());
 
@@ -407,6 +432,7 @@ public class FileWatcherTest {
         this.checkStatusAfterDeleteEvent(SyncState.DOWNLOADING, SyncState.DOWNLOADING);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void checkStatusAfterDeleteEvent(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 

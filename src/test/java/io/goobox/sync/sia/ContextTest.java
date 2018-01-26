@@ -51,8 +51,8 @@ public class ContextTest {
         final ApiClient cli = new ApiClient();
 
         final Context ctx = new Context(cfg, cli);
-        assertEquals(ctx.config, cfg);
-        assertEquals(ctx.apiClient, cli);
+        assertEquals(ctx.getConfig(), cfg);
+        assertEquals(ctx.getApiClient(), cli);
         assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
 
     }

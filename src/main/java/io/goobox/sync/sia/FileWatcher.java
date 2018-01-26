@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,7 +106,6 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     this.trackingFiles.remove(event.path());
                 }
                 DB.get(name).ifPresent(syncFile -> {
-
                     try {
                         switch (syncFile.getState()) {
                             case SYNCED:
@@ -114,16 +113,13 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                             case UPLOADING:
                                 DB.setDeleted(name);
                                 break;
-
                             case FOR_DOWNLOAD:
                             case DOWNLOADING:
                                 break;
-
                         }
                     } finally {
                         DB.commit();
                     }
-
                 });
                 break;
         }
@@ -145,32 +141,31 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 }
 
                 final String name = getName(localPath);
-                try {
+                final boolean shouldBeAdded = DB.get(name).map(syncFile -> {
 
-                    final boolean shouldBeAdded = DB.get(name).map(syncFile -> {
-
-                        try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
-                            final String digest = DigestUtils.sha512Hex(in);
-                            if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
-                                logger.trace("File {} is modified but the contents are not changed", name);
-                                removePaths.add(localPath);
-                                return false;
-                            }
-                        } catch (final IOException e) {
-                            logger.error("Failed to compute digest of {}: {}", name, e.getMessage());
+                    try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                        final String digest = DigestUtils.sha512Hex(in);
+                        if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
+                            logger.trace("File {} is modified but the contents are not changed", name);
+                            removePaths.add(localPath);
+                            return false;
                         }
-                        return true;
+                    } catch (final IOException e) {
+                        logger.error("Failed to compute digest of {}: {}", name, e.getMessage());
+                    }
+                    return true;
 
-                    }).orElse(true);
+                }).orElse(true);
 
-                    if (shouldBeAdded) {
+                if (shouldBeAdded) {
+                    try {
                         logger.info("Found modified file {}", name);
                         DB.addNewFile(name, localPath);
+                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
                         removePaths.add(localPath);
+                    } catch (IOException e) {
+                        logger.error("Failed to add a new file {} to the sync DB: {}", name, e.getMessage());
                     }
-
-                } catch (IOException e) {
-                    logger.error("Failed to add a new file {} to the sync DB: {}", name, e.getMessage());
                 }
 
             });

@@ -2,7 +2,7 @@ build:
   verbosity: detailed
 
 build_script:
-  - gradlew.bat assemble --info --no-daemon
+  - gradlew.bat assemble --no-daemon
 
 test_script:
   - gradlew.bat test --info --no-daemon

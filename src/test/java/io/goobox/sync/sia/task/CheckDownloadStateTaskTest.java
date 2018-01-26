@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -54,6 +55,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -61,13 +63,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class CheckDownloadStateTaskTest {
 
     private static SimpleDateFormat RFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ssZ");
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -164,6 +171,14 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -205,6 +220,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -234,6 +252,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -265,6 +286,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -317,6 +341,14 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -348,6 +380,14 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -381,6 +421,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -434,6 +477,14 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -472,6 +523,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -513,6 +567,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -591,6 +648,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
