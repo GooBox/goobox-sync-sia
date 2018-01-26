@@ -120,8 +120,8 @@ public final class App implements Callable<Integer> {
     private static App app;
 
     // Instance fields.
-    @NotNull
-    private final Path configPath;
+//    @NotNull
+//    private final Path configPath;
     @NotNull
     private final Config cfg;
     @NotNull
@@ -225,8 +225,8 @@ public final class App implements Callable<Integer> {
 
     public App() {
 
-        this.configPath = Utils.getDataDir().resolve(ConfigFileName);
-        this.cfg = APIUtils.loadConfig(this.configPath);
+        final Path configPath = Utils.getDataDir().resolve(ConfigFileName);
+        this.cfg = APIUtils.loadConfig(configPath);
 
         final ApiClient apiClient = APIUtils.getApiClient();
         this.ctx = new Context(cfg, apiClient);

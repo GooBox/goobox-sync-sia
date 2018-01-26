@@ -29,7 +29,6 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
-import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -57,7 +56,7 @@ public class NotifyFundInfoTaskTest {
     @Mocked
     private GetWalletInfoTask walletInfoTask;
     @Mocked
-    private CreateAllowance createAllowanceCmd;
+    private CreateAllowanceTask createAllowanceTask;
 
     private Path configPath;
     private Context ctx;
@@ -168,8 +167,8 @@ public class NotifyFundInfoTaskTest {
             info.setPeriod(period);
             info.setRenewwindow(renewWindow);
             final AllowanceInfo allowanceInfo = new AllowanceInfo(info);
-            createAllowanceCmd = new CreateAllowance(null);
-            createAllowanceCmd.call();
+            createAllowanceTask = new CreateAllowanceTask(ctx);
+            createAllowanceTask.call();
             result = allowanceInfo;
 
             task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Allocated, anyString);

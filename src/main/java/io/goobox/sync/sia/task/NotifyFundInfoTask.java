@@ -17,12 +17,10 @@
 
 package io.goobox.sync.sia.task;
 
-import com.google.gson.Gson;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -39,7 +37,6 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
     @NotNull
     private final Context ctx;
     private final boolean autoAllocate;
-    private final Gson gson = new Gson();
 
     public NotifyFundInfoTask(@NotNull final Context ctx, final boolean autoAllocate) {
         this.ctx = ctx;
@@ -64,7 +61,7 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
             final PriceInfo prices = pair.getPriceInfo();
             if (this.autoAllocate) {
                 if (info.getBalance().compareTo(info.getFunds()) > 0) {
-                    final CreateAllowance createAllowance = new CreateAllowance(null);
+                    final CreateAllowanceTask createAllowance = new CreateAllowanceTask(this.ctx);
                     final AllowanceInfo allowance = createAllowance.call();
                     this.sendEvent(
                             EventType.Allocated,

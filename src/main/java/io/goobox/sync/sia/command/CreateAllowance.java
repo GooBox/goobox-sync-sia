@@ -21,14 +21,10 @@ import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.SiaDaemon;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
-import io.goobox.sync.sia.model.AllowanceInfo;
+import io.goobox.sync.sia.task.CreateAllowanceTask;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -39,27 +35,23 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.math.BigInteger;
 import java.net.ConnectException;
-import java.util.concurrent.Callable;
 
 /**
  * Creates allowance.
  */
-public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> {
+public final class CreateAllowance implements Runnable {
 
     public static final String CommandName = "create-allowance";
     public static final String Description = "Create allowance";
-
-    static final int DefaultPeriod = 4320;
 
     private static final Logger logger = LoggerFactory.getLogger(CreateAllowance.class);
 
     @NotNull
     private final Config cfg;
     @Nullable
-    private BigDecimal fund;
+    private BigInteger fund;
     @Nullable
     private SiaDaemon daemon = null;
 
@@ -69,7 +61,7 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
         opts.addOption("h", "help", false, "show this help");
         opts.addOption(null, "fund", true, "hastings to be allocated if not given allocate current balance");
 
-        BigDecimal fund = null;
+        BigInteger fund = null;
         try {
 
             final CommandLine cmd = new DefaultParser().parse(opts, args);
@@ -82,7 +74,7 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
             }
 
             if (cmd.hasOption("fund")) {
-                fund = new BigDecimal(cmd.getOptionValue("fund"));
+                fund = new BigInteger(cmd.getOptionValue("fund"));
             }
 
 
@@ -108,49 +100,21 @@ public final class CreateAllowance implements Runnable, Callable<AllowanceInfo> 
      * @param fund to be allocated, if null, all current balance will be allocated.
      */
     @SuppressWarnings("WeakerAccess")
-    public CreateAllowance(@Nullable final BigDecimal fund) {
+    public CreateAllowance(@Nullable final BigInteger fund) {
         this.fund = fund;
         this.cfg = APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
     }
 
     @Override
-    public AllowanceInfo call() throws ApiException {
-
-        final ApiClient apiClient = APIUtils.getApiClient();
-        final WalletApi wallet = new WalletApi(apiClient);
-        final InlineResponse20013 walletInfo = wallet.walletGet();
-
-        // If the wallet is locked, unlock it first.
-        if (!walletInfo.getUnlocked()) {
-            logger.info("Unlocking the wallet");
-            wallet.walletUnlockPost(cfg.getPrimarySeed());
-        }
-
-        // If fund is null, get current balance.
-        final RenterApi renter = new RenterApi(apiClient);
-        if (this.fund == null) {
-            // Allocating the current balance.
-            this.fund = new BigDecimal(walletInfo.getConfirmedsiacoinbalance());
-        }
-
-        // Allocate new fund.
-        logger.info("Allocating {} hastings", this.fund);
-        renter.renterPost(this.fund.setScale(0, RoundingMode.DOWN).toString(), null, DefaultPeriod, null);
-
-        final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
-        return new AllowanceInfo(allowance);
-
-    }
-
-    @Override
     public void run() {
 
+        final CreateAllowanceTask task = new CreateAllowanceTask(new Context(this.cfg, APIUtils.getApiClient()), this.fund);
         int retry = 0;
         while (true) {
 
             try {
 
-                System.out.println(this.call().toString());
+                System.out.println(task.call().toString());
                 break;
 
             } catch (final ApiException e) {
