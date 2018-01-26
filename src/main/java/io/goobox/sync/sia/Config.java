@@ -54,6 +54,12 @@ public class Config {
     static final int MinimumParityPieces = 12;
 
     /**
+     * Path to this config file.
+     */
+    @NotNull
+    private final Path filePath;
+
+    /**
      * User name.
      */
     private String userName;
@@ -92,7 +98,15 @@ public class Config {
      */
     private boolean disableAutoAllocation;
 
-    public Config() {
+    /**
+     * Create a config object associated with a given path.
+     * <p>
+     * Note that this constructor doesn't load the given file.
+     *
+     * @param filePath to be used to save the configuration.
+     */
+    public Config(@NotNull Path filePath) {
+        this.filePath = filePath;
         this.userName = "";
         this.primarySeed = "";
         this.syncDir = Utils.getSyncDir().toAbsolutePath();
@@ -100,6 +114,11 @@ public class Config {
         this.dataPieces = DefaultDataPieces;
         this.parityPieces = DefaultParityPieces;
         this.disableAutoAllocation = false;
+    }
+
+    @NotNull
+    public Path getFilePath() {
+        return filePath;
     }
 
     @NotNull
@@ -183,12 +202,11 @@ public class Config {
     }
 
     /**
-     * Save this configurations to the given file.
+     * Save this configurations.
      *
-     * @param path to the config file.
      * @throws IOException if failed to write a file.
      */
-    public void save(@NotNull final Path path) throws IOException {
+    public void save() throws IOException {
 
         final Properties props = new Properties();
         props.setProperty(UserName, this.userName);
@@ -199,7 +217,7 @@ public class Config {
         props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
         props.setProperty(DisableAutoAllocation, String.valueOf(this.disableAutoAllocation));
 
-        try (final BufferedWriter output = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+        try (final BufferedWriter output = Files.newBufferedWriter(this.filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             props.store(output, "");
         }
 
@@ -208,23 +226,23 @@ public class Config {
     /**
      * Load configurations from the given file.
      *
-     * @param path to the config file.
+     * @param filePath to the config file.
      * @return a Config object.
      * @throws IOException if failed to read a file.
      */
-    public static Config load(@NotNull final Path path) throws IOException {
+    public static Config load(@NotNull final Path filePath) throws IOException {
 
-        logger.info("Loading config file {}", path);
-        if (!path.toFile().exists()) {
-            throw new IOException(String.format("file %s doesn't exist", path));
+        logger.info("Loading config file {}", filePath);
+        if (!filePath.toFile().exists()) {
+            throw new IOException(String.format("file %s doesn't exist", filePath));
         }
 
         final Properties props = new Properties();
-        try (final InputStream in = Files.newInputStream(path)) {
+        try (final InputStream in = Files.newInputStream(filePath)) {
             props.load(in);
         }
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(filePath);
         cfg.setUserName(props.getProperty(UserName, ""));
         cfg.setPrimarySeed(props.getProperty(PrimarySeed, ""));
 

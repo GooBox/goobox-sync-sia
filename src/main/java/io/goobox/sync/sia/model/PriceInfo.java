@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class PriceInfo {
 
@@ -74,5 +75,21 @@ public class PriceInfo {
             writer.print(String.format("  contract: %s SC/contract", APIUtils.toSiacoin(this.getContract())));
         }
         return buffer.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PriceInfo priceInfo = (PriceInfo) o;
+        return Objects.equals(download, priceInfo.download) &&
+                Objects.equals(upload, priceInfo.upload) &&
+                Objects.equals(storage, priceInfo.storage) &&
+                Objects.equals(contract, priceInfo.contract);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(download, upload, storage, contract);
     }
 }

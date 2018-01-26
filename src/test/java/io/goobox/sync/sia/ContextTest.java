@@ -17,8 +17,12 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiClient;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -26,10 +30,23 @@ import static org.junit.Assert.assertEquals;
 
 public class ContextTest {
 
+    private Path configPath;
+
+    @Before
+    public void setUp() throws IOException {
+        this.configPath = Files.createTempFile(null, null);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @After
+    public void tearDown() {
+        this.configPath.toFile().delete();
+    }
+
     @Test
     public void test() {
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         final ApiClient cli = new ApiClient();
 
@@ -44,7 +61,7 @@ public class ContextTest {
     public void getName() {
 
         final Path wd = Paths.get(".").toAbsolutePath();
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setSyncDir(wd);
 
         final Context ctx = new Context(cfg, null);
@@ -58,7 +75,7 @@ public class ContextTest {
     public void getLocalPath() {
 
         final Path wd = Paths.get(".").toAbsolutePath();
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setSyncDir(wd);
 
         final Context ctx = new Context(cfg, null);

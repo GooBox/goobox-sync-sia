@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class AllowanceInfo {
 
@@ -68,6 +69,22 @@ public class AllowanceInfo {
             writer.println(String.format("  renew-window: %d blocks", this.getRenewWindow()));
         }
         return buffer.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AllowanceInfo that = (AllowanceInfo) o;
+        return hosts == that.hosts &&
+                period == that.period &&
+                renewWindow == that.renewWindow &&
+                Objects.equals(funds, that.funds);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(funds, hosts, period, renewWindow);
     }
 
 }

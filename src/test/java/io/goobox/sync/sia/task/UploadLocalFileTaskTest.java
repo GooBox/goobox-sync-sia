@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -69,7 +70,7 @@ public class UploadLocalFileTaskTest {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        this.cfg = new Config();
+        this.cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(this.cfg, "userName", "test-user");
         Deencapsulation.setField(this.cfg, "dataPieces", 120);
         Deencapsulation.setField(this.cfg, "parityPieces", 50);
