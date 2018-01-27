@@ -53,7 +53,7 @@ public class ContextTest {
         final Context ctx = new Context(cfg, cli);
         assertEquals(ctx.getConfig(), cfg);
         assertEquals(ctx.getApiClient(), cli);
-        assertEquals(ctx.pathPrefix, Paths.get(cfg.getUserName(), "Goobox"));
+        assertEquals(ctx.getPathPrefix(), Paths.get(cfg.getUserName(), "Goobox"));
 
     }
 

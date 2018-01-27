@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,7 +74,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
         }
         final Path cloudPath = syncFile.getCloudPath().get();
         final Path temporaryPath = syncFile.getTemporaryPath().get();
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));

@@ -41,7 +41,7 @@ public class WaitContractsTask implements Callable<Void> {
     @Override
     public Void call() throws ApiException {
         logger.info("Checking contracts");
-        final RenterApi api = new RenterApi(ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         while (true) {
 
             final int contracts = api.renterContractsGet().getContracts().size();

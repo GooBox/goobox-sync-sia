@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ public class DownloadCloudFileTaskTest {
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
-        this.remotePath = this.ctx.pathPrefix.resolve(this.name);
+        this.remotePath = this.ctx.getPathPrefix().resolve(this.name);
         this.localPath = this.tmpDir.resolve(this.name);
         this.slashedRemotePath = APIUtils.toSlash(this.remotePath);
 

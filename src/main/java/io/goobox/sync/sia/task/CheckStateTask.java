@@ -69,7 +69,7 @@ public class CheckStateTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking for changes");
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         final Set<String> processedFiles = new HashSet<>();
         try {
 
@@ -178,7 +178,7 @@ public class CheckStateTask implements Callable<Void> {
                 // It should be uploaded.
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                    this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
                 }
@@ -206,7 +206,7 @@ public class CheckStateTask implements Callable<Void> {
                 // It means this file was deleted from the cloud network by another client.
                 // This file should be deleted from the local directory, too.
                 logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
-                this.enqueueForLocalDelete(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             });
 
@@ -244,12 +244,12 @@ public class CheckStateTask implements Callable<Void> {
                 }
 
                 final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
-                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
+                if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
                     // This file isn't managed by Goobox.
                     logger.debug(
                             "Found remote file {} but it's not managed by Goobox (not starts with {})",
                             siaFile.getCloudPath(),
-                            this.ctx.pathPrefix);
+                            this.ctx.getPathPrefix());
                     return;
                 }
 
@@ -286,8 +286,8 @@ public class CheckStateTask implements Callable<Void> {
      */
     private void enqueueForUpload(@NotNull final Path localPath) throws IOException {
 
-        final Path name = this.ctx.config.getSyncDir().relativize(localPath);
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
+        final Path name = this.ctx.getConfig().getSyncDir().relativize(localPath);
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
             App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));

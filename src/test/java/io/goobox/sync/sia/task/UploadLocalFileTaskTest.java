@@ -88,7 +88,7 @@ public class UploadLocalFileTaskTest {
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
-        this.cloudPath = this.context.pathPrefix.resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
+        this.cloudPath = this.context.getPathPrefix().resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
         assertTrue(this.localPath.toFile().createNewFile());
         DB.addNewFile(this.name, this.localPath);
         DB.setForUpload(this.name, this.localPath, this.cloudPath);

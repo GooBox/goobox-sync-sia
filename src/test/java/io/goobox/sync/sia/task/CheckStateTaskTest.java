@@ -109,7 +109,7 @@ public class CheckStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -122,7 +122,7 @@ public class CheckStateTaskTest {
         files.add(file);
 
         final InlineResponse20011Files newerFile = new InlineResponse20011Files();
-        final Path newerRemotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path newerRemotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         newerFile.setSiapath(newerRemotePath.toString());
         newerFile.setAvailable(true);
         newerFile.setFilesize(10L);
@@ -168,7 +168,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -206,7 +206,7 @@ public class CheckStateTaskTest {
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
-        final Path expected = this.ctx.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
+        final Path expected = this.ctx.getPathPrefix().resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
         assertEquals(expected.getParent(), DB.get(siaFile).get().getCloudPath().get().getParent());
 
         final long time1 = Long.valueOf(expected.getFileName().toString());
@@ -230,7 +230,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(10L);
@@ -316,7 +316,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -427,7 +427,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path cloudPath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(cloudPath.toString());
         file.setAvailable(false);
         file.setFilesize(0L);
@@ -501,7 +501,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -550,7 +550,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -631,7 +631,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);

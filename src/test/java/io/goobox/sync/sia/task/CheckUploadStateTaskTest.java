@@ -79,7 +79,7 @@ public class CheckUploadStateTaskTest {
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
-        this.cloudPath = this.ctx.pathPrefix.resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
+        this.cloudPath = this.ctx.getPathPrefix().resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
         this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
 

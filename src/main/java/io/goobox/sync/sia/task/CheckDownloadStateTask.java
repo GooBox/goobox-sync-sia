@@ -67,7 +67,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking download status");
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             for (final InlineResponse20010Downloads remoteFile : getRecentDownloads(api.renterDownloadsGet().getDownloads())) {
@@ -75,11 +75,11 @@ public class CheckDownloadStateTask implements Callable<Void> {
                 final SiaFileFromDownloadsAPI file = new SiaFileFromDownloadsAPI(this.ctx, remoteFile);
                 final Optional<SyncFile> syncFileOpt = DB.get(file);
 
-                if (!file.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
+                if (!file.getCloudPath().startsWith(this.ctx.getPathPrefix()) || !syncFileOpt.isPresent()) {
                     logger.trace(
                             "Found remote file {} but it's not managed by Goobox (not starts with {})",
                             file.getCloudPath(),
-                            this.ctx.pathPrefix);
+                            this.ctx.getPathPrefix());
                     continue;
                 }
 

@@ -96,7 +96,7 @@ public class CheckDownloadStateTaskTest {
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
-        final Path cloudPath = this.ctx.pathPrefix.resolve(this.name);
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(this.name);
         this.localPath = this.tmpDir.resolve(this.name);
         DB.addForDownload(new CloudFile() {
             @Override
@@ -303,7 +303,7 @@ public class CheckDownloadStateTaskTest {
 
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
         final Path name = Paths.get("sub-dir", "file");
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name);
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name);
         final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {
             @Override
@@ -440,7 +440,7 @@ public class CheckDownloadStateTaskTest {
         final long targetDate = System.currentTimeMillis();
 
         final String name = String.format("file-%x", System.currentTimeMillis());
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(targetDate));
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(String.valueOf(targetDate));
         final Path localPath = this.tmpDir.resolve(name);
 
         final CloudFile cloudFile = new CloudFile() {
@@ -601,7 +601,7 @@ public class CheckDownloadStateTaskTest {
         final List<InlineResponse20010Downloads> files = new LinkedList<>();
 
         final Path name = Paths.get("sub-dir", "file");
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(
                 String.valueOf(System.currentTimeMillis() + 10000));
         final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {

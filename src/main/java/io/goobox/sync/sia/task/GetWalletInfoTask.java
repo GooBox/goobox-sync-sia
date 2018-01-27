@@ -84,7 +84,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
     @Override
     public InfoPair call() throws ApiException, WalletException {
 
-        final WalletApi walletApi = new WalletApi(this.ctx.apiClient);
+        final WalletApi walletApi = new WalletApi(this.ctx.getApiClient());
 
         logger.info("Retrieving the wallet information");
         final InlineResponse20013 wallet = walletApi.walletGet();
@@ -140,7 +140,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
 
         }
 
-        final RenterApi renter = new RenterApi(this.ctx.apiClient);
+        final RenterApi renter = new RenterApi(this.ctx.getApiClient());
         final InlineResponse2008 info = renter.renterGet();
         final WalletInfo walletInfo = new WalletInfo(
                 walletApi.walletAddressGet().getAddress(), this.ctx.getConfig().getPrimarySeed(), wallet, info);

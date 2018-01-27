@@ -54,7 +54,7 @@ public class CheckUploadStateTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking upload status");
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             final InlineResponse20011 res = api.renterFilesGet();
@@ -67,7 +67,7 @@ public class CheckUploadStateTask implements Callable<Void> {
                 final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, item);
                 final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
 
-                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
+                if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()) || !syncFileOpt.isPresent()) {
                     logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
                     return;
                 }

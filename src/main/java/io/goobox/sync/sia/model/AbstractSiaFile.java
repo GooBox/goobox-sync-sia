@@ -46,7 +46,7 @@ public abstract class AbstractSiaFile implements SiaFile {
 
         Path withoutTimestamp = this.cloudPath;
         Long created = null;
-        if (this.cloudPath.getNameCount() - ctx.pathPrefix.getNameCount() != 1) {
+        if (this.cloudPath.getNameCount() - ctx.getPathPrefix().getNameCount() != 1) {
             try {
                 created = Long.parseLong(this.cloudPath.getFileName().toString());
                 withoutTimestamp = this.cloudPath.getParent();
@@ -56,7 +56,7 @@ public abstract class AbstractSiaFile implements SiaFile {
         }
         this.creationTime = created;
 
-        this.name = ctx.pathPrefix.relativize(withoutTimestamp);
+        this.name = ctx.getPathPrefix().relativize(withoutTimestamp);
         this.localPath = ctx.getLocalPath(this.name.toString());
 
     }

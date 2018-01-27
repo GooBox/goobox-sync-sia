@@ -55,7 +55,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
     @Override
     public AllowanceInfo call() throws ApiException {
 
-        final WalletApi wallet = new WalletApi(this.ctx.apiClient);
+        final WalletApi wallet = new WalletApi(this.ctx.getApiClient());
         final InlineResponse20013 walletInfo = wallet.walletGet();
 
         // If the wallet is locked, unlock it first.
@@ -65,7 +65,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
         }
 
         // If fund is null, get current balance.
-        final RenterApi renter = new RenterApi(this.ctx.apiClient);
+        final RenterApi renter = new RenterApi(this.ctx.getApiClient());
         if (this.fund == null) {
             // Allocating the current balance.
             this.fund = new BigInteger(walletInfo.getConfirmedsiacoinbalance());

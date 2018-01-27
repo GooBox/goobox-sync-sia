@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ public class DeleteCloudFileTask implements Callable<Void> {
             return null;
         }
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             final InlineResponse20011 files = api.renterFilesGet();
@@ -83,7 +83,7 @@ public class DeleteCloudFileTask implements Callable<Void> {
                 for (final InlineResponse20011Files file : files.getFiles()) {
 
                     final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
-                    if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
+                    if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
                         return null;
                     }
                     if (siaFile.getName().equals(this.name)) {

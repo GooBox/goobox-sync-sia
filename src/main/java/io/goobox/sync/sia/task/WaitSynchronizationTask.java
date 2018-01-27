@@ -43,7 +43,7 @@ public class WaitSynchronizationTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking consensus DB");
-        final ConsensusApi api = new ConsensusApi(ctx.apiClient);
+        final ConsensusApi api = new ConsensusApi(this.ctx.getApiClient());
         while (true) {
 
             final InlineResponse2006 res = api.consensusGet();

@@ -83,7 +83,7 @@ public class DeleteCloudFileTaskTest {
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
-        this.cloudPath = this.ctx.pathPrefix.resolve(this.name);
+        this.cloudPath = this.ctx.getPathPrefix().resolve(this.name);
 
         APIUtilsMock.toSlashPaths.clear();
         new APIUtilsMock();

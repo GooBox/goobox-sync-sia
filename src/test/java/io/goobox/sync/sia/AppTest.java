@@ -409,7 +409,7 @@ public class AppTest {
             new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
-            new FileWatcher(ctx.config.getSyncDir(), executor);
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
         }};
 
         app.call();
@@ -492,7 +492,7 @@ public class AppTest {
             new NotifyFundInfoTask(ctx, true);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
-            new FileWatcher(ctx.config.getSyncDir(), executor);
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
         }};
 
         app.call();
@@ -576,7 +576,7 @@ public class AppTest {
             new NotifyFundInfoTask(ctx, false);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
-            new FileWatcher(ctx.config.getSyncDir(), executor);
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
         }};
 
         app.call();

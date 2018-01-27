@@ -366,7 +366,7 @@ public final class App implements Callable<Integer> {
 
         }
 
-        this.synchronizeModifiedFiles(this.ctx.config.getSyncDir());
+        this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
         this.synchronizeDeletedFiles();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
@@ -387,7 +387,7 @@ public final class App implements Callable<Integer> {
             executor.scheduleWithFixedDelay(
                     new NotifyFundInfoTask(ctx, !this.ctx.getConfig().isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
-        new FileWatcher(this.ctx.config.getSyncDir(), executor);
+        new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         return 0;
 
     }
@@ -398,8 +398,8 @@ public final class App implements Callable<Integer> {
      * @return true if the synchronizing directory is ready.
      */
     boolean checkAndCreateSyncDir() {
-        logger.info("Checking if local Goobox sync folder exists: {}", this.ctx.config.getSyncDir());
-        return checkAndCreateFolder(this.ctx.config.getSyncDir());
+        logger.info("Checking if local Goobox sync folder exists: {}", this.ctx.getConfig().getSyncDir());
+        return checkAndCreateFolder(this.ctx.getConfig().getSyncDir());
     }
 
     /**
@@ -408,8 +408,8 @@ public final class App implements Callable<Integer> {
      * @return true if the data directory is ready.
      */
     boolean checkAndCreateDataDir() {
-        logger.info("Checking if Goobox data folder exists: {}", this.ctx.config.getDataDir());
-        return checkAndCreateFolder(this.ctx.config.getDataDir());
+        logger.info("Checking if Goobox data folder exists: {}", this.ctx.getConfig().getDataDir());
+        return checkAndCreateFolder(this.ctx.getConfig().getDataDir());
     }
 
     /**

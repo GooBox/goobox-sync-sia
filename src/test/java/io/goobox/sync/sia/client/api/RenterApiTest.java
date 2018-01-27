@@ -13,20 +13,20 @@
 
 package io.goobox.sync.sia.client.api;
 
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009;
-import io.goobox.sync.sia.client.api.model.StandardError;
-import org.junit.Test;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * API tests for RenterApi
@@ -36,14 +36,11 @@ public class RenterApiTest {
 
     private final RenterApi api = new RenterApi();
 
-    
+
     /**
-     * 
-     *
      * returns active contracts. Expired contracts are not included.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterContractsGetTest() throws ApiException {
@@ -51,14 +48,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * deletes a renter file entry. Does not delete any downloads or original files, only the entry in the renter.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterDeleteSiapathPostTest() throws ApiException {
@@ -67,14 +61,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * downloads a file to the local filesystem. The call will block until the file has been downloaded.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterDownloadSiapathGetTest() throws ApiException {
@@ -84,14 +75,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * downloads a file to the local filesystem. The call will return immediately.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterDownloadasyncSiapathGetTest() throws ApiException {
@@ -101,14 +89,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * lists all files in the download queue.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterDownloadsGetTest() throws ApiException {
@@ -116,14 +101,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * lists the status of all files.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterFilesGetTest() throws ApiException {
@@ -131,14 +113,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * returns the current settings along with metrics on the renter&#39;s spending.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterGetTest() throws ApiException {
@@ -146,14 +125,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * modify settings that control the renter&#39;s behavior.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterPostTest() throws ApiException {
@@ -165,14 +141,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * lists the estimated prices of performing various storage and data operations.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterPricesGetTest() throws ApiException {
@@ -180,14 +153,11 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * renames a file. Does not rename any downloads or source files, only renames the entry in the renter. An error is returned if siapath does not exist or newsiapath already exists.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
     public void renterRenameSiapathPostTest() throws ApiException {
@@ -197,24 +167,41 @@ public class RenterApiTest {
 
         // TODO: test validations
     }
-    
+
     /**
-     * 
-     *
      * uploads a file to the network from the local filesystem.
      *
-     * @throws ApiException
-     *          if the Api call fails
+     * @throws ApiException if the Api call fails
      */
     @Test
-    public void renterUploadSiapathPostTest() throws ApiException {
-        String siapath = null;
-        Integer datapieces = null;
-        Integer paritypieces = null;
-        String source = null;
+    public void renterUploadSiapathPostTest() throws ApiException, IOException, InterruptedException {
+
+        final Integer datapieces = 10;
+        final Integer paritypieces = 20;
+
+        String siapath = "hog e";
+        String source = "pi yo";
+
+
+        final MockWebServer mockServer = new MockWebServer();
+        mockServer.enqueue(new MockResponse().setResponseCode(204));
+
+        mockServer.start();
+
+        final ApiClient cli = new ApiClient();
+        cli.setBasePath(mockServer.url("/").toString());
+        final RenterApi api = new RenterApi(cli);
+
         api.renterUploadSiapathPost(siapath, datapieces, paritypieces, source);
 
         // TODO: test validations
+
+        RecordedRequest request1 = mockServer.takeRequest();
+        System.out.println(request1);
+
+
+        mockServer.shutdown();
+
     }
-    
+
 }

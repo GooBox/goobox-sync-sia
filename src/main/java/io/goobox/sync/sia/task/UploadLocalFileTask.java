@@ -75,12 +75,12 @@ public class UploadLocalFileTask implements Callable<Void> {
         }
 
         final Path cloudPath = syncFile.getCloudPath().get();
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             api.renterUploadSiapathPost(
                     APIUtils.toSlash(cloudPath),
-                    this.ctx.config.getDataPieces(), this.ctx.config.getParityPieces(),
+                    this.ctx.getConfig().getDataPieces(), this.ctx.getConfig().getParityPieces(),
                     APIUtils.toSlash(this.localPath));
             DB.setUploading(this.ctx.getName(this.localPath));
 
