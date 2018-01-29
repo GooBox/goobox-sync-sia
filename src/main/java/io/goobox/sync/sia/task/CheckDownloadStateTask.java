@@ -24,7 +24,6 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20010Downloads;
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromDownloadsAPI;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -35,17 +34,17 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -73,6 +72,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
             getRecentDownloads(api.renterDownloadsGet().getDownloads())
                     .stream()
                     .map(remoteFile -> new SiaFileFromDownloadsAPI(this.ctx, remoteFile))
+                    .filter(siaFile -> siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()))
                     .forEach(this::handleFile);
         } catch (final ApiException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -123,16 +123,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
 
     private void handleFile(@NotNull final SiaFileFromDownloadsAPI file) {
 
-        final Optional<SyncFile> syncFileOpt = DB.get(file);
-        if (!file.getCloudPath().startsWith(this.ctx.getPathPrefix()) || !syncFileOpt.isPresent()) {
-            logger.trace(
-                    "Found remote file {} but it's not managed by Goobox (not starts with {})",
-                    file.getCloudPath(),
-                    this.ctx.getPathPrefix());
-            return;
-        }
-
-        syncFileOpt.ifPresent(syncFile -> {
+        DB.get(file).ifPresent(syncFile -> {
 
             final String err = file.getError();
             if (err != null && !err.isEmpty()) {
@@ -151,7 +142,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
             syncFile.getTemporaryPath().ifPresent(tempPath -> syncFile.getLocalPath().ifPresent(localPath -> {
 
                 // If temporary path is not set, it means file is not being downloaded.
-                if (!tempPath.toFile().exists()) {
+                if (!Files.exists(tempPath)) {
                     logger.trace("Temporal downloaded file {} doesn't exist", tempPath);
                     return;
                 }
@@ -159,18 +150,20 @@ public class CheckDownloadStateTask implements Callable<Void> {
                 try {
 
                     final Path parent = localPath.getParent();
-                    if (!parent.toFile().exists()) {
+                    if (!Files.exists(parent)) {
                         logger.debug("Create directories for {}", localPath);
                         Files.createDirectories(parent);
                     }
 
                     // If local file doesn't exist, it means there are no conflict.
-                    if (!localPath.toFile().exists()) {
+                    if (!Files.exists(localPath)) {
                         logger.info("New file {} has been downloaded", file.getName());
                         Files.move(tempPath, localPath, StandardCopyOption.REPLACE_EXISTING);
                         syncFile.getCloudCreationTime().ifPresent(cloudCreationTime -> {
-                            if (localPath.toFile().setLastModified(cloudCreationTime)) {
-                                logger.error("Failed to set timestamp of {}", file.getName());
+                            try {
+                                Files.setLastModifiedTime(localPath, FileTime.fromMillis(cloudCreationTime));
+                            } catch (IOException e) {
+                                logger.error("Failed to set timestamp of {}, expected = {}: {}", file.getName(), cloudCreationTime, e.getMessage());
                             }
                         });
                         DB.setSynced(file, file.getLocalPath());
@@ -180,8 +173,14 @@ public class CheckDownloadStateTask implements Callable<Void> {
 
                     // Both local file and downloaded file exist, and solve the conflict.
                     final long cloudCreationTime = file.getCreationTime().orElse(0L);
-                    final long localCreationTime = localPath.toFile().lastModified();
-                    final long syncTime = syncFile.getLocalModificationTime().orElse(0L);
+                    long localCreationTime;
+                    try {
+                        localCreationTime = Files.getLastModifiedTime(localPath).toMillis();
+                    } catch (final IOException e) {
+                        logger.error("Failed to get the time stamp of {}: {}", localPath, e.getMessage());
+                        localCreationTime = System.currentTimeMillis();
+                    }
+                    final long syncTime = syncFile.getLocalModificationTime().orElse(localCreationTime);
                     logger.trace(
                             "name = {}, cloudCreationTime = {}, localCreationTime = {}, syncTime = {}",
                             syncFile.getName(), cloudCreationTime, localCreationTime, syncTime);
@@ -194,8 +193,10 @@ public class CheckDownloadStateTask implements Callable<Void> {
                             logger.debug("Conflicted copy of {} has been created", file.getName());
                         }
                         Files.move(tempPath, localPath, StandardCopyOption.REPLACE_EXISTING);
-                        if (localPath.toFile().setLastModified(cloudCreationTime)) {
-                            logger.error("Failed to set timestamp of {}", file.getName());
+                        try {
+                            Files.setLastModifiedTime(localPath, FileTime.fromMillis(cloudCreationTime));
+                        } catch (final IOException e) {
+                            logger.error("Failed to set timestamp of {}, expected = {}: {}", file.getName(), cloudCreationTime, e.getMessage());
                         }
                         if (syncFile.getState() == SyncState.DOWNLOADING) {
                             DB.setSynced(file, file.getLocalPath());
@@ -208,8 +209,10 @@ public class CheckDownloadStateTask implements Callable<Void> {
                             final Path conflictedCopy = Utils.conflictedCopyPath(localPath);
                             Files.move(tempPath, conflictedCopy, StandardCopyOption.REPLACE_EXISTING);
                             logger.info("Conflicted copy of {} has been created", file.getName());
-                            if (conflictedCopy.toFile().setLastModified(cloudCreationTime)) {
-                                logger.error("Failed to set timestamp of {}", conflictedCopy);
+                            try {
+                                Files.setLastModifiedTime(conflictedCopy, FileTime.fromMillis(cloudCreationTime));
+                            } catch (final IOException e) {
+                                logger.error("Failed to set timestamp of {}, expected = {}: {}", file.getName(), cloudCreationTime, e.getMessage());
                             }
                         } else {
                             logger.trace("Found cloud file was created before last sync time.");
@@ -218,11 +221,11 @@ public class CheckDownloadStateTask implements Callable<Void> {
                     } else if (cloudCreationTime > syncTime) {
 
                         String cloudDigest;
-                        try (final FileInputStream in = new FileInputStream(tempPath.toFile())) {
+                        try (final InputStream in = Files.newInputStream(tempPath)) {
                             cloudDigest = DigestUtils.sha512Hex(in);
                         }
                         String localDigest;
-                        try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                        try (final InputStream in = Files.newInputStream(localPath)) {
                             localDigest = DigestUtils.sha512Hex(in);
                         }
 
@@ -230,11 +233,13 @@ public class CheckDownloadStateTask implements Callable<Void> {
                             logger.info("Conflicted copy of {} has been created", file.getName());
                             final Path conflictedCopy = Utils.conflictedCopyPath(localPath);
                             Files.move(tempPath, conflictedCopy, StandardCopyOption.REPLACE_EXISTING);
-                            if (conflictedCopy.toFile().setLastModified(cloudCreationTime)) {
-                                logger.error("Failed to set timestamp of {}", conflictedCopy);
+                            try {
+                                Files.setLastModifiedTime(conflictedCopy, FileTime.fromMillis(cloudCreationTime));
+                            } catch (final IOException e) {
+                                logger.error("Failed to set timestamp of {}: {}", conflictedCopy, e.getMessage());
                             }
                         } else {
-                            logger.error("Downloaded cloud file is same as the corresponding local file {}", file.getName());
+                            logger.info("Downloaded cloud file is same as the corresponding local file {}", file.getName());
                         }
 
                     } else {
@@ -243,10 +248,10 @@ public class CheckDownloadStateTask implements Callable<Void> {
 
                 } catch (final IOException e) {
                     logger.error("Failed post process of downloading {}: {}", file.getName(), e.getLocalizedMessage());
-                    if (syncFile.getState() == SyncState.DOWNLOADING) {
-                        DB.setDownloadFailed(file.getName());
-                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
-                    }
+//                    if (syncFile.getState() == SyncState.DOWNLOADING) {
+//                        DB.setDownloadFailed(file.getName());
+//                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+//                    }
                 }
 
             }));
