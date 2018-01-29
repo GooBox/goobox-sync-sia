@@ -29,8 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     static final long MinElapsedTime = 3000L;
 
     @NotNull
-    private final Path target;
+    private final Path syncDir;
     @NotNull
     private final DirectoryWatcher watcher;
 
@@ -59,11 +60,11 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
      */
     private final Map<Path, Long> trackingFiles = new HashMap<>();
 
-    FileWatcher(@NotNull final Path target, @NotNull final ScheduledExecutorService executor) throws IOException {
+    FileWatcher(@NotNull final Path syncDir, @NotNull final ScheduledExecutorService executor) throws IOException {
 
-        logger.info("Start watching {}", target);
-        this.target = target;
-        this.watcher = DirectoryWatcher.create(target, this);
+        logger.info("Start watching {}", syncDir);
+        this.syncDir = syncDir;
+        this.watcher = DirectoryWatcher.create(syncDir, this);
         this.watcher.watchAsync(executor);
         executor.scheduleAtFixedRate(this, 0, MinElapsedTime, TimeUnit.MILLISECONDS);
 
@@ -79,7 +80,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
             return;
         }
 
-        if (event.path().toFile().isDirectory()) {
+        if (Files.isDirectory(event.path())) {
             logger.trace("{} is a directory and will be ignored", event.path());
             return;
         }
@@ -106,20 +107,8 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     this.trackingFiles.remove(event.path());
                 }
                 DB.get(name).ifPresent(syncFile -> {
-                    try {
-                        switch (syncFile.getState()) {
-                            case SYNCED:
-                            case FOR_UPLOAD:
-                            case UPLOADING:
-                                DB.setDeleted(name);
-                                break;
-                            case FOR_DOWNLOAD:
-                            case DOWNLOADING:
-                                break;
-                        }
-                    } finally {
-                        DB.commit();
-                    }
+                    DB.setDeleted(name);
+                    DB.commit();
                 });
                 break;
         }
@@ -143,7 +132,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                 final String name = getName(localPath);
                 final boolean shouldBeAdded = DB.get(name).map(syncFile -> {
 
-                    try (final FileInputStream in = new FileInputStream(localPath.toFile())) {
+                    try (final InputStream in = Files.newInputStream(localPath)) {
                         final String digest = DigestUtils.sha512Hex(in);
                         if (syncFile.getLocalDigest().map(digest::equals).orElse(false)) {
                             logger.trace("File {} is modified but the contents are not changed", name);
@@ -178,12 +167,17 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     }
 
     @Override
-    public void close() throws IOException {
-        this.watcher.close();
+    public void close() {
+        try {
+            this.watcher.close();
+        } catch (final IOException e) {
+            logger.error("Failed to stop file watching service: {}", e.getMessage());
+        }
     }
 
-    private String getName(final Path localPath) {
-        return this.target.relativize(localPath).toString();
+    @NotNull
+    private String getName(@NotNull final Path localPath) {
+        return this.syncDir.relativize(localPath).toString();
     }
 
 }

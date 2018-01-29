@@ -417,19 +417,19 @@ public class FileWatcherTest {
 
     /**
      * It is possible a file waiting for being downloaded is deleted from the local directory if a user creates and
-     * deletes the file while the download is waiting. In this case, the download has to be continued.
+     * deletes the file while the download is waiting.
      */
     @Test
     public void testToBeDownloadFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        this.checkStatusAfterDeleteEvent(SyncState.FOR_DOWNLOAD, SyncState.FOR_DOWNLOAD);
+        this.checkStatusAfterDeleteEvent(SyncState.FOR_DOWNLOAD, SyncState.DELETED);
     }
 
     /**
-     * As same as the case that a file waiting to start download is deleted locally, the download has to be continued.
+     * As same as the case that a file waiting to start download is deleted locally.
      */
     @Test
     public void testDownloadingFileDeleted() throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        this.checkStatusAfterDeleteEvent(SyncState.DOWNLOADING, SyncState.DOWNLOADING);
+        this.checkStatusAfterDeleteEvent(SyncState.DOWNLOADING, SyncState.DELETED);
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -439,8 +439,6 @@ public class FileWatcherTest {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         new Expectations(executor) {{
             executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
-        }};
-        new Expectations() {{
             watchService.watchAsync(executor);
         }};
 
