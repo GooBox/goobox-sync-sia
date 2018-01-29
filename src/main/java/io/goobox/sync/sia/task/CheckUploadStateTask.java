@@ -66,7 +66,15 @@ public class CheckUploadStateTask implements Callable<Void> {
                     .filter(siaFile -> siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()))
                     .forEach(siaFile -> DB.get(siaFile).ifPresent(syncFile -> {
 
-                        if (syncFile.getState() != SyncState.UPLOADING) {
+                        if (syncFile.getState() == SyncState.DELETED) {
+                            logger.debug("Since found remote file {} was deleted, delete the remote file");
+                            try {
+                                api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
+                            } catch (final ApiException e) {
+                                logger.error("Failed to delete {}: {}", syncFile.getName(), APIUtils.getErrorMessage(e));
+                            }
+                            return;
+                        } else if (syncFile.getState() != SyncState.UPLOADING) {
                             logger.trace("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
                             return;
                         }

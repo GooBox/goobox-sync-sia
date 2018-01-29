@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -35,6 +36,7 @@ import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.dizitart.no2.objects.ObjectRepository;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +48,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,7 +61,7 @@ import static org.junit.Assert.assertTrue;
 public class CheckUploadStateTaskTest {
 
     @Mocked
-    private RenterApi api;
+    private RenterApi renterApi;
 
     private Path tmpDir;
     private Context ctx;
@@ -94,22 +96,16 @@ public class CheckUploadStateTaskTest {
     @Test
     public void uploadFile(@Mocked App app, @Mocked OverlayHelper overlayHelper) throws ApiException, IOException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
-        final InlineResponse20011Files file1 = new InlineResponse20011Files();
-        file1.setSiapath(this.cloudPath.toString());
-        file1.setLocalpath(this.localPath.toString());
-        file1.setFilesize(1234L);
-        file1.setUploadprogress(new BigDecimal(100));
-
+        final List<InlineResponse20011Files> files = Collections.singletonList(
+                createCloudFile(1234, 100)
+        );
         DB.addNewFile(name, localPath);
         DB.setUploading(name);
-        files.add(file1);
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
             res.setFiles(files);
-            api.renterFilesGet();
+            renterApi.renterFilesGet();
             result = res;
 
             App.getInstance();
@@ -130,21 +126,16 @@ public class CheckUploadStateTaskTest {
     @Test
     public void stillUploadingFile() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
-        final InlineResponse20011Files file2 = new InlineResponse20011Files();
-        file2.setSiapath(this.cloudPath.toString());
-        file2.setLocalpath(this.localPath.toString());
-        file2.setFilesize(1234L);
-        file2.setUploadprogress(new BigDecimal(95.2));
+        final List<InlineResponse20011Files> files = Collections.singletonList(
+                createCloudFile(1234, 95.2)
+        );
         DB.addNewFile(this.name, this.localPath);
         DB.setUploading(this.name);
-        files.add(file2);
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
             res.setFiles(files);
-            api.renterFilesGet();
+            renterApi.renterFilesGet();
             result = res;
         }};
 
@@ -175,7 +166,7 @@ public class CheckUploadStateTaskTest {
     }
 
     /**
-     * Test a case that an uploading file is also modified. In this case, the file is marked as MODIFIED and
+     * Test the case where an uploading file is also modified. In this case, the file is marked as MODIFIED and
      * CheckUploadStateTask doesn't handle it.
      */
     @Test
@@ -184,25 +175,27 @@ public class CheckUploadStateTaskTest {
     }
 
     /**
-     * Test a case that an uploading file is also deleted. In this case, the file is marked as DELETED and
-     * CheckUploadStateTask doesn't handle it.
+     * Test the case where an uploading file is also deleted. In this case, the file should be marked as DELETED and
+     * the associated cloud file should deleted.
      */
     @Test
     public void uploadingFileDeleted() throws NoSuchMethodException, ApiException, IOException, InvocationTargetException, IllegalAccessException {
+
+        final String slashedCloudPath = APIUtils.toSlash(cloudPath);
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(cloudPath);
+            result = slashedCloudPath;
+            renterApi.renterDeleteSiapathPost(slashedCloudPath);
+        }};
+
         this.checkStatusAfterExecution(SyncState.DELETED, SyncState.DELETED);
+
     }
 
     @SuppressWarnings("unchecked")
     private void checkStatusAfterExecution(final SyncState before, final SyncState expected)
             throws IOException, NoSuchMethodException, ApiException, InvocationTargetException, IllegalAccessException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(this.cloudPath.toString());
-        file.setLocalpath(this.localPath.toString());
-        file.setFilesize(1234L);
-        file.setUploadprogress(new BigDecimal(100L));
         DB.addNewFile(this.name, this.localPath);
 
         final SyncFile syncFile = DB.get(name).get();
@@ -213,11 +206,13 @@ public class CheckUploadStateTaskTest {
         final ObjectRepository<SyncFile> repository = (ObjectRepository<SyncFile>) repo.invoke(DB.class);
         repository.update(syncFile);
 
-        files.add(file);
+        final List<InlineResponse20011Files> files = Collections.singletonList(
+                createCloudFile(1234L, 100)
+        );
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
             res.setFiles(files);
-            api.renterFilesGet();
+            renterApi.renterFilesGet();
             result = res;
         }};
 
@@ -230,20 +225,13 @@ public class CheckUploadStateTaskTest {
     @Test
     public void notManagedFile() throws ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(this.cloudPath.toString());
-        file.setLocalpath(this.localPath.toString());
-        file.setFilesize(1234L);
-        file.setUploadprogress(new BigDecimal(100));
-
-        files.add(file);
-
+        final List<InlineResponse20011Files> files = Collections.singletonList(
+                createCloudFile(1234L, 100)
+        );
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
             res.setFiles(files);
-            api.renterFilesGet();
+            renterApi.renterFilesGet();
             result = res;
         }};
 
@@ -253,30 +241,14 @@ public class CheckUploadStateTaskTest {
 
     }
 
-    @Test
-    public void deletedFromDBFile() throws ApiException {
-
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
+    @NotNull
+    private InlineResponse20011Files createCloudFile(long fileSize, double progress) {
         final InlineResponse20011Files file = new InlineResponse20011Files();
         file.setSiapath(this.cloudPath.toString());
         file.setLocalpath(this.localPath.toString());
-        file.setFilesize(1234L);
-        file.setUploadprogress(new BigDecimal(100));
-
-        files.add(file);
-
-        new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
-            api.renterFilesGet();
-            result = res;
-        }};
-
-        new CheckUploadStateTask(this.ctx).call();
-        assertTrue(DBMock.committed);
-        assertFalse(DB.get(this.name).isPresent());
-
+        file.setFilesize(fileSize);
+        file.setUploadprogress(new BigDecimal(progress));
+        return file;
     }
 
 }
