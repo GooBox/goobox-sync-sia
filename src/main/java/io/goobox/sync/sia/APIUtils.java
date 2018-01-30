@@ -87,7 +87,7 @@ public class APIUtils {
      * Parse error massages in an APIException.
      */
     @Nullable
-    public static String getErrorMessage(final ApiException e) {
+    public static String getErrorMessage(@NotNull final ApiException e) {
 
         final String body = e.getResponseBody();
         if (body == null || body.isEmpty()) {
@@ -130,6 +130,7 @@ public class APIUtils {
      * @param siacoin in double.
      * @return a big decimal representing the give sc in hastings.
      */
+    @NotNull
     public static BigInteger toHasting(final double siacoin) {
         return BigDecimal.valueOf(siacoin).multiply(Hasting).toBigInteger();
     }
@@ -140,7 +141,8 @@ public class APIUtils {
      * @param hastings in BigInteger
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSiacoin(final BigInteger hastings) {
+    @NotNull
+    public static BigDecimal toSiacoin(@NotNull final BigInteger hastings) {
         return new BigDecimal(hastings).divide(Hasting, 4, RoundingMode.HALF_UP);
     }
 
@@ -150,7 +152,8 @@ public class APIUtils {
      * @param hastings in String
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSiacoin(final String hastings) {
+    @NotNull
+    public static BigDecimal toSiacoin(@NotNull final String hastings) {
         return toSiacoin(new BigInteger(hastings));
     }
 

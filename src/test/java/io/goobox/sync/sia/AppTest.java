@@ -55,6 +55,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 import org.dizitart.no2.objects.ObjectRepository;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -756,11 +757,13 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return null;
@@ -788,11 +791,13 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return null;
@@ -829,11 +834,13 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return null;
@@ -890,11 +897,13 @@ public class AppTest {
         assertTrue(localPath.toFile().createNewFile());
 
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return null;

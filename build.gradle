@@ -191,8 +191,10 @@ jacocoTestReport {
         xml.enabled = true
         html.enabled = true
     }
-    classDirectories = fileTree(
-            dir: "./build/classes/java",
-            excludes: ["**/sia/client/**"]
-    )
+    afterEvaluate {
+        classDirectories = fileTree(
+                dir: "${buildDir}/classes/java/main",
+                excludes: ["**/sia/client/**"]
+        )
+    }
 }

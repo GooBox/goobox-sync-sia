@@ -27,6 +27,7 @@ import io.goobox.sync.sia.mocks.DBMock;
 import mockit.Deencapsulation;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,11 +63,13 @@ public class DeleteLocalFileTaskTest {
         this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return null;

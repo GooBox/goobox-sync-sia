@@ -387,7 +387,8 @@ public final class App implements Callable<Integer> {
             executor.scheduleWithFixedDelay(
                     new NotifyFundInfoTask(ctx, !this.ctx.getConfig().isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
-        new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
+        final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
+        Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
         return 0;
 
     }

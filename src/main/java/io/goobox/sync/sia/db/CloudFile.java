@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.db;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 /**
@@ -27,11 +29,13 @@ public interface CloudFile {
     /**
      * Returns the name of this file.
      */
+    @NotNull
     String getName();
 
     /**
      * Returns the path to this file in the cloud network.
      */
+    @NotNull
     Path getCloudPath();
 
     /**
