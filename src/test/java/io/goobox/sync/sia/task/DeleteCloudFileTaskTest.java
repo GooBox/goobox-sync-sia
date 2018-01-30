@@ -37,6 +37,7 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,11 +116,13 @@ public class DeleteCloudFileTaskTest {
         });
 
         final CloudFile cloudFile = new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return Paths.get(siaPaths.get(siaPaths.size() - 1));

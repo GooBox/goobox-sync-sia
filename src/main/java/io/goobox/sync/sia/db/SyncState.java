@@ -40,6 +40,7 @@ public enum SyncState {
     FOR_CLOUD_DELETE,
     DOWNLOAD_FAILED,
     UPLOAD_FAILED,
+    DELETE_FAILED,
     CONFLICT,
     /**
      * Set by FileWatcher to mark this file is a found new file or modified.
@@ -65,7 +66,8 @@ public enum SyncState {
 
     public boolean isFailed() {
         return this == DOWNLOAD_FAILED
-                || this == UPLOAD_FAILED;
+                || this == UPLOAD_FAILED
+                || this == DELETE_FAILED;
     }
 
     public boolean isConflict() {

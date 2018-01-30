@@ -206,6 +206,10 @@ public class DB {
         setState(name, SyncState.DELETED);
     }
 
+    public static void setDeleteFailed(@NotNull final String name) {
+        setState(name, SyncState.DELETE_FAILED);
+    }
+
     public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
         return repo().find(eq("state", state));
     }
