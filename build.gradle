@@ -37,7 +37,7 @@ apply plugin: "com.github.hierynomus.license"
 apply plugin: "com.github.kt3k.coveralls"
 
 
-version = '0.0.17'
+version = '0.0.18'
 mainClassName = 'io.goobox.sync.sia.App'
 applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.OnErrorConsoleStatusListener"]
 

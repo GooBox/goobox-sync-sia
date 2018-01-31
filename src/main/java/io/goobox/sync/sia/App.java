@@ -90,7 +90,7 @@ public final class App implements Callable<Integer> {
     /**
      * Version information.
      */
-    public static final String Version = "0.0.17";
+    public static final String Version = "0.0.18";
 
     /**
      * The number of the minimum required contracts.
