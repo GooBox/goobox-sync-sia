@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -124,7 +125,7 @@ public class CheckStateTask implements Callable<Void> {
             if (e.getCause() instanceof ConnectException) {
                 throw e;
             }
-            logger.error("Failed to retrieve files stored in sia network", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve files stored in sia network: {}", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
@@ -147,13 +148,7 @@ public class CheckStateTask implements Callable<Void> {
 
         // Key: file name, Value: file object.
         final Map<String, SiaFile> fileMap = new HashMap<>();
-        files.forEach(file -> {
-
-            if (!file.getAvailable()) {
-                // This file is still being uploaded.
-                logger.debug("Found remote file {} but it's not available (still being uploaded)", file.getSiapath());
-                return;
-            }
+        files.stream().filter(InlineResponse20011Files::getAvailable).forEach(file -> {
 
             final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
             if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
@@ -205,17 +200,17 @@ public class CheckStateTask implements Callable<Void> {
                 final SyncFile syncFile = syncFileOpt.get();
                 switch (syncFile.getState()) {
                     case SYNCED:
+
                         // This file was synced.
                         if (file.getCreationTime().orElse(0L) > syncFile.getLocalModificationTime().orElse(0L)) {
-
                             // The cloud file was updated, and it will be downloaded.
                             logger.info("Cloud file {} is going to be downloaded", file.getName());
                             this.enqueueForDownload(file);
-
                         }
                         break;
 
                     case MODIFIED:
+
                         // This file has been modified.
                         if (file.getCreationTime().orElse(0L) < syncFile.getLocalModificationTime().orElse(0L)) {
 
@@ -238,6 +233,7 @@ public class CheckStateTask implements Callable<Void> {
                         break;
 
                     case DELETED:
+
                         // Since this file has been deleted from the local directory.
                         // it will be deleted from the cloud network, too.
                         logger.info("Remote file {} is going to be deleted", file.getName());
@@ -250,8 +246,20 @@ public class CheckStateTask implements Callable<Void> {
                         break;
 
                     case DOWNLOAD_FAILED:
+                        // TODO: Check the cloud file is still newer than the local one / local file doesn't exist.
+                        // -> retry to download
+
+                    case CONFLICT:
+                        // TODO: Handle this case.
+
+                    case FOR_DOWNLOAD:
+                    case DOWNLOADING:
+                    case FOR_UPLOAD:
+                    case UPLOADING:
+                    case FOR_LOCAL_DELETE:
+                    case FOR_CLOUD_DELETE:
                     default:
-                        logger.debug("File {} ({}) is skipped", file.getName(), syncFile.getState());
+                        logger.debug("File {} is marked as {}", file.getName(), syncFile.getState());
                         break;
 
                 }
@@ -259,7 +267,7 @@ public class CheckStateTask implements Callable<Void> {
             } else {
 
                 logger.debug("Cloud file {} is not found in the sync DB", file.getName());
-                if (file.getLocalPath().toFile().exists()) {
+                if (Files.exists(file.getLocalPath())) {
 
                     // The file exists in the local directory but not in the sync DB.
                     // It means the file still invokes modify event e.g. still being copied etc.
@@ -293,13 +301,21 @@ public class CheckStateTask implements Callable<Void> {
     private void enqueueForUpload(@NotNull final Path localPath) throws IOException {
 
         final Path name = this.ctx.getConfig().getSyncDir().relativize(localPath);
-        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
+
+        long lastModifiedTime;
+        try {
+            lastModifiedTime = Files.getLastModifiedTime(localPath).toMillis();
+        } catch (final IOException e) {
+            logger.error("Failed to get the time stamp of {}: {}", localPath, e.getMessage());
+            lastModifiedTime = System.currentTimeMillis();
+        }
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(Long.toString(lastModifiedTime));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
             App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
-            if (localPath.toFile().exists()) {
+            if (Files.exists(localPath)) {
                 throw e;
             }
             logger.info("File {} was deleted", name);
@@ -317,7 +333,7 @@ public class CheckStateTask implements Callable<Void> {
     private void enqueueForDownload(@NotNull final SiaFile file) throws IOException {
 
         DB.addForDownload(file, file.getLocalPath());
-        if (file.getLocalPath().toFile().exists()) {
+        if (Files.exists(file.getLocalPath())) {
             App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
         }
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));

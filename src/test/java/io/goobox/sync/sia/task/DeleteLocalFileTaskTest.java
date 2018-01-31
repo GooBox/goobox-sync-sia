@@ -72,7 +72,7 @@ public class DeleteLocalFileTaskTest {
             @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override

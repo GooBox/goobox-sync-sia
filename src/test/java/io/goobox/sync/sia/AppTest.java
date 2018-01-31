@@ -766,7 +766,7 @@ public class AppTest {
             @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -800,7 +800,7 @@ public class AppTest {
             @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -843,7 +843,7 @@ public class AppTest {
             @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -906,7 +906,7 @@ public class AppTest {
             @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
