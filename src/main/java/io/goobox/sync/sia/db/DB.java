@@ -1,13 +1,13 @@
 package io.goobox.sync.sia.db;
 
 import io.goobox.sync.common.Utils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.objects.Cursor;
 import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +21,7 @@ import static org.dizitart.no2.objects.filters.ObjectFilters.not;
 public class DB {
 
     private static Nitrite db;
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DB.class);
     public static final String DatabaseFileName = "sync.sia.db";
 
     private static Nitrite db() {
@@ -204,6 +204,10 @@ public class DB {
 
     public static void setDeleted(@NotNull final String name) {
         setState(name, SyncState.DELETED);
+    }
+
+    public static void setDeleteFailed(@NotNull final String name) {
+        setState(name, SyncState.DELETE_FAILED);
     }
 
     public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {

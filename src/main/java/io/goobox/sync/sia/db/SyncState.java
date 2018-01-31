@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ public enum SyncState {
     FOR_CLOUD_DELETE,
     DOWNLOAD_FAILED,
     UPLOAD_FAILED,
+    DELETE_FAILED,
     CONFLICT,
     /**
      * Set by FileWatcher to mark this file is a found new file or modified.
@@ -54,21 +55,23 @@ public enum SyncState {
         return this == SYNCED;
     }
 
-    public boolean isPending() {
+    public boolean isSynchronizing() {
         return this == FOR_DOWNLOAD
+                || this == DOWNLOADING
                 || this == FOR_UPLOAD
+                || this == UPLOADING
                 || this == FOR_LOCAL_DELETE
                 || this == FOR_CLOUD_DELETE;
     }
 
     public boolean isFailed() {
         return this == DOWNLOAD_FAILED
-                || this == UPLOAD_FAILED;
+                || this == UPLOAD_FAILED
+                || this == DELETE_FAILED;
     }
 
     public boolean isConflict() {
         return this == CONFLICT;
     }
-
 
 }

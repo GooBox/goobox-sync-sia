@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -36,6 +37,7 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +76,7 @@ public class DeleteCloudFileTaskTest {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
@@ -82,7 +84,7 @@ public class DeleteCloudFileTaskTest {
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
-        this.cloudPath = this.ctx.pathPrefix.resolve(this.name);
+        this.cloudPath = this.ctx.getPathPrefix().resolve(this.name);
 
         APIUtilsMock.toSlashPaths.clear();
         new APIUtilsMock();
@@ -114,11 +116,13 @@ public class DeleteCloudFileTaskTest {
         });
 
         final CloudFile cloudFile = new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return Paths.get(siaPaths.get(siaPaths.size() - 1));

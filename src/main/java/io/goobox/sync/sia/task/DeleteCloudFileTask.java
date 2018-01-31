@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,13 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
-import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 import java.util.Optional;
@@ -41,7 +39,7 @@ import java.util.concurrent.Callable;
  */
 public class DeleteCloudFileTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DeleteCloudFileTask.class);
 
     @NotNull
     private final Context ctx;
@@ -56,7 +54,7 @@ public class DeleteCloudFileTask implements Callable<Void> {
 
     @Override
     public Void call() throws ApiException {
-        logger.traceEntry();
+        logger.trace("Enter call");
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
@@ -70,40 +68,41 @@ public class DeleteCloudFileTask implements Callable<Void> {
             return null;
         }
 
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             final InlineResponse20011 files = api.renterFilesGet();
             if (files.getFiles() == null) {
 
                 logger.warn("No files exist in the cloud storage");
+                DB.remove(this.name);
 
             } else {
 
-                for (final InlineResponse20011Files file : files.getFiles()) {
-
-                    final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
-                    if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
-                        return null;
-                    }
-                    if (siaFile.getName().equals(this.name)) {
-                        logger.info("Delete file {}", siaFile.getCloudPath());
-                        try {
-                            api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
-                        } catch (final ApiException e) {
-                            if (e.getCause() instanceof ConnectException) {
-                                throw e;
+                final boolean success = files.getFiles().stream()
+                        .map(file -> new SiaFileFromFilesAPI(this.ctx, file))
+                        .filter(siaFile -> siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()))
+                        .filter(siaFile -> siaFile.getName().equals(this.name))
+                        .allMatch(siaFile -> {
+                            logger.info("Delete file {}", siaFile.getCloudPath());
+                            try {
+                                api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
+                            } catch (final ApiException e) {
+                                logger.error(
+                                        "Failed to delete remote file {}: {}",
+                                        siaFile.getCloudPath(), APIUtils.getErrorMessage(e));
+                                return false;
                             }
-                            logger.error(
-                                    "Failed to delete remote file {}: {}",
-                                    siaFile.getCloudPath(), APIUtils.getErrorMessage(e));
-                        }
-                    }
+                            return true;
+                        });
 
+                if (success) {
+                    DB.remove(this.name);
+                } else {
+                    DB.setDeleteFailed(this.name);
                 }
 
             }
-            DB.remove(this.name);
             DB.commit();
 
         } catch (final ApiException e) {

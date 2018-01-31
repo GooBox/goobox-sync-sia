@@ -89,6 +89,7 @@ public class ConfigTest {
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(tmpPath, cfg.getFilePath());
 
     }
 
@@ -113,6 +114,7 @@ public class ConfigTest {
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(Config.DefaultParityPieces, cfg.getParityPieces());
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(tmpPath, cfg.getFilePath());
 
     }
 
@@ -141,6 +143,7 @@ public class ConfigTest {
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(tmpPath, cfg.getFilePath());
 
     }
 
@@ -149,7 +152,7 @@ public class ConfigTest {
 
         final Path syncDir = Paths.get("sync-dir");
         final Path dataDir = Paths.get("data-dir");
-        final Config cfg = new Config();
+        final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
@@ -157,7 +160,7 @@ public class ConfigTest {
         cfg.setSyncDir(syncDir);
         Deencapsulation.setField(cfg, "dataDir", dataDir);
 
-        cfg.save(tmpPath);
+        cfg.save();
         Deencapsulation.setField(cfg, "syncDir", syncDir.toAbsolutePath());
         Deencapsulation.setField(cfg, "dataDir", dataDir.toAbsolutePath());
 
@@ -173,7 +176,7 @@ public class ConfigTest {
     @Test
     public void overwrite() throws IOException {
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
@@ -186,7 +189,7 @@ public class ConfigTest {
         writer.flush();
         writer.close();
 
-        cfg.save(tmpPath);
+        cfg.save();
         assertEquals(cfg, Config.load(tmpPath));
 
     }
@@ -224,14 +227,14 @@ public class ConfigTest {
     public void setSyncDir() throws IOException {
 
         final Path syncDir = Paths.get("sync-dir");
-        final Config cfg = new Config();
+        final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
         cfg.setSyncDir(syncDir);
 
-        cfg.save(tmpPath);
+        cfg.save();
 
         final Config res = Config.load(tmpPath);
         assertEquals(cfg, res);

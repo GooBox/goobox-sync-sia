@@ -17,9 +17,11 @@
 
 package io.goobox.sync.sia.task;
 
-import com.google.gson.Gson;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
+import io.goobox.sync.sia.Config;
+import io.goobox.sync.sia.Context;
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
@@ -27,8 +29,6 @@ import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
-import io.goobox.sync.sia.command.CreateAllowance;
-import io.goobox.sync.sia.command.Wallet;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -41,14 +41,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-@SuppressWarnings("unused")
 @RunWith(JMockit.class)
 public class NotifyFundInfoTaskTest {
 
@@ -56,25 +53,24 @@ public class NotifyFundInfoTaskTest {
     private final long period = 6000;
     private final long renewWindow = 1000;
 
+    @Mocked
+    private GetWalletInfoTask walletInfoTask;
+    @Mocked
+    private CreateAllowanceTask createAllowanceTask;
+
+    private Path configPath;
+    private Context ctx;
+    private NotifyFundInfoTask task;
+
     private PriceInfo priceInfo;
     private WalletInfo walletInfo;
 
-    @Mocked
-    private Wallet walletCmd;
-    @Mocked
-    private CreateAllowance createAllowanceCmd;
-
-    private ByteArrayOutputStream out;
-    private PrintStream oldOut;
-
-    private Gson gson = new Gson();
-
     @SuppressWarnings("SpellCheckingInspection")
     @Before
-    public void setUp() {
-        this.out = new ByteArrayOutputStream();
-        this.oldOut = System.out;
-        System.setOut(new PrintStream(out));
+    public void setUp() throws IOException {
+        this.configPath = Files.createTempFile(null, null);
+        this.ctx = new Context(new Config(this.configPath), new ApiClient());
+        this.task = new NotifyFundInfoTask(this.ctx);
 
         this.walletInfo = this.createWalletInfo();
 
@@ -91,132 +87,45 @@ public class NotifyFundInfoTaskTest {
         this.priceInfo = new PriceInfo(prices);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @After
     public void tearDown() {
-        System.setOut(this.oldOut);
+        this.configPath.toFile().delete();
     }
 
     @Test
-    public void constructorChecksRemainingFunds() throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        new NotifyFundInfoTask();
-        assertTrue(out.toString().isEmpty());
-    }
-
-    @Test
-    public void constructorNotifiesEmptyFunds() throws Wallet.WalletException, ApiException {
-        Deencapsulation.setField(walletInfo, "balance", BigInteger.ZERO);
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        new NotifyFundInfoTask();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.NoFunds, event.args.eventType);
-    }
-
-    @Test
-    public void constructorHandlesAPIError(@Mocked APIUtils utils) throws Wallet.WalletException, ApiException {
-        final String err = "expected error";
-        new Expectations() {{
-            APIUtils.getErrorMessage(withAny(new ApiException()));
-            result = err;
-
-            walletCmd.call();
-            result = new ApiException();
-        }};
-        new NotifyFundInfoTask();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.Error, event.args.eventType);
-        assertEquals(err, event.args.message);
-    }
-
-    @Test
-    public void constructorHandlesWalletException() throws Wallet.WalletException, ApiException {
-        final String err = "expected error";
-        new Expectations() {{
-            walletCmd.call();
-            result = new Wallet.WalletException(err);
-        }};
-        new NotifyFundInfoTask();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.Error, event.args.eventType);
-        assertEquals(err, event.args.message);
-    }
-
-    @Test
-    public void runChecksRemainingFunds() throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
-
+    public void checksRemainingFunds() throws GetWalletInfoTask.WalletException, ApiException {
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+        new Expectations(this.task) {{
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
+
+            task.sendEvent((AbstractNotifyWalletInfoTask.EventType) any, anyString);
+            times = 0;
         }};
         task.run();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-        assertTrue(output.isEmpty());
     }
 
     @Test
-    public void runNotifyInsufficientFunds() throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
-
+    public void notifyInsufficientFunds() throws GetWalletInfoTask.WalletException, ApiException {
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).divide(BigInteger.valueOf(2)));
 
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
+        new Expectations(this.task) {{
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
             result = pair;
+
+            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.InsufficientFunds, anyString);
         }};
         task.run();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.InsufficientFunds, event.args.eventType);
     }
 
     /**
@@ -224,7 +133,7 @@ public class NotifyFundInfoTaskTest {
      * create a new allowance with the current balance.
      */
     @Test
-    public void autoAllocation() throws Wallet.WalletException, ApiException {
+    public void autoAllocation() throws GetWalletInfoTask.WalletException, ApiException {
         // Threshold: contract fee * number of min. contracts + current spending.
         final BigInteger threshold = priceInfo.getContract()
                 .multiply(BigInteger.valueOf(App.MinContracts))
@@ -238,39 +147,34 @@ public class NotifyFundInfoTaskTest {
 
         new Expectations() {{
             // Constructor and the first call in run.
-            final Wallet.InfoPair pairBefore = new Wallet.InfoPair(walletInfo, priceInfo);
+            final GetWalletInfoTask.InfoPair pairBefore = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
 
             // after allocation.
             final WalletInfo newWalletInfo = createWalletInfo();
             Deencapsulation.setField(newWalletInfo, "funds", balance);
             Deencapsulation.setField(newWalletInfo, "balance", balance);
-            final Wallet.InfoPair pairAfter = new Wallet.InfoPair(newWalletInfo, priceInfo);
+            final GetWalletInfoTask.InfoPair pairAfter = new GetWalletInfoTask.InfoPair(newWalletInfo, priceInfo);
 
-            walletCmd.call();
+            walletInfoTask.call();
             returns(pairBefore, pairBefore, pairAfter);
         }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx, true);
 
-        new Expectations() {{
+        new Expectations(task) {{
             final InlineResponse2008SettingsAllowance info = new InlineResponse2008SettingsAllowance();
             info.setFunds(balance.toString());
             info.setHosts(hosts);
             info.setPeriod(period);
             info.setRenewwindow(renewWindow);
             final AllowanceInfo allowanceInfo = new AllowanceInfo(info);
-            createAllowanceCmd = new CreateAllowance(null);
-            createAllowanceCmd.call();
+            createAllowanceTask = new CreateAllowanceTask(ctx);
+            createAllowanceTask.call();
             result = allowanceInfo;
-        }};
 
+            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Allocated, anyString);
+        }};
         task.run();
 
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.Allocated, event.args.eventType);
     }
 
     /**
@@ -278,90 +182,63 @@ public class NotifyFundInfoTaskTest {
      * do not create a new allowance with the current balance.
      */
     @Test
-    public void skipAllocation() throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-            times = 2;
-        }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask(true);
-
+    public void skipAllocation() throws GetWalletInfoTask.WalletException, ApiException {
+        final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx, true);
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         final BigInteger newFunds = threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2));
         Deencapsulation.setField(walletInfo, "funds", newFunds);
         Deencapsulation.setField(walletInfo, "balance", newFunds);
 
-        task.run();
+        new Expectations(task) {{
+            final GetWalletInfoTask.InfoPair pair = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
+            walletInfoTask.call();
+            result = pair;
 
-        final String output = this.out.toString();
-        assertTrue(output.isEmpty());
+            task.sendEvent((AbstractNotifyWalletInfoTask.EventType) any, anyString);
+            times = 0;
+        }};
+        task.run();
     }
 
     @Test
-    public void handleAPIError(@Mocked APIUtils utils) throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
-
+    public void handleAPIError(@SuppressWarnings("unused") @Mocked APIUtils utils) throws GetWalletInfoTask.WalletException, ApiException {
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         final String err = "expected error";
-        new Expectations() {{
+        new Expectations(this.task) {{
             APIUtils.getErrorMessage(withAny(new ApiException()));
             result = err;
 
-            walletCmd.call();
+            walletInfoTask.call();
             result = new ApiException();
+
+            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
         }};
         task.run();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.Error, event.args.eventType);
-        assertEquals(err, event.args.message);
     }
 
     @Test
-    public void handleWalletException() throws Wallet.WalletException, ApiException {
-        new Expectations() {{
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-        }};
-        final NotifyFundInfoTask task = new NotifyFundInfoTask();
-
+    public void handleWalletException() throws GetWalletInfoTask.WalletException, ApiException {
         final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
 
         final String err = "expected error";
-        new Expectations() {{
-            walletCmd.call();
-            result = new Wallet.WalletException(err);
+        new Expectations(this.task) {{
+            walletInfoTask.call();
+            result = new GetWalletInfoTask.WalletException(err);
+
+            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
         }};
         task.run();
-
-        final String output = this.out.toString();
-        System.err.println(output);
-
-        NotifyFundInfoTask.Event event = gson.fromJson(output, NotifyFundInfoTask.Event.class);
-        assertEquals("walletInfo", event.method);
-        assertEquals(NotifyFundInfoTask.EventType.Error, event.args.eventType);
-        assertEquals(err, event.args.message);
     }
 
     private WalletInfo createWalletInfo() {
+
         final String address = "01234567890123456789";
         final String primarySeed = "sample primary seed";
         final double balance = 12345.02;
@@ -387,6 +264,7 @@ public class NotifyFundInfoTaskTest {
         allowance.setRenewwindow(renewWindow);
         settings.setAllowance(allowance);
         info.setSettings(settings);
+        //noinspection SpellCheckingInspection
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
@@ -396,6 +274,7 @@ public class NotifyFundInfoTaskTest {
         info.setCurrentperiod(String.valueOf(currentPeriod));
 
         return new WalletInfo(address, primarySeed, wallet, info);
+
     }
 
 }

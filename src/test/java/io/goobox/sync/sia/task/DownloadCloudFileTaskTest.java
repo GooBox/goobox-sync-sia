@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -24,13 +27,13 @@ import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
-import io.goobox.sync.sia.mocks.APIUtilsMock;
 import io.goobox.sync.sia.mocks.DBMock;
 import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,16 +42,22 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class DownloadCloudFileTaskTest {
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -58,6 +67,7 @@ public class DownloadCloudFileTaskTest {
     private String name;
     private Path remotePath;
     private Path localPath;
+    private String slashedRemotePath;
 
     @Before
     public void setUp() throws IOException {
@@ -65,21 +75,24 @@ public class DownloadCloudFileTaskTest {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
-        this.remotePath = this.ctx.pathPrefix.resolve(this.name);
+        this.remotePath = this.ctx.getPathPrefix().resolve(this.name);
         this.localPath = this.tmpDir.resolve(this.name);
+        this.slashedRemotePath = APIUtils.toSlash(this.remotePath);
 
         DB.addForDownload(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return remotePath;
@@ -90,9 +103,6 @@ public class DownloadCloudFileTaskTest {
                 return System.currentTimeMillis();
             }
         }, this.localPath);
-
-        APIUtilsMock.toSlashPaths.clear();
-        new APIUtilsMock();
 
     }
 
@@ -110,17 +120,27 @@ public class DownloadCloudFileTaskTest {
     @Test
     public void downloadFile() throws ApiException {
 
-        new Expectations() {{
-            //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(toSlash(remotePath), toSlash(DB.get(name).get().getTemporaryPath().get()));
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(remotePath);
+            result = slashedRemotePath;
+
+            final Path tempPath = DB.get(name).get().getTemporaryPath().get();
+            final String slashedTempPath = APIUtils.toSlash(tempPath);
+            result = slashedTempPath;
+
+            api.renterDownloadasyncSiapathGet(slashedRemotePath, slashedTempPath);
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(this.name).get().getState());
-
-        assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(this.remotePath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(DB.get(this.name).get().getTemporaryPath().get(), APIUtilsMock.toSlashPaths.get(1));
 
     }
 
@@ -133,14 +153,14 @@ public class DownloadCloudFileTaskTest {
     public void downloadNotExistingFile() throws ApiException {
 
         new Expectations() {{
-            //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(toSlash(remotePath), toSlash(DB.get(name).get().getTemporaryPath().get()));
+            api.renterDownloadasyncSiapathGet(anyString, anyString);
+            times = 0;
+
+            App.getInstance();
             times = 0;
         }};
         new DownloadCloudFileTask(this.ctx, "not-existing-name").call();
         assertFalse(DBMock.committed);
-
-        assertEquals(0, APIUtilsMock.toSlashPaths.size());
 
     }
 
@@ -152,18 +172,28 @@ public class DownloadCloudFileTaskTest {
     @Test
     public void handleApiException() throws ApiException {
 
-        new Expectations() {{
-            //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(toSlash(remotePath), toSlash(DB.get(name).get().getTemporaryPath().get()));
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(remotePath);
+            result = slashedRemotePath;
+
+            final Path tempPath = DB.get(name).get().getTemporaryPath().get();
+            final String slashedTempPath = APIUtils.toSlash(tempPath);
+            result = slashedTempPath;
+
+            api.renterDownloadasyncSiapathGet(slashedRemotePath, slashedTempPath);
             result = new ApiException("expected exception");
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(this.name).get().getState());
-
-        assertEquals(2, APIUtilsMock.toSlashPaths.size());
-        assertEquals(this.remotePath, APIUtilsMock.toSlashPaths.get(0));
-        assertEquals(DB.get(this.name).get().getTemporaryPath().get(), APIUtilsMock.toSlashPaths.get(1));
 
     }
 
@@ -176,8 +206,10 @@ public class DownloadCloudFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            //noinspection ConstantConditions
-            api.renterDownloadasyncSiapathGet(toSlash(remotePath), toSlash(DB.get(name).get().getTemporaryPath().get()));
+            api.renterDownloadasyncSiapathGet(anyString, anyString);
+            times = 0;
+
+            App.getInstance();
             times = 0;
         }};
 
@@ -191,15 +223,9 @@ public class DownloadCloudFileTaskTest {
         // then, the task is executed.
         task.call();
 
-        assertFalse(DBMock.committed);
+        // assertFalse(DBMock.committed);
         assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
 
-        assertEquals(0, APIUtilsMock.toSlashPaths.size());
-
-    }
-
-    private String toSlash(final Path path) {
-        return path.toString().replace("\\", "/");
     }
 
 }

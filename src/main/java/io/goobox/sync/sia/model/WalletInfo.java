@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class WalletInfo {
 
@@ -172,6 +173,32 @@ public class WalletInfo {
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WalletInfo that = (WalletInfo) o;
+        return hosts == that.hosts &&
+                period == that.period &&
+                renewWindow == that.renewWindow &&
+                startHeight == that.startHeight &&
+                Objects.equals(address, that.address) &&
+                Objects.equals(primarySeed, that.primarySeed) &&
+                Objects.equals(balance, that.balance) &&
+                Objects.equals(unconfirmedDelta, that.unconfirmedDelta) &&
+                Objects.equals(funds, that.funds) &&
+                Objects.equals(downloadSpending, that.downloadSpending) &&
+                Objects.equals(uploadSpending, that.uploadSpending) &&
+                Objects.equals(storageSpending, that.storageSpending) &&
+                Objects.equals(contractSpending, that.contractSpending);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                address, primarySeed, balance, unconfirmedDelta, funds, hosts, period, renewWindow,
+                startHeight, downloadSpending, uploadSpending, storageSpending, contractSpending);
+    }
 }
 
 

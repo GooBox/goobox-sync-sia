@@ -21,6 +21,7 @@ import mockit.Deencapsulation;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.objects.ObjectRepository;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +34,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
 public class SyncFileTest {
@@ -151,11 +154,13 @@ public class SyncFileTest {
 
         final SyncFile syncFile = new SyncFile();
         syncFile.setCloudData(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return cloudPath;

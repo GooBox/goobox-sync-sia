@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.mocks.APIUtilsMock;
@@ -53,7 +54,7 @@ public class AbstractSiaFileTest {
         this.path = Paths.get("foo", "bar.txt").toString();
         this.created = System.currentTimeMillis();
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", this.user);
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);

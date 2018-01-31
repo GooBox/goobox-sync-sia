@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,15 +18,16 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 import java.nio.file.Path;
@@ -38,7 +39,7 @@ import java.util.concurrent.Callable;
  */
 public class DownloadCloudFileTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DownloadCloudFileTask.class);
 
     @NotNull
     private final Context ctx;
@@ -53,7 +54,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
 
     @Override
     public Void call() throws ApiException {
-        logger.traceEntry();
+        logger.trace("Enter call");
 
         final Optional<SyncFile> syncFileOpt = DB.get(this.name);
         if (!syncFileOpt.isPresent()) {
@@ -73,7 +74,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
         }
         final Path cloudPath = syncFile.getCloudPath().get();
         final Path temporaryPath = syncFile.getTemporaryPath().get();
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             logger.info("Downloading {} to {}", cloudPath, syncFile.getLocalPath().orElse(temporaryPath));
@@ -92,6 +93,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
             DB.setDownloadFailed(this.name);
 
         } finally {
+            App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(localPath -> app.getOverlayHelper().refresh(localPath)));
             DB.commit();
         }
         return null;

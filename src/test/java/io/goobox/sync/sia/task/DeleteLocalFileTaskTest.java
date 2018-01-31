@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.db.CloudFile;
@@ -26,6 +27,7 @@ import io.goobox.sync.sia.mocks.DBMock;
 import mockit.Deencapsulation;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class DeleteLocalFileTaskTest {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
 
@@ -61,14 +63,16 @@ public class DeleteLocalFileTaskTest {
         this.localPath = this.tmpDir.resolve(this.name);
         assertTrue(this.localPath.toFile().createNewFile());
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,28 +18,27 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.db.DB;
-import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class CheckUploadStateTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(CheckUploadStateTask.class);
     private static final BigDecimal Completed = new BigDecimal(100);
 
     @NotNull
@@ -53,7 +52,7 @@ public class CheckUploadStateTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking upload status");
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
             final InlineResponse20011 res = api.renterFilesGet();
@@ -61,40 +60,40 @@ public class CheckUploadStateTask implements Callable<Void> {
                 return null;
             }
 
-            res.getFiles().forEach(item -> {
+            res.getFiles()
+                    .stream()
+                    .map(file -> new SiaFileFromFilesAPI(this.ctx, file))
+                    .filter(siaFile -> siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()))
+                    .forEach(siaFile -> DB.get(siaFile).ifPresent(syncFile -> {
 
-                final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, item);
-                final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
-
-                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix) || !syncFileOpt.isPresent()) {
-                    logger.debug("Found remote file {} but it's not managed by Goobox", siaFile.getCloudPath());
-                    return;
-                }
-
-                syncFileOpt.ifPresent(syncFile -> {
-
-                    if (syncFile.getState() != SyncState.UPLOADING) {
-                        logger.debug("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
-                        return;
-                    }
-
-                    if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
-                        logger.info("File {} has been uploaded", siaFile.getLocalPath());
-                        try {
-                            DB.setSynced(siaFile, siaFile.getLocalPath());
-                        } catch (final IOException e) {
-                            logger.error("Failed to update the sync db: {}", e.getMessage());
-                            DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
+                        if (syncFile.getState() == SyncState.DELETED) {
+                            logger.debug("Since found remote file {} was deleted, delete the remote file");
+                            try {
+                                api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
+                            } catch (final ApiException e) {
+                                logger.error("Failed to delete {}: {}", syncFile.getName(), APIUtils.getErrorMessage(e));
+                            }
+                            return;
+                        } else if (syncFile.getState() != SyncState.UPLOADING) {
+                            logger.trace("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
+                            return;
                         }
-                    } else {
-                        logger.info(
-                                "File {} is now being uploaded ({}%)", siaFile.getName(),
-                                siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP));
-                    }
 
-                });
+                        if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
+                            logger.info("File {} has been uploaded", siaFile.getLocalPath());
+                            try {
+                                DB.setSynced(siaFile, siaFile.getLocalPath());
+                            } catch (final IOException e) {
+                                logger.error("Failed to update the sync db: {}", e.getMessage());
+                                DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
+                            }
+                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(siaFile.getLocalPath()));
+                        } else {
+                            final BigDecimal progress = siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP);
+                            logger.info("File {} is now being uploaded ({}%)", siaFile.getName(), progress);
+                        }
 
-            });
+                    }));
 
         } catch (final ApiException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -112,9 +111,7 @@ public class CheckUploadStateTask implements Callable<Void> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         CheckUploadStateTask that = (CheckUploadStateTask) o;
-
         return ctx.equals(that.ctx);
     }
 

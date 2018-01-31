@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -34,6 +36,7 @@ import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.ISODateTimeFormat;
@@ -50,9 +53,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -60,13 +65,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class CheckDownloadStateTaskTest {
 
     private static SimpleDateFormat RFC3339 = new SimpleDateFormat("yyyy-MM-dd'T'h:m:ssZ");
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -75,6 +85,8 @@ public class CheckDownloadStateTaskTest {
     private String name;
     private Path localPath;
     private SyncFile syncFile;
+    private String oldDate;
+    private String currentDate;
 
     @Before
     public void setUp() throws IOException {
@@ -82,20 +94,22 @@ public class CheckDownloadStateTaskTest {
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
-        final Path cloudPath = this.ctx.pathPrefix.resolve(this.name);
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(this.name);
         this.localPath = this.tmpDir.resolve(this.name);
         DB.addForDownload(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return cloudPath;
@@ -108,6 +122,8 @@ public class CheckDownloadStateTaskTest {
         }, localPath);
         this.syncFile = DB.get(this.name).get();
 
+        this.oldDate = RFC3339.format(new Date(10000));
+        this.currentDate = RFC3339.format(new Date());
     }
 
     @After
@@ -128,41 +144,47 @@ public class CheckDownloadStateTaskTest {
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
 
     }
 
     @Test
     public void downloadedFiles() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        // old entry.
-        final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
-        oldFile.setSiapath(syncFile.getCloudPath().get().toString());
-        oldFile.setDestination("some temporary path");
-        oldFile.setFilesize(syncFile.getCloudSize().get());
-        oldFile.setReceived(syncFile.getCloudSize().get());
-        oldFile.setStarttime(RFC3339.format(new Date(10000)));
-        files.add(oldFile);
-
-        // new entry.
-        final InlineResponse20010Downloads newFile = new InlineResponse20010Downloads();
-        newFile.setSiapath(syncFile.getCloudPath().get().toString());
-        newFile.setDestination(syncFile.getTemporaryPath().get().toString());
-        newFile.setFilesize(syncFile.getCloudSize().get());
-        newFile.setReceived(syncFile.getCloudSize().get());
-        newFile.setStarttime(RFC3339.format(new Date()));
-        files.add(newFile);
-
         final byte[] data = "test-data".getBytes();
         Files.write(syncFile.getTemporaryPath().get(), data);
         DB.setDownloading(syncFile.getName());
+
+        final List<InlineResponse20010Downloads> files = Arrays.asList(
+                // old entry.
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        this.tmpDir.resolve("some temporary path"),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        oldDate),
+                // new entry.
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate)
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -177,33 +199,35 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void downloadingNewerFile() throws ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        // old entry.
-        final InlineResponse20010Downloads oldFile = new InlineResponse20010Downloads();
-        oldFile.setSiapath(syncFile.getCloudPath().get().toString());
-        oldFile.setDestination("some temporary path");
-        oldFile.setFilesize(syncFile.getCloudSize().get());
-        oldFile.setReceived(syncFile.getCloudSize().get());
-        oldFile.setStarttime(RFC3339.format(new Date(10000)));
-        files.add(oldFile);
-
-        // new entry.
-        final InlineResponse20010Downloads newFile = new InlineResponse20010Downloads();
-        newFile.setSiapath(syncFile.getCloudPath().get().toString());
-        newFile.setDestination(syncFile.getTemporaryPath().get().toString());
-        newFile.setFilesize(syncFile.getCloudSize().get());
-        newFile.setReceived(syncFile.getCloudSize().get() / 2);
-        newFile.setStarttime(RFC3339.format(new Date()));
-        files.add(newFile);
-
         DB.setDownloading(syncFile.getName());
+
+        final List<InlineResponse20010Downloads> files = Arrays.asList(
+                // old entry.
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        this.tmpDir.resolve("some temporary path"),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        oldDate
+                ),
+                // new entry.
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get() / 2,
+                        currentDate
+                )
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -216,23 +240,26 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void stillDownloadingFile() throws ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get() / 2);
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
-
         DB.setDownloading(syncFile.getName());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get() / 2,
+                        currentDate
+                )
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -249,21 +276,24 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void toBeDownloadedFile() throws ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get() / 2);
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get() / 2,
+                        currentDate
+                )
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -276,16 +306,17 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void downloadFilesInSubDirectory() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
         final Path name = Paths.get("sub-dir", "file");
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name);
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name);
         final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return cloudPath;
@@ -299,23 +330,34 @@ public class CheckDownloadStateTaskTest {
         DB.addForDownload(cloudFile, localPath);
 
         final SyncFile syncFile = DB.get(name.toString()).get();
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(cloudPath.toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get());
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
 
         final byte[] fileData = "test-data".getBytes();
         Files.write(syncFile.getTemporaryPath().get(), fileData);
         DB.setDownloading(syncFile.getName());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        cloudPath,
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -329,16 +371,15 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void failedDownloads() throws ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file1 = new InlineResponse20010Downloads();
-        file1.setSiapath(syncFile.getCloudPath().get().toString());
-        file1.setDestination(syncFile.getTemporaryPath().get().toString());
-        file1.setFilesize(syncFile.getCloudSize().get());
-        file1.setReceived(syncFile.getCloudSize().get() / 2);
-        file1.setStarttime(RFC3339.format(new Date()));
+        final InlineResponse20010Downloads file1 = createCloudFile(
+                syncFile.getCloudPath().get(),
+                syncFile.getTemporaryPath().get(),
+                syncFile.getCloudSize().get(),
+                syncFile.getCloudSize().get() / 2,
+                currentDate
+        );
         file1.setError("expected error");
-        files.add(file1);
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(file1);
 
         DB.setDownloading(syncFile.getName());
 
@@ -347,6 +388,14 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -364,22 +413,24 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void failedPendingDownloads() throws ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get() / 2);
-        file.setStarttime(RFC3339.format(new Date()));
+        final InlineResponse20010Downloads file = createCloudFile(
+                syncFile.getCloudPath().get(),
+                syncFile.getTemporaryPath().get(),
+                syncFile.getCloudSize().get(),
+                syncFile.getCloudSize().get() / 2,
+                currentDate
+        );
         file.setError("expected error");
-        files.add(file);
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(file);
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -392,19 +443,20 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void creationTimeOfDownloadedFile() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
         final long targetDate = System.currentTimeMillis();
 
         final String name = String.format("file-%x", System.currentTimeMillis());
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(targetDate));
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(String.valueOf(targetDate));
         final Path localPath = this.tmpDir.resolve(name);
 
         final CloudFile cloudFile = new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return cloudPath;
@@ -419,20 +471,29 @@ public class CheckDownloadStateTaskTest {
         DB.setDownloading(cloudFile.getName());
 
         final SyncFile syncFile = DB.get(name).get();
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(cloudPath.toString());
-        //noinspection ConstantConditions
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(100L);
-        file.setReceived(100L);
-        file.setStarttime(RFC3339.format(targetDate));
-        files.add(file);
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        cloudPath,
+                        syncFile.getTemporaryPath().get(),
+                        100L,
+                        100L,
+                        RFC3339.format(targetDate)
+                )
+        );
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -451,15 +512,15 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void downloadingFileModified() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get() / 2);
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get() / 2,
+                        currentDate
+                )
+        );
         DB.setDownloading(syncFile.getName());
 
         final String dummyData = "dummy data";
@@ -471,6 +532,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -489,29 +553,36 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void downloadedFileModified() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().resolve(
-                String.valueOf(System.currentTimeMillis() + 10000)).toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get());
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
-
+        final long currentMillis = System.currentTimeMillis();
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis + 10000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
         DB.setDownloading(syncFile.getName());
 
         final String dummyData = "dummy data";
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name, localPath);
-        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 20000));
+        assertTrue(localPath.toFile().setLastModified(currentMillis + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
+        }};
+
+        new Expectations(System.class) {{
+            System.currentTimeMillis();
+            result = currentMillis;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -540,18 +611,18 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void downloadedFileInSubDirModified() throws IOException, ApiException {
 
-        final List<InlineResponse20010Downloads> files = new LinkedList<>();
-
         final Path name = Paths.get("sub-dir", "file");
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(
                 String.valueOf(System.currentTimeMillis() + 10000));
         final Path localPath = this.tmpDir.resolve(name);
         final CloudFile cloudFile = new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
                 return cloudPath;
@@ -565,15 +636,15 @@ public class CheckDownloadStateTaskTest {
         DB.addForDownload(cloudFile, localPath);
 
         final SyncFile syncFile = DB.get(name.toString()).get();
-
-        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
-        file.setSiapath(syncFile.getCloudPath().get().toString());
-        file.setDestination(syncFile.getTemporaryPath().get().toString());
-        file.setFilesize(syncFile.getCloudSize().get());
-        file.setReceived(syncFile.getCloudSize().get());
-        file.setStarttime(RFC3339.format(new Date()));
-        files.add(file);
-
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get(),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
         DB.setDownloading(syncFile.getName());
 
         final String dummyData = "dummy data";
@@ -590,6 +661,9 @@ public class CheckDownloadStateTaskTest {
             res.setDownloads(files);
             api.renterDownloadsGet();
             result = res;
+
+            App.getInstance();
+            times = 0;
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -634,6 +708,19 @@ public class CheckDownloadStateTaskTest {
         assertEquals(21, res2.hourOfDay().get());
         assertEquals(42, res2.minuteOfHour().get());
         assertEquals(59, res2.secondOfMinute().get());
+
+    }
+
+    @NotNull
+    private InlineResponse20010Downloads createCloudFile(
+            @NotNull final Path siaPath, @NotNull final Path destination, long fileSize, long receivedSize, @NotNull final String startTime) {
+        final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
+        file.setSiapath(siaPath.toString());
+        file.setDestination(destination.toString());
+        file.setFilesize(fileSize);
+        file.setReceived(receivedSize);
+        file.setStarttime(startTime);
+        return file;
 
     }
 

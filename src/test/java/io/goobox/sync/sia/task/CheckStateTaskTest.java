@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 package io.goobox.sync.sia.task;
 
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -35,6 +37,7 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -49,17 +52,23 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class CheckStateTaskTest {
 
-    @SuppressWarnings("unused")
+    @Mocked
+    private App app;
+
+    @Mocked
+    private OverlayHelper overlayHelper;
+
     @Mocked
     private RenterApi api;
 
@@ -71,11 +80,10 @@ public class CheckStateTaskTest {
 
     @Before
     public void setUp() throws IOException {
-
         new DBMock();
         this.tmpDir = Files.createTempDirectory(null);
 
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);
@@ -83,7 +91,6 @@ public class CheckStateTaskTest {
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.oldTimeStamp = new Date(100000);
         this.newTimeStamp = new Date();
-
     }
 
     @After
@@ -103,7 +110,7 @@ public class CheckStateTaskTest {
         final List<InlineResponse20011Files> files = new ArrayList<>();
 
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -116,7 +123,7 @@ public class CheckStateTaskTest {
         files.add(file);
 
         final InlineResponse20011Files newerFile = new InlineResponse20011Files();
-        final Path newerRemotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path newerRemotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         newerFile.setSiapath(newerRemotePath.toString());
         newerFile.setAvailable(true);
         newerFile.setFilesize(10L);
@@ -128,6 +135,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localFile.toPath());
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -154,7 +169,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -177,6 +192,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localFile.toPath());
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -184,7 +207,7 @@ public class CheckStateTaskTest {
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
 
-        final Path expected = this.ctx.pathPrefix.resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
+        final Path expected = this.ctx.getPathPrefix().resolve(Paths.get(name)).resolve(String.valueOf(newTimeStamp.getTime()));
         assertEquals(expected.getParent(), DB.get(siaFile).get().getCloudPath().get().getParent());
 
         final long time1 = Long.valueOf(expected.getFileName().toString());
@@ -208,7 +231,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(10L);
@@ -222,8 +245,11 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
-        }};
 
+            // Since the local files doesn't exist yet, refresh should be skipped.
+            App.getInstance();
+            times = 0;
+        }};
 
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.ctx, executor).call();
@@ -259,6 +285,14 @@ public class CheckStateTaskTest {
             res.setFiles(new ArrayList<>());
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -283,7 +317,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -304,6 +338,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -334,14 +372,16 @@ public class CheckStateTaskTest {
 
         DB.addNewFile(name, localPath);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -357,6 +397,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -382,7 +430,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path cloudPath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(cloudPath.toString());
         file.setAvailable(false);
         file.setFilesize(0L);
@@ -456,7 +504,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -477,6 +525,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -497,7 +553,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -518,6 +574,14 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -544,6 +608,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final Path localPath = tmpDir.resolve(name);
@@ -566,7 +634,7 @@ public class CheckStateTaskTest {
 
         final List<InlineResponse20011Files> files = new ArrayList<>();
         final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.pathPrefix.resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(true);
         file.setFilesize(0L);
@@ -590,6 +658,10 @@ public class CheckStateTaskTest {
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
+
+            // Since the local file has been deleted, don't need to update the overlay icon.
+            App.getInstance();
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -600,5 +672,8 @@ public class CheckStateTaskTest {
         assertEquals(0, executor.queue.size());
 
     }
+
+    // downloadFailedButCloudFileIsStillNewer -> re-download
+    // downloadFailedAndLocalFileIsNotFound -> re-download
 
 }

@@ -17,16 +17,16 @@
 
 package io.goobox.sync.sia;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class RetryableTask implements Runnable {
 
-    private static Logger logger = LogManager.getLogger();
+    private static Logger logger = LoggerFactory.getLogger(RetryableTask.class);
 
     @NotNull
     private final Callable<Void> task;

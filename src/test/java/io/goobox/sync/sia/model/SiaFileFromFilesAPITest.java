@@ -16,6 +16,7 @@
  */
 package io.goobox.sync.sia.model;
 
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
@@ -46,7 +47,7 @@ public class SiaFileFromFilesAPITest {
         this.tmpDir = Files.createTempDirectory(null);
 
         this.user = "test-user";
-        final Config cfg = new Config();
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", this.user);
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
         this.ctx = new Context(cfg, null);

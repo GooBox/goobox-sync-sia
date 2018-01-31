@@ -18,24 +18,91 @@
 package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
+import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
+import mockit.Expectations;
+import mockit.Mocked;
+import mockit.integration.junit4.JMockit;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
+@RunWith(JMockit.class)
 public class APIUtilsTest {
 
-    private Gson gson = new Gson();
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    public void loadConfig(@Mocked Config cfg) throws IOException {
+
+        final Path configPath = Files.createTempFile(null, null);
+        try {
+            new Expectations() {{
+                Config.load(configPath);
+                result = cfg;
+            }};
+            assertEquals(cfg, APIUtils.loadConfig(configPath));
+        } finally {
+            configPath.toFile().delete();
+        }
+
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    public void loadConfigWithoutConfigFile(@Mocked Config cfg) throws IOException {
+
+        final Path configPath = Files.createTempFile(null, null);
+        try {
+            new Expectations() {{
+                Config.load(configPath);
+                result = new IOException("expected exception");
+                new Config(configPath);
+                result = cfg;
+            }};
+            APIUtils.loadConfig(configPath);
+//            assertEquals(cfg, APIUtils.loadConfig(configPath));
+        } finally {
+            configPath.toFile().delete();
+        }
+
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    public void getApiClient(@Mocked ApiClient apiClient) {
+
+        final OkHttpClient httpClient = new OkHttpClient();
+        new Expectations(httpClient) {{
+            new ApiClient();
+            result = apiClient;
+            apiClient.setBasePath("http://localhost:9980");
+
+            apiClient.getHttpClient();
+            result = httpClient;
+            httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
+            httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        }};
+        APIUtils.getApiClient();
+//        assertEquals(apiClient, APIUtils.getApiClient());
+
+    }
 
     @Test
     public void testGetErrorMessage() {
 
+        final Gson gson = new Gson();
         final String errMsg = "test error message";
         final StandardError err = new StandardError();
         err.setMessage(errMsg);

@@ -18,18 +18,27 @@ package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.squareup.okhttp.OkHttpClient;
+import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class APIUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(APIUtils.class);
 
     /**
      * Defines 1 SC in hastings.
@@ -37,9 +46,48 @@ public class APIUtils {
     static final BigDecimal Hasting = new BigDecimal("1000000000000000000000000");
 
     /**
+     * Load configuration.
+     *
+     * @param configFilePath to the config file.
+     * @return a Config object.
+     */
+    @NotNull
+    public static Config loadConfig(@NotNull final Path configFilePath) {
+
+        Config cfg;
+        try {
+            cfg = Config.load(configFilePath);
+        } catch (IOException e) {
+            logger.warn("Failed to read config file {}: {}", configFilePath, e.getMessage());
+            logger.info("Loading the default configuration");
+            cfg = new Config(configFilePath);
+        }
+        return cfg;
+
+    }
+
+    /**
+     * Creates an API client.
+     *
+     * @return an ApiClient object.
+     */
+    @NotNull
+    public static ApiClient getApiClient() {
+
+        final ApiClient apiClient = new ApiClient();
+        apiClient.setBasePath("http://localhost:9980");
+        final OkHttpClient httpClient = apiClient.getHttpClient();
+        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
+        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        return apiClient;
+
+    }
+
+    /**
      * Parse error massages in an APIException.
      */
-    public static String getErrorMessage(final ApiException e) {
+    @Nullable
+    public static String getErrorMessage(@NotNull final ApiException e) {
 
         final String body = e.getResponseBody();
         if (body == null || body.isEmpty()) {
@@ -82,6 +130,7 @@ public class APIUtils {
      * @param siacoin in double.
      * @return a big decimal representing the give sc in hastings.
      */
+    @NotNull
     public static BigInteger toHasting(final double siacoin) {
         return BigDecimal.valueOf(siacoin).multiply(Hasting).toBigInteger();
     }
@@ -92,7 +141,8 @@ public class APIUtils {
      * @param hastings in BigInteger
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSiacoin(final BigInteger hastings) {
+    @NotNull
+    public static BigDecimal toSiacoin(@NotNull final BigInteger hastings) {
         return new BigDecimal(hastings).divide(Hasting, 4, RoundingMode.HALF_UP);
     }
 
@@ -102,7 +152,8 @@ public class APIUtils {
      * @param hastings in String
      * @return a big decimal representing the given hastings in sc.
      */
-    public static BigDecimal toSiacoin(final String hastings) {
+    @NotNull
+    public static BigDecimal toSiacoin(@NotNull final String hastings) {
         return toSiacoin(new BigInteger(hastings));
     }
 

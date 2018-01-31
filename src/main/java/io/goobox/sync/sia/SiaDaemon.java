@@ -20,10 +20,10 @@ package io.goobox.sync.sia;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.input.TeeInputStream;
 import org.apache.commons.lang3.SystemUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SiaDaemon extends Thread implements Closeable {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(SiaDaemon.class);
 
     private static final String SiaDaemonFolderName = "sia";
     private static final String SiaDaemonName = "siad";

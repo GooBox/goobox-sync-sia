@@ -18,14 +18,17 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.sia.client.ApiException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.goobox.sync.sia.task.GetWalletInfoTask;
+import io.goobox.sync.sia.task.WaitContractsTask;
+import io.goobox.sync.sia.task.WaitSynchronizationTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 
 public class StartSiaDaemonTask implements RecoveryTask {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(StartSiaDaemonTask.class);
 
     @Override
     public boolean recover(Exception e) {
@@ -35,9 +38,9 @@ public class StartSiaDaemonTask implements RecoveryTask {
             final ApiException apiException = (ApiException) e;
             if (apiException.getCause() instanceof ConnectException) {
 
-                final App app = App.getInstance();
-                if (app != null) {
+                return App.getInstance().map(app -> {
 
+                    final Context ctx = app.getContext();
                     int retry = 0;
                     while (true) {
 
@@ -45,12 +48,18 @@ public class StartSiaDaemonTask implements RecoveryTask {
                         try {
 
                             Thread.sleep(App.DefaultSleepTime);
-                            app.prepareWallet();
-                            app.waitSynchronization();
-                            app.waitContracts();
+
+                            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+                            getWalletInfoTask.call();
+
+                            final WaitSynchronizationTask waitSynchronizationTask = new WaitSynchronizationTask(ctx);
+                            waitSynchronizationTask.call();
+
+                            final WaitContractsTask waitContractsTask = new WaitContractsTask(ctx);
+                            waitContractsTask.call();
                             return true;
 
-                        } catch (ApiException e1) {
+                        } catch (final ApiException e1) {
 
                             if (!(e1.getCause() instanceof ConnectException) || retry >= App.MaxRetry) {
                                 logger.error("Failed to start a sia daemon");
@@ -58,16 +67,21 @@ public class StartSiaDaemonTask implements RecoveryTask {
                             }
                             retry++;
 
-                        } catch (InterruptedException e1) {
+                        } catch (final InterruptedException e1) {
 
                             logger.error("Interrupted while waiting the sia daemon gets ready: {}", e1.getMessage());
+                            return false;
+
+                        } catch (final GetWalletInfoTask.WalletException e1) {
+
+                            logger.error("Failed to obtain the wallet information: {}", e1.getMessage());
                             return false;
 
                         }
 
                     }
 
-                }
+                }).orElse(false);
 
             }
 

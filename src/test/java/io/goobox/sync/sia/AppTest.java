@@ -21,21 +21,6 @@ import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.ConsensusApi;
-import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
-import io.goobox.sync.sia.client.api.model.InlineResponse20014;
-import io.goobox.sync.sia.client.api.model.InlineResponse20016;
-import io.goobox.sync.sia.client.api.model.InlineResponse2006;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
-import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
-import io.goobox.sync.sia.client.api.model.InlineResponse2009;
-import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
-import io.goobox.sync.sia.command.CmdUtils;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
 import io.goobox.sync.sia.command.GatewayConnect;
@@ -47,20 +32,21 @@ import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.mocks.DBMock;
 import io.goobox.sync.sia.mocks.ExecutorMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
-import io.goobox.sync.sia.model.PriceInfo;
-import io.goobox.sync.sia.model.WalletInfo;
 import io.goobox.sync.sia.task.CheckDownloadStateTask;
 import io.goobox.sync.sia.task.CheckStateTask;
 import io.goobox.sync.sia.task.CheckUploadStateTask;
 import io.goobox.sync.sia.task.DeleteCloudFileTask;
 import io.goobox.sync.sia.task.DeleteLocalFileTask;
 import io.goobox.sync.sia.task.DownloadCloudFileTask;
+import io.goobox.sync.sia.task.GetWalletInfoTask;
+import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
 import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
+import io.goobox.sync.sia.task.WaitContractsTask;
+import io.goobox.sync.sia.task.WaitSynchronizationTask;
 import mockit.Deencapsulation;
 import mockit.Expectations;
-import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
@@ -69,66 +55,34 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 import org.dizitart.no2.objects.ObjectRepository;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JMockit.class)
 public class AppTest {
-
-    private final String address = "01234567890123456789";
-    private final String primarySeed = "sample primary seed";
-    private final double balance = 12345.02;
-    private final int hosts = 30;
-    private final long period = 6000;
-    private final long renewWindow = 1000;
-    private final double income = 10;
-    private final double outcome = 15;
-    private final long currentPeriod = 3000;
-    private final double downloadSpending = 1.2345;
-    private final double uploadSpending = 0.223;
-    private final double storageSpending = 2.3;
-    private final double contractSpending = 0.001;
-    private final double downloadPrice = 1234.5;
-    private final double uploadPrice = 1234.5;
-    private final double storagePrice = 12345.6;
-    private final double contractPrice = 1.123;
-
-    @SuppressWarnings("unused")
-    @Mocked
-    private WalletApi wallet;
-
-    @SuppressWarnings("unused")
-    @Mocked
-    private ConsensusApi consensus;
-
-    @SuppressWarnings("unused")
-    @Mocked
-    private RenterApi renter;
 
     private Path tmpDir;
     private Context ctx;
@@ -138,10 +92,11 @@ public class AppTest {
 
         new DBMock();
         UtilsMock.dataDir = Files.createTempDirectory("data");
+        UtilsMock.syncDir = Files.createTempDirectory("sync");
         new UtilsMock();
 
-        this.tmpDir = Files.createTempDirectory("sync");
-        final Config cfg = new Config();
+        this.tmpDir = UtilsMock.syncDir;
+        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
 
@@ -168,109 +123,16 @@ public class AppTest {
     }
 
     /**
-     * Mock class used for App.main tests.
-     */
-    @SuppressWarnings("unused")
-    class SimpleAppMock extends MockUp<App> {
-        private boolean initialized = false;
-        private App app = null;
-
-        @Mock
-        private void init(Invocation invocation) {
-            this.app = invocation.getInvokedInstance();
-            this.initialized = true;
-        }
-
-    }
-
-    /**
-     * A simple mock of App class which only records which methods are invoked.
-     */
-    @SuppressWarnings("unused")
-    class RecordingAppMock extends MockUp<App> {
-        private boolean checkedSyncDir = false;
-        private boolean checkedDataDir = false;
-        private boolean preparedWallet = false;
-        private boolean waitedSynchronization = false;
-        private boolean waitedContracts = false;
-        private boolean calledResumeTasks = false;
-        private boolean calledSynchronizeModifiedFiles = false;
-        private boolean calledSynchronizeDeletedFiles = false;
-
-        @Mock
-        private Config loadConfig(Path path) {
-            assertEquals(Utils.getDataDir().resolve(App.ConfigFileName), path);
-            return ctx.config;
-        }
-
-        @Mock
-        private boolean checkAndCreateSyncDir() {
-            this.checkedSyncDir = true;
-            return true;
-        }
-
-        @Mock
-        private boolean checkAndCreateDataDir() {
-            this.checkedDataDir = true;
-            return true;
-        }
-
-        @Mock
-        void prepareWallet() {
-            this.preparedWallet = true;
-        }
-
-        @Mock
-        void waitSynchronization() {
-            this.waitedSynchronization = true;
-        }
-
-        @Mock
-        void waitContracts() {
-            this.waitedContracts = true;
-        }
-
-        @Mock
-        private void resumeTasks(final Context context, final Executor executor) {
-            assertEquals(ctx, context);
-            this.calledResumeTasks = true;
-        }
-
-        @Mock
-        private void synchronizeModifiedFiles(Path root) {
-            this.calledSynchronizeModifiedFiles = true;
-        }
-
-        @Mock
-        private void synchronizeDeletedFiles() {
-            this.calledSynchronizeDeletedFiles = true;
-        }
-
-    }
-
-    /**
-     * A mock of ScheduledThreadPoolExecutor which just puts tasks to a list.
-     */
-    @SuppressWarnings("unused")
-    class ScheduledThreadPoolExecutorMock extends MockUp<ScheduledThreadPoolExecutor> {
-        private List<Runnable> queue = new ArrayList<>();
-
-        @Mock
-        void scheduleWithFixedDelay(Runnable task, long start, long delay, TimeUnit unit) {
-            queue.add(task);
-        }
-    }
-
-    /**
-     * Test App.main without any options invokes app.init.
+     * Test App.main without any options invokes app.call.
      */
     @Test
-    public void testMain() {
-
-        final SimpleAppMock mock = new SimpleAppMock();
+    public void testMain() throws IOException {
+        new Expectations(App.class) {{
+            final App app = new App();
+            result = app;
+            app.call();
+        }};
         App.main(new String[]{});
-        assertTrue(mock.initialized);
-
     }
 
     /**
@@ -279,20 +141,20 @@ public class AppTest {
     @Test
     public void testMainWithResetDB() throws IOException {
 
-        final SimpleAppMock mock = new SimpleAppMock();
-        try {
+        new Expectations(App.class) {{
+            final App app = new App();
+            result = app;
+            app.call();
+            result = 0;
+        }};
 
+        try {
             final File dbFile = Utils.getDataDir().resolve(DB.DatabaseFileName).toFile();
             assertTrue(dbFile.createNewFile());
-
             App.main(new String[]{"--reset-db"});
-            assertTrue("check app is initialized", mock.initialized);
             assertFalse("check database files exists", dbFile.exists());
-
         } finally {
-
             FileUtils.deleteDirectory(UtilsMock.dataDir.toFile());
-
         }
 
     }
@@ -301,15 +163,15 @@ public class AppTest {
      * Test App.main with sync-dir flag updates cfg.syncDir.
      */
     @Test
-    public void testMainWithSyncDir() {
+    public void testMainWithSyncDir() throws IOException {
 
-        final SimpleAppMock mock = new SimpleAppMock();
-        final Path tmpPath = Paths.get("sync-dir");
-        App.main(new String[]{"--sync-dir", tmpPath.toString()});
-        assertNotNull(mock.app);
-
-        final Config cfg = Deencapsulation.getField(mock.app, "cfg");
-        assertEquals(tmpPath.toAbsolutePath(), cfg.getSyncDir());
+        new Expectations(App.class) {{
+            final App app = new App(tmpDir);
+            result = app;
+            app.call();
+            result = 0;
+        }};
+        App.main(new String[]{"--sync-dir", this.tmpDir.toString()});
 
     }
 
@@ -317,15 +179,18 @@ public class AppTest {
      * Test App.main with output-events flag sets app.outputEvents = true.
      */
     @Test
-    public void testMainWithOutputEvents() {
+    public void testMainWithOutputEvents() throws IOException {
 
-        final SimpleAppMock mock = new SimpleAppMock();
+        new Expectations(App.class) {{
+            final App app = new App();
+            result = app;
+            app.setOutputEvents();
+            app.call();
+            result = 0;
+        }};
         App.main(new String[]{"--output-events"});
-        assertNotNull(mock.app);
-        assertTrue(Deencapsulation.getField(mock.app, "outputEvents"));
 
     }
-
 
     @Test
     public void testMainWithHelp() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -372,28 +237,31 @@ public class AppTest {
     @Test
     public void testPrintHelp(@Mocked HelpFormatter help) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        final StringBuilder builder = new StringBuilder();
-        builder.append("\nCommands:\n");
-        builder.append(" ");
-        builder.append(Wallet.CommandName);
-        builder.append("\n   ");
-        builder.append(Wallet.Description);
-        builder.append("\n ");
-        builder.append(CreateAllowance.CommandName);
-        builder.append("\n   ");
-        builder.append(CreateAllowance.Description);
-        builder.append("\n ");
-        builder.append(GatewayConnect.CommandName);
-        builder.append("\n   ");
-        builder.append(GatewayConnect.Description);
-        builder.append("\n ");
-        builder.append(DumpDB.CommandName);
-        builder.append("\n   ");
-        builder.append(DumpDB.Description);
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (final PrintWriter writer = new PrintWriter(buffer)) {
+            writer.println();
+            writer.println("Commands:");
+            writer.print(" ");
+            writer.println(Wallet.CommandName);
+            writer.print("   ");
+            writer.println(Wallet.Description);
+            writer.print(" ");
+            writer.println(CreateAllowance.CommandName);
+            writer.print("   ");
+            writer.println(CreateAllowance.Description);
+            writer.print(" ");
+            writer.println(GatewayConnect.CommandName);
+            writer.print("   ");
+            writer.println(GatewayConnect.Description);
+            writer.print(" ");
+            writer.println(DumpDB.CommandName);
+            writer.print("   ");
+            writer.println(DumpDB.Description);
+        }
 
         final Options opt = new Options();
         new Expectations() {{
-            help.printHelp(App.Name, App.Description, opt, builder.toString(), true);
+            help.printHelp(App.Name, App.Description, opt, buffer.toString(), true);
         }};
 
         final Method printHelp = App.class.getDeclaredMethod("printHelp", Options.class);
@@ -404,7 +272,7 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testMainWithWalletCommand(@Mocked Wallet cmd) {
+    public void testWithWalletCommand(@Mocked Wallet cmd) {
 
         final String[] args = new String[]{Wallet.CommandName, "a", "b", "c"};
         new Expectations() {{
@@ -416,7 +284,7 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testMainWithCreateAllowanceCommand(@Mocked CreateAllowance cmd) {
+    public void testCreateAllowanceCommand(@Mocked CreateAllowance cmd) {
 
         final String[] args = new String[]{CreateAllowance.CommandName, "x", "y", "z"};
         new Expectations() {{
@@ -428,7 +296,7 @@ public class AppTest {
 
     @SuppressWarnings("unused")
     @Test
-    public void testMainWithGatewayConnectCommand(@Mocked GatewayConnect cmd) {
+    public void testGatewayConnectCommand(@Mocked GatewayConnect cmd) {
 
         final String[] args = new String[]{GatewayConnect.CommandName, "x", "y", "z"};
         new Expectations() {{
@@ -438,303 +306,339 @@ public class AppTest {
 
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void testInit(@Mocked CmdUtils utils, @Mocked FileWatcher watcher)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
+    public void testConstructor() {
+        new Expectations(APIUtils.class) {{
+            APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
+            result = ctx.getConfig();
 
-        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
-
-        new Expectations() {{
-            CmdUtils.getApiClient();
-            result = ctx.apiClient;
-            new FileWatcher(tmpDir, withNotNull());
+            APIUtils.getApiClient();
+            result = ctx.getApiClient();
         }};
 
-        final RecordingAppMock mock = new RecordingAppMock();
         final App app = new App();
-        final Method init = App.class.getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(app);
-
-        assertTrue(mock.checkedSyncDir);
-        assertTrue(mock.checkedDataDir);
-        assertTrue(mock.preparedWallet);
-        assertTrue(mock.waitedSynchronization);
-        assertTrue(mock.waitedContracts);
-        assertTrue(mock.calledSynchronizeModifiedFiles);
-        assertTrue(mock.calledSynchronizeDeletedFiles);
-        assertTrue(mock.calledResumeTasks);
-
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
-
+        final Context ctx = app.getContext();
+        assertEquals(this.ctx.getConfig(), ctx.getConfig());
+        assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
+        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
     }
 
-    @SuppressWarnings("unused")
     @Test
-    public void testInitWithOutputEvents(@Mocked CmdUtils utils, @Mocked FileWatcher watcher, @Mocked Wallet walletCmd)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException, Wallet.WalletException, ApiException {
+    public void testConstructorWithSyncDir() {
+        new Expectations(APIUtils.class) {{
+            APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
+            result = ctx.getConfig();
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
-        wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
-        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
-        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
-
-        final InlineResponse2008 info = new InlineResponse2008();
-        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
-        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHasting(balance).toString());
-        allowance.setHosts(hosts);
-        allowance.setPeriod(period);
-        allowance.setRenewwindow(renewWindow);
-        settings.setAllowance(allowance);
-        info.setSettings(settings);
-        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-        spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
-        spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
-        spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
-        info.setFinancialmetrics(spending);
-        info.setCurrentperiod(String.valueOf(currentPeriod));
-
-        WalletInfo walletInfo = new WalletInfo(address, primarySeed, wallet, info);
-
-        final InlineResponse20012 prices = new InlineResponse20012();
-        prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
-        prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
-        prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
-        prices.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
-        PriceInfo priceInfo = new PriceInfo(prices);
-
-        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
-        new Expectations() {{
-            CmdUtils.getApiClient();
-            result = ctx.apiClient;
-            new FileWatcher(tmpDir, withNotNull());
-
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-
+            APIUtils.getApiClient();
+            result = ctx.getApiClient();
         }};
 
-        final RecordingAppMock mock = new RecordingAppMock();
-        final App app = new App();
-        Deencapsulation.setField(app, "outputEvents", true);
-
-        final Method init = App.class.getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(app);
-
-        assertTrue(mock.checkedSyncDir);
-        assertTrue(mock.checkedDataDir);
-        assertTrue(mock.preparedWallet);
-        assertTrue(mock.waitedSynchronization);
-        assertTrue(mock.waitedContracts);
-        assertTrue(mock.calledSynchronizeModifiedFiles);
-        assertTrue(mock.calledSynchronizeDeletedFiles);
-        assertTrue(mock.calledResumeTasks);
-
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
-        assertTrue(executorMock.queue.get(3) instanceof NotifySyncStateTask);
-        assertTrue(executorMock.queue.get(4) instanceof NotifyFundInfoTask);
-        final NotifyFundInfoTask task = (NotifyFundInfoTask) executorMock.queue.get(4);
-        assertTrue(Deencapsulation.getField(task, "autoAllocate"));
-
+        final App app = new App(this.tmpDir);
+        final Context ctx = app.getContext();
+        assertEquals(this.ctx.getConfig(), ctx.getConfig());
+        assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
+        assertEquals(this.tmpDir, ctx.getConfig().getSyncDir());
+        assertEquals(this.tmpDir, Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * Calls checkAndCreateSyncDir and checkAndCreateDataDir. Then runs GetWalletInfoTask, WaitSynchronizationTask,
+     * and WaitContractsTask. After that, runs synchronizeModifiedFiles and synchronizeDeletedFiles.
+     * Finally, registers CheckStateTask, CheckDownloadStateTask, CheckUploadStateTask, and FileWatcher.
+     */
     @Test
-    public void testInitWithOutputEventsAndDisableAutoAllocation(
-            @Mocked CmdUtils utils, @Mocked FileWatcher watcher, @Mocked Wallet walletCmd)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException,
-            IOException, Wallet.WalletException, ApiException {
+    public void testCall() throws GetWalletInfoTask.WalletException, ApiException, IOException {
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
-        wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
-        wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
-        wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", this.ctx);
 
-        final InlineResponse2008 info = new InlineResponse2008();
-        final InlineResponse2008Settings settings = new InlineResponse2008Settings();
-        final InlineResponse2008SettingsAllowance allowance = new InlineResponse2008SettingsAllowance();
-        allowance.setFunds(APIUtils.toHasting(balance).toString());
-        allowance.setHosts(hosts);
-        allowance.setPeriod(period);
-        allowance.setRenewwindow(renewWindow);
-        settings.setAllowance(allowance);
-        info.setSettings(settings);
-        final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
-        spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
-        spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
-        spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
-        info.setFinancialmetrics(spending);
-        info.setCurrentperiod(String.valueOf(currentPeriod));
-
-        WalletInfo walletInfo = new WalletInfo(address, primarySeed, wallet, info);
-
-        final InlineResponse20012 prices = new InlineResponse20012();
-        prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
-        prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
-        prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
-        prices.setFormcontracts(APIUtils.toHasting(contractPrice).toString());
-        PriceInfo priceInfo = new PriceInfo(prices);
-
-        final ScheduledThreadPoolExecutorMock executorMock = new ScheduledThreadPoolExecutorMock();
-        new Expectations() {{
-            CmdUtils.getApiClient();
-            result = ctx.apiClient;
-            new FileWatcher(tmpDir, withNotNull());
-
-            final Wallet.InfoPair pair = new Wallet.InfoPair(walletInfo, priceInfo);
-            walletCmd.call();
-            result = pair;
-
+        new Expectations(app) {{
+            app.checkAndCreateSyncDir();
+            result = true;
+            app.checkAndCreateDataDir();
+            result = true;
         }};
 
-        final RecordingAppMock mock = new RecordingAppMock();
-        final App app = new App();
-        Deencapsulation.setField(app, "outputEvents", true);
-
-        final Config cfg = Deencapsulation.getField(app, "cfg");
-        cfg.setDisableAutoAllocation(true);
-
-        final Method init = App.class.getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(app);
-
-        assertTrue(mock.checkedSyncDir);
-        assertTrue(mock.checkedDataDir);
-        assertTrue(mock.preparedWallet);
-        assertTrue(mock.waitedSynchronization);
-        assertTrue(mock.waitedContracts);
-        assertTrue(mock.calledSynchronizeModifiedFiles);
-        assertTrue(mock.calledSynchronizeDeletedFiles);
-        assertTrue(mock.calledResumeTasks);
-
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(0), "task") instanceof CheckStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(1), "task") instanceof CheckDownloadStateTask);
-        assertTrue(Deencapsulation.getField(executorMock.queue.get(2), "task") instanceof CheckUploadStateTask);
-        assertTrue(executorMock.queue.get(3) instanceof NotifySyncStateTask);
-        assertTrue(executorMock.queue.get(4) instanceof NotifyFundInfoTask);
-        final NotifyFundInfoTask task = (NotifyFundInfoTask) executorMock.queue.get(4);
-        assertFalse(Deencapsulation.getField(task, "autoAllocate"));
-
-    }
-
-    @SuppressWarnings("unused")
-    @Test
-    public void initWithApiException(@Mocked Thread thread)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InterruptedException {
-
-        final Config cfg = new Config();
-        new Expectations() {{
-            CmdUtils.getApiClient();
+        new Expectations(GetWalletInfoTask.class, WaitSynchronizationTask.class, NotifyEmptyFundTask.class, WaitContractsTask.class) {{
+            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+            getWalletInfoTask.call();
             result = null;
+
+            final WaitSynchronizationTask waitSynchronizationTask = new WaitSynchronizationTask(ctx);
+            waitSynchronizationTask.call();
+            result = null;
+
+            final WaitContractsTask waitContractsTask = new WaitContractsTask(ctx);
+            waitContractsTask.call();
+            result = null;
+        }};
+
+        new Expectations(app) {{
+            app.synchronizeModifiedFiles(ctx.getConfig().getSyncDir());
+            app.synchronizeDeletedFiles();
+        }};
+
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(App.WorkerThreadSize);
+        final StartSiaDaemonTask startSiaDaemonTask = new StartSiaDaemonTask();
+        final CheckStateTask checkStateTask = new CheckStateTask(ctx, executor);
+        final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
+        final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
+        new Expectations(Executors.class) {{
+            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            result = executor;
+        }};
+
+        new Expectations(app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class, FileWatcher.class) {{
+
+            app.resumeTasks(ctx, executor);
+
+            new StartSiaDaemonTask();
+            result = startSiaDaemonTask;
+
+            new CheckStateTask(ctx, executor);
+            result = checkStateTask;
+            new RetryableTask(checkStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 0, 60, TimeUnit.SECONDS);
+
+            new CheckDownloadStateTask(ctx);
+            result = checkDownloadStateTask;
+            new RetryableTask(checkDownloadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 30, 60, TimeUnit.SECONDS);
+
+            new CheckUploadStateTask(ctx);
+            result = checkUploadStateTask;
+            new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
+
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+        }};
+
+        app.call();
+
+    }
+
+    @Test
+    public void testCallWithOutputEvents() throws IOException, GetWalletInfoTask.WalletException, ApiException {
+
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", this.ctx);
+        Deencapsulation.setField(app, "outputEvents", true);
+
+        new Expectations(app) {{
+            app.checkAndCreateSyncDir();
+            result = true;
+            app.checkAndCreateDataDir();
+            result = true;
+        }};
+
+        new Expectations(GetWalletInfoTask.class, WaitSynchronizationTask.class, NotifyEmptyFundTask.class, WaitContractsTask.class) {{
+            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+            getWalletInfoTask.call();
+            result = null;
+
+            final WaitSynchronizationTask waitSynchronizationTask = new WaitSynchronizationTask(ctx);
+            waitSynchronizationTask.call();
+            result = null;
+
+            final NotifyEmptyFundTask notifyEmptyFundTask = new NotifyEmptyFundTask(ctx);
+            notifyEmptyFundTask.run();
+
+            final WaitContractsTask waitContractsTask = new WaitContractsTask(ctx);
+            waitContractsTask.call();
+            result = null;
+        }};
+
+        new Expectations(app) {{
+            app.synchronizeModifiedFiles(ctx.getConfig().getSyncDir());
+            app.synchronizeDeletedFiles();
+        }};
+
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(App.WorkerThreadSize);
+        final StartSiaDaemonTask startSiaDaemonTask = new StartSiaDaemonTask();
+        final CheckStateTask checkStateTask = new CheckStateTask(ctx, executor);
+        final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
+        final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
+        new Expectations(Executors.class) {{
+            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            result = executor;
+        }};
+
+        new Expectations(
+                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
+                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+
+            app.resumeTasks(ctx, executor);
+
+            new StartSiaDaemonTask();
+            result = startSiaDaemonTask;
+
+            new CheckStateTask(ctx, executor);
+            result = checkStateTask;
+            new RetryableTask(checkStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 0, 60, TimeUnit.SECONDS);
+
+            new CheckDownloadStateTask(ctx);
+            result = checkDownloadStateTask;
+            new RetryableTask(checkDownloadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 30, 60, TimeUnit.SECONDS);
+
+            new CheckUploadStateTask(ctx);
+            result = checkUploadStateTask;
+            new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
+
+            new NotifySyncStateTask();
+            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
+
+            new NotifyFundInfoTask(ctx, true);
+            executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
+
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+        }};
+
+        app.call();
+
+    }
+
+    @Test
+    public void testCallWithOutputEventsAndDisableAutoAllocation() throws IOException, GetWalletInfoTask.WalletException, ApiException {
+
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", this.ctx);
+        Deencapsulation.setField(app, "outputEvents", true);
+        this.ctx.getConfig().setDisableAutoAllocation(true);
+
+        new Expectations(app) {{
+            app.checkAndCreateSyncDir();
+            result = true;
+            app.checkAndCreateDataDir();
+            result = true;
+        }};
+
+        new Expectations(GetWalletInfoTask.class, WaitSynchronizationTask.class, NotifyEmptyFundTask.class, WaitContractsTask.class) {{
+            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+            getWalletInfoTask.call();
+            result = null;
+
+            final WaitSynchronizationTask waitSynchronizationTask = new WaitSynchronizationTask(ctx);
+            waitSynchronizationTask.call();
+            result = null;
+
+            final NotifyEmptyFundTask notifyEmptyFundTask = new NotifyEmptyFundTask(ctx);
+            notifyEmptyFundTask.run();
+
+            final WaitContractsTask waitContractsTask = new WaitContractsTask(ctx);
+            waitContractsTask.call();
+            result = null;
+        }};
+
+        new Expectations(app) {{
+            app.synchronizeModifiedFiles(ctx.getConfig().getSyncDir());
+            app.synchronizeDeletedFiles();
+        }};
+
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(App.WorkerThreadSize);
+        final StartSiaDaemonTask startSiaDaemonTask = new StartSiaDaemonTask();
+        final CheckStateTask checkStateTask = new CheckStateTask(ctx, executor);
+        final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
+        final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
+        new Expectations(Executors.class) {{
+            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            result = executor;
+        }};
+
+        new Expectations(
+                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
+                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+
+            app.resumeTasks(ctx, executor);
+
+            new StartSiaDaemonTask();
+            result = startSiaDaemonTask;
+
+            new CheckStateTask(ctx, executor);
+            result = checkStateTask;
+            new RetryableTask(checkStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 0, 60, TimeUnit.SECONDS);
+
+            new CheckDownloadStateTask(ctx);
+            result = checkDownloadStateTask;
+            new RetryableTask(checkDownloadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 30, 60, TimeUnit.SECONDS);
+
+            new CheckUploadStateTask(ctx);
+            result = checkUploadStateTask;
+            new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
+            executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
+
+            new NotifySyncStateTask();
+            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
+
+            new NotifyFundInfoTask(ctx, false);
+            executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
+
+            new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+        }};
+
+        app.call();
+
+    }
+
+    /**
+     * This test simulates the scenario that trying to start a sia daemon couple of times but finally cannot do it.
+     */
+    @Test
+    public void testCallWithApiException(@SuppressWarnings("unused") @Mocked Thread thread)
+            throws GetWalletInfoTask.WalletException, ApiException, IOException, InterruptedException {
+
+        final App app = new App();
+        Deencapsulation.setField(app, "ctx", this.ctx);
+
+        new Expectations(app) {{
+            app.checkAndCreateSyncDir();
+            result = true;
+            app.checkAndCreateDataDir();
+            result = true;
+        }};
+
+        new Expectations(GetWalletInfoTask.class, WaitSynchronizationTask.class, NotifyEmptyFundTask.class, WaitContractsTask.class) {{
+            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+            result = getWalletInfoTask;
+            getWalletInfoTask.call();
+            result = new ApiException();
+            times = App.MaxRetry + 1;
             Thread.sleep(App.DefaultSleepTime);
+            times = App.MaxRetry;
         }};
 
-        new Expectations(System.class) {{
-            System.exit(1);
-        }};
-
-        class AppMock extends MockUp<App> {
-            private boolean checkedSyncDir = false;
-            private boolean checkedDataDir = false;
-            private int prepareWalletCalled = 0;
-            private int startSiaDaemonCalled = 0;
-
-            @Mock
-            private Config loadConfig(Path path) {
-                assertEquals(Utils.getDataDir().resolve(App.ConfigFileName), path);
-                return cfg;
-            }
-
-            @Mock
-            private boolean checkAndCreateSyncDir() {
-                this.checkedSyncDir = true;
-                return true;
-            }
-
-            @Mock
-            private boolean checkAndCreateDataDir() {
-                this.checkedDataDir = true;
-                return true;
-            }
-
-            @Mock
-            void prepareWallet() throws ApiException {
-                this.prepareWalletCalled++;
-                throw new ApiException(new ConnectException("expected exception"));
-            }
-
-            @Mock
-            public synchronized void startSiaDaemon() {
-                this.startSiaDaemonCalled++;
-            }
-
-        }
-
-        final AppMock mock = new AppMock();
-        final App app = new App();
-        final Method init = App.class.getDeclaredMethod("init");
-        init.setAccessible(true);
-        init.invoke(app);
-
-        assertTrue(mock.checkedSyncDir);
-        assertTrue(mock.checkedDataDir);
-        assertEquals(App.MaxRetry + 1, mock.prepareWalletCalled);
-        assertEquals(App.MaxRetry, mock.startSiaDaemonCalled);
+        assertEquals(Integer.valueOf(1), app.call());
 
     }
 
+    /**
+     * This test simulates the scenario that GetWalletInfoTask throws a WalletException.
+     */
     @Test
-    public void testLoadConfig() throws IOException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-
-        final Config cfg = new Config();
-        cfg.setUserName("testuser@sample.com");
-        cfg.setPrimarySeed("a b c d e f g");
-        cfg.setDataPieces(5);
-        cfg.setParityPieces(12);
-
-        final Path tmpFile = Files.createTempFile(null, null);
-        try {
-
-            cfg.save(tmpFile);
-
-            final App app = new App();
-            final Method loadConfig = App.class.getDeclaredMethod("loadConfig", Path.class);
-            loadConfig.setAccessible(true);
-            final Config res = (Config) loadConfig.invoke(app, tmpFile);
-            assertEquals(cfg, res);
-
-        } finally {
-
-            final File file = tmpFile.toFile();
-            if (file.exists()) {
-                assertTrue(file.delete());
-            }
-
-        }
-
-    }
-
-    @Test
-    public void testLoadConfigWithoutConfigFile() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, IOException {
-
-        final Path tmpFile = Files.createTempFile(null, null);
-        assertTrue(tmpFile.toFile().delete());
+    public void testCallWithWalletException() throws GetWalletInfoTask.WalletException, ApiException, IOException {
 
         final App app = new App();
-        final Method loadConfig = App.class.getDeclaredMethod("loadConfig", Path.class);
-        loadConfig.setAccessible(true);
-        final Config res = (Config) loadConfig.invoke(app, tmpFile);
-        assertEquals(new Config(), res);
+        Deencapsulation.setField(app, "ctx", this.ctx);
+
+        new Expectations(app) {{
+            app.checkAndCreateSyncDir();
+            result = true;
+            app.checkAndCreateDataDir();
+            result = true;
+        }};
+
+        new Expectations(GetWalletInfoTask.class, WaitSynchronizationTask.class, NotifyEmptyFundTask.class, WaitContractsTask.class) {{
+            final GetWalletInfoTask getWalletInfoTask = new GetWalletInfoTask(ctx);
+            result = getWalletInfoTask;
+            getWalletInfoTask.call();
+            result = new GetWalletInfoTask.WalletException("expected error");
+        }};
+
+        assertEquals(Integer.valueOf(1), app.call());
 
     }
 
@@ -830,266 +734,6 @@ public class AppTest {
     }
 
     @Test
-    public void testPrepareWallet() throws ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        ctx.config.setPrimarySeed("abcdefg");
-        final String address = "012345567890";
-
-        new Expectations() {{
-            final InlineResponse20013 res = new InlineResponse20013();
-            res.setUnlocked(false);
-            wallet.walletGet();
-            result = res;
-
-            wallet.walletUnlockPost(ctx.config.getPrimarySeed());
-        }};
-
-        new Expectations() {{
-            final InlineResponse20014 res = new InlineResponse20014();
-            res.setAddress(address);
-            wallet.walletAddressGet();
-            result = res;
-        }};
-
-        final Method init = App.class.getDeclaredMethod("prepareWallet");
-        init.setAccessible(true);
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        init.invoke(app);
-
-    }
-
-    @Test
-    public void testPrepareWalletWithUnlockedWallet() throws ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        new Expectations() {{
-            final InlineResponse20013 res = new InlineResponse20013();
-            res.setUnlocked(true);
-            wallet.walletGet();
-            result = res;
-        }};
-
-        final Method init = App.class.getDeclaredMethod("prepareWallet");
-        init.setAccessible(true);
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        init.invoke(app);
-
-    }
-
-    @Test
-    public void testPrepareWalletWithUninitializedWallet() throws ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
-
-        final String primarySeed = "1234567890";
-        final String address = "012345567890";
-
-        new Expectations() {{
-            final InlineResponse20013 res = new InlineResponse20013();
-            res.setUnlocked(false);
-            wallet.walletGet();
-            result = res;
-        }};
-
-        new Expectations() {{
-            wallet.walletUnlockPost(ctx.config.getPrimarySeed());
-            result = new ApiException();
-        }};
-
-        new Expectations() {{
-            final InlineResponse20016 seed = new InlineResponse20016();
-            seed.setPrimaryseed(primarySeed);
-            wallet.walletInitPost("", null, false);
-            result = seed;
-        }};
-
-        new Expectations() {{
-            wallet.walletUnlockPost(primarySeed);
-        }};
-
-        new Expectations() {{
-            final InlineResponse20014 res = new InlineResponse20014();
-            res.setAddress(address);
-            wallet.walletAddressGet();
-            result = res;
-        }};
-
-        final Path tmpFile = Files.createTempFile(null, null);
-        try {
-
-            final App app = new App();
-            Deencapsulation.setField(app, "configPath", tmpFile);
-            Deencapsulation.setField(app, "ctx", ctx);
-
-            final Method init = App.class.getDeclaredMethod("prepareWallet");
-            init.setAccessible(true);
-            init.invoke(app);
-
-            final Config cfg = Config.load(tmpFile);
-            assertEquals(primarySeed, cfg.getPrimarySeed());
-
-        } finally {
-
-            assertTrue(tmpFile.toFile().delete());
-
-        }
-
-    }
-
-    @Test
-    public void testPrepareWalletWithImportingWallet() throws ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        final String primarySeed = "abcdefg";
-        final String address = "012345567890";
-        ctx.config.setPrimarySeed(primarySeed);
-
-        new Expectations() {{
-            final InlineResponse20013 res = new InlineResponse20013();
-            res.setUnlocked(false);
-            wallet.walletGet();
-            result = res;
-        }};
-
-        new Expectations() {{
-            wallet.walletUnlockPost(primarySeed);
-            result = new ApiException("expected error");
-            result = null;
-
-        }};
-
-        new Expectations() {{
-            final InlineResponse2006 res2 = new InlineResponse2006();
-            res2.setSynced(true);
-            consensus.consensusGet();
-            result = res2;
-        }};
-
-        new Expectations() {{
-            wallet.walletInitSeedPost("", ctx.config.getPrimarySeed(), true, null);
-        }};
-
-        new Expectations() {{
-            final InlineResponse20014 res3 = new InlineResponse20014();
-            res3.setAddress(address);
-            wallet.walletAddressGet();
-            result = res3;
-        }};
-
-        final App app = new App();
-        final Method init = App.class.getDeclaredMethod("prepareWallet");
-        init.setAccessible(true);
-        Deencapsulation.setField(app, "ctx", ctx);
-        init.invoke(app);
-
-    }
-
-
-    @SuppressWarnings("unused")
-    @Test
-    public void testWaitSynchronization(@Mocked Thread thread)
-            throws ApiException, InterruptedException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-
-        new Expectations() {{
-            final InlineResponse2006 res1 = new InlineResponse2006();
-            res1.setSynced(false);
-
-            final InlineResponse2006 res2 = new InlineResponse2006();
-            res2.setSynced(true);
-
-            consensus.consensusGet();
-            returns(res1, res2);
-            Thread.sleep(App.DefaultSleepTime);
-
-        }};
-
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization");
-        waitSynchronization.setAccessible(true);
-        waitSynchronization.invoke(app);
-
-    }
-
-    @Test
-    public void testWaitSynchronizationWithoutSleet() throws ApiException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        new Expectations() {{
-            final InlineResponse2006 res = new InlineResponse2006();
-            res.setSynced(true);
-            consensus.consensusGet();
-            result = res;
-        }};
-
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        final Method waitSynchronization = App.class.getDeclaredMethod("waitSynchronization");
-        waitSynchronization.setAccessible(true);
-        waitSynchronization.invoke(app);
-
-    }
-
-    @SuppressWarnings("unused")
-    @Test
-    public void testWaitContracts(@Mocked Thread thread)
-            throws ApiException, InterruptedException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        final List<InlineResponse2009Contracts> contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
-            final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
-            c.setId(String.valueOf(i));
-            c.setNetaddress("aaa-bbb-ccc");
-            c.setRenterfunds("1234");
-            return c;
-        }).collect(Collectors.toList());
-
-        new Expectations() {{
-            // First call: returns not enough contracts.
-            final InlineResponse2009 res1 = new InlineResponse2009();
-            res1.setContracts(contracts.subList(0, App.MinContracts / 2));
-
-            // Second call: returns enough contracts.
-            final InlineResponse2009 res2 = new InlineResponse2009();
-            res2.setContracts(contracts);
-
-            renter.renterContractsGet();
-            returns(res1, res2);
-            Thread.sleep(App.DefaultSleepTime);
-
-        }};
-
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        final Method waitContracts = App.class.getDeclaredMethod("waitContracts");
-        waitContracts.setAccessible(true);
-        waitContracts.invoke(app);
-
-    }
-
-    @Test
-    public void testWaitContractsWithoutSleep() throws ApiException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-
-        final List<InlineResponse2009Contracts> contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
-            final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
-            c.setId(String.valueOf(i));
-            c.setNetaddress("aaa-bbb-ccc");
-            c.setRenterfunds("1234");
-            return c;
-        }).collect(Collectors.toList());
-
-        new Expectations() {{
-            InlineResponse2009 res = new InlineResponse2009();
-            res.setContracts(contracts);
-            renter.renterContractsGet();
-            result = res;
-        }};
-
-        final App app = new App();
-        Deencapsulation.setField(app, "ctx", ctx);
-        final Method waitContracts = App.class.getDeclaredMethod("waitContracts");
-        waitContracts.setAccessible(true);
-        waitContracts.invoke(app);
-
-    }
-
-    @Test
     public void synchronizeNewFile() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
 
         final Path name = Paths.get("sub-dir", String.format("file-%x", System.currentTimeMillis()));
@@ -1113,14 +757,16 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -1145,14 +791,16 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -1186,14 +834,16 @@ public class AppTest {
         Files.createDirectories(localPath.getParent());
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name.toString();
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override
@@ -1247,14 +897,16 @@ public class AppTest {
         assertTrue(localPath.toFile().createNewFile());
 
         DB.setSynced(new CloudFile() {
+            @NotNull
             @Override
             public String getName() {
                 return name;
             }
 
+            @NotNull
             @Override
             public Path getCloudPath() {
-                return null;
+                return ctx.getPathPrefix().resolve(name);
             }
 
             @Override

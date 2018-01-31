@@ -29,8 +29,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
@@ -39,8 +39,7 @@ public final class GatewayConnect implements Runnable {
     public static final String CommandName = "gateway-connect";
     public static final String Description = "Connects the gateway to a peer";
     static final String HelpFormat = "%s %s addr";
-    private static final Logger logger = LogManager.getLogger();
-
+    private static final Logger logger = LoggerFactory.getLogger(GatewayConnect.class);
 
     private final Config cfg;
     private final String addr;
@@ -74,9 +73,9 @@ public final class GatewayConnect implements Runnable {
 
     }
 
-    public GatewayConnect(final String addr) {
+    GatewayConnect(final String addr) {
         final Path configPath = Utils.getDataDir().resolve(App.ConfigFileName);
-        this.cfg = CmdUtils.loadConfig(configPath);
+        this.cfg = APIUtils.loadConfig(configPath);
         this.addr = addr;
     }
 
@@ -85,7 +84,7 @@ public final class GatewayConnect implements Runnable {
     public void run() {
 
         logger.info("Connect peer {}", this.addr);
-        final ApiClient apiClient = CmdUtils.getApiClient();
+        final ApiClient apiClient = APIUtils.getApiClient();
         final GatewayApi gateway = new GatewayApi(apiClient);
         try {
             gateway.gatewayConnectNetaddressPost(addr);

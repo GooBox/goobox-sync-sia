@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,13 +32,13 @@ import java.nio.file.Paths;
 public class Context {
 
     @NotNull
-    public final Config config;
+    private final Config config;
 
     @Nullable
-    public final ApiClient apiClient;
+    private final ApiClient apiClient;
 
     @NotNull
-    public final Path pathPrefix;
+    private final Path pathPrefix;
 
     /**
      * Create a new context with a config object, an API client, and a task queue.
@@ -53,7 +53,7 @@ public class Context {
     }
 
     /**
-     * Returns a file name from a local path.
+     * Returns the file name from a given local path.
      *
      * @param localPath of the file
      * @return the name used in goobox for the given file.
@@ -64,7 +64,7 @@ public class Context {
     }
 
     /**
-     * Returns a local path to the given named file.
+     * Returns the local path for a given named file.
      *
      * @param name of the file.
      * @return local path to the file.
@@ -72,6 +72,36 @@ public class Context {
     @NotNull
     public Path getLocalPath(@NotNull final String name) {
         return this.config.getSyncDir().resolve(name);
+    }
+
+    /**
+     * Returns the config object in this context.
+     *
+     * @return the config object
+     */
+    @NotNull
+    public Config getConfig() {
+        return config;
+    }
+
+    /**
+     * Returns the api client in this context.
+     *
+     * @return the client object.
+     */
+    @Nullable
+    public ApiClient getApiClient() {
+        return apiClient;
+    }
+
+    /**
+     * Returns the prefix of cloud paths in this context.
+     *
+     * @return the path prefix.
+     */
+    @NotNull
+    public Path getPathPrefix() {
+        return pathPrefix;
     }
 
     @Override

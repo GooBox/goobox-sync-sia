@@ -17,6 +17,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.RetryableTask;
 import io.goobox.sync.sia.StartSiaDaemonTask;
@@ -28,21 +29,24 @@ import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFile;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * Checks changes in both cloud directory and local directory, and create tasks to handle them.
@@ -51,7 +55,7 @@ import java.util.concurrent.Executor;
  */
 public class CheckStateTask implements Callable<Void> {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(CheckStateTask.class);
 
     @NotNull
     private final Context ctx;
@@ -67,107 +71,16 @@ public class CheckStateTask implements Callable<Void> {
     public Void call() throws ApiException {
 
         logger.info("Checking for changes");
-        final RenterApi api = new RenterApi(this.ctx.apiClient);
-        final Set<String> processedFiles = new HashSet<>();
+        final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
-            logger.trace("Processing files stored in the cloud network");
-            for (final SiaFile file : this.takeNewestFiles(api.renterFilesGet().getFiles())) {
+            logger.debug("Processing files found in the cloud network");
+            final Set<String> processedFiles = this.takeNewestFiles(api.renterFilesGet().getFiles())
+                    .stream()
+                    .map(this::processCloudFile)
+                    .collect(Collectors.toSet());
 
-                try {
-
-                    final Optional<SyncFile> syncFileOpt = DB.get(file);
-                    if (syncFileOpt.isPresent()) {
-
-                        final SyncFile syncFile = syncFileOpt.get();
-                        switch (syncFile.getState()) {
-                            case SYNCED:
-
-                                // This file was synced.
-                                if (file.getCreationTime().orElse(0L) > syncFile.getLocalModificationTime().orElse(0L)) {
-
-                                    // The cloud file was updated, and it will be downloaded.
-                                    logger.info("Cloud file {} is going to be downloaded", file.getName());
-                                    this.enqueueForDownload(file);
-
-                                }
-                                break;
-
-                            case MODIFIED:
-
-                                // This file has been modified.
-                                if (file.getCreationTime().orElse(0L) < syncFile.getLocalModificationTime().orElse(0L)) {
-
-                                    // The newer local file will be uploaded.
-                                    // Even if the file in cloud was also modified, i.e. there is conflict,
-                                    // the cloud network supports versioning and the conflict can be solved.
-                                    logger.info("Local file {} is going to be uploaded", file.getName());
-                                    this.enqueueForUpload(file.getLocalPath());
-
-                                } else {
-
-                                    // Both cloud and local files are modified and it is a conflict.
-                                    // The cloud file should be downloaded and the local file should be renamed and kept it
-                                    // too.
-                                    logger.debug("Conflict detected: file {} is modified in both cloud and local", file.getName());
-                                    logger.info("Cloud file {} is going to be downloaded", file.getName());
-                                    this.enqueueForDownload(file);
-
-                                }
-                                break;
-
-                            case DELETED:
-
-                                // Since this file has been deleted from the local directory.
-                                // it will be deleted from the cloud network, too.
-                                logger.info("Remote file {} is going to be deleted", file.getName());
-                                this.enqueueForCloudDelete(file);
-                                break;
-
-                            case UPLOAD_FAILED:
-
-                                logger.info("Retry to upload file {}", file.getName());
-                                this.enqueueForUpload(file.getLocalPath());
-                                break;
-
-                            case DOWNLOAD_FAILED:
-                            default:
-                                logger.debug("File {} ({}) is skipped", file.getName(), syncFile.getState());
-                                break;
-
-                        }
-
-                    } else {
-
-                        // The file is found in the cloud network but doesn't exist in the local DB.
-                        logger.debug("New file {} is found in the cloud storage", file.getName());
-                        if (file.getLocalPath().toFile().exists()) {
-
-                            // The file exists in the local directory but not in the sync DB.
-                            // It means the file still invokes modify event e.g. still being copied etc.
-                            // This kind of file should be pended until the modify events end and the file is added to the
-                            // sync DB.
-                            logger.debug("The file {} is also found in the local storage, pending", file.getName());
-
-                        } else {
-
-                            // The file also doesn't exist in the local directory.
-                            logger.info("Remote file {} is going to be downloaded", file.getName());
-                            this.enqueueForDownload(file);
-
-                        }
-
-                    }
-
-                } catch (IOException e) {
-                    logger.error("Failed to handle file {}: {}", file.getName(), e.getMessage());
-                }
-
-                processedFiles.add(file.getName());
-
-            }
-
-            logger.trace("Processing files stored only in the local directory and modified");
+            logger.debug("Processing files stored only in the local directory and modified");
             DB.getFiles(SyncState.MODIFIED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
                     return;
@@ -176,14 +89,14 @@ public class CheckStateTask implements Callable<Void> {
                 // It should be uploaded.
                 try {
                     logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                    this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
                 } catch (IOException e) {
                     logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
                 }
                 processedFiles.add(syncFile.getName());
             });
 
-            logger.trace("Processing files stored only in the local directory but deleted");
+            logger.debug("Processing files stored only in the local directory but deleted");
             DB.getFiles(SyncState.DELETED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
                     return;
@@ -195,7 +108,7 @@ public class CheckStateTask implements Callable<Void> {
                 processedFiles.add(syncFile.getName());
             });
 
-            logger.trace("Processing files stored only in the local directory but marked as synced");
+            logger.debug("Processing files stored only in the local directory but marked as synced");
             DB.getFiles(SyncState.SYNCED).forEach(syncFile -> {
                 if (processedFiles.contains(syncFile.getName())) {
                     return;
@@ -204,7 +117,7 @@ public class CheckStateTask implements Callable<Void> {
                 // It means this file was deleted from the cloud network by another client.
                 // This file should be deleted from the local directory, too.
                 logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
-                this.enqueueForLocalDelete(this.ctx.config.getSyncDir().resolve(syncFile.getName()));
+                this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
                 processedFiles.add(syncFile.getName());
             });
 
@@ -212,7 +125,7 @@ public class CheckStateTask implements Callable<Void> {
             if (e.getCause() instanceof ConnectException) {
                 throw e;
             }
-            logger.error("Failed to retrieve files stored in sia network", APIUtils.getErrorMessage(e));
+            logger.error("Failed to retrieve files stored in sia network: {}", APIUtils.getErrorMessage(e));
         } finally {
             DB.commit();
         }
@@ -226,52 +139,156 @@ public class CheckStateTask implements Callable<Void> {
      * @param files returned by renterFilesGet.
      * @return a collection of SiaFile instances.
      */
-    private Collection<SiaFile> takeNewestFiles(final Collection<InlineResponse20011Files> files) {
+    @NotNull
+    private Collection<SiaFile> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
+
+        if (files == null) {
+            return new ArrayList<>();
+        }
 
         // Key: file name, Value: file object.
         final Map<String, SiaFile> fileMap = new HashMap<>();
-        if (files != null) {
+        files.stream().filter(InlineResponse20011Files::getAvailable).forEach(file -> {
 
-            files.forEach(file -> {
+            final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+            if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
+                // This file isn't managed by Goobox.
+                logger.debug(
+                        "Found remote file {} but it's not managed by Goobox (not starts with {})",
+                        siaFile.getCloudPath(),
+                        this.ctx.getPathPrefix());
+                return;
+            }
 
-                if (!file.getAvailable()) {
-                    // This file is still being uploaded.
-                    logger.debug("Found remote file {} but it's not available (still being uploaded)", file.getSiapath());
-                    return;
-                }
+            if (fileMap.containsKey(siaFile.getName())) {
 
-                final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
-                if (!siaFile.getCloudPath().startsWith(this.ctx.pathPrefix)) {
-                    // This file isn't managed by Goobox.
-                    logger.debug(
-                            "Found remote file {} but it's not managed by Goobox (not starts with {})",
-                            siaFile.getCloudPath(),
-                            this.ctx.pathPrefix);
-                    return;
-                }
-
-                if (fileMap.containsKey(siaFile.getName())) {
-
-                    final SiaFile prev = fileMap.get(siaFile.getName());
-                    if (siaFile.getCreationTime().orElse(0L) > prev.getCreationTime().orElse(0L)) {
-                        logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
-                                siaFile.getCreationTime());
-                        fileMap.put(siaFile.getName(), siaFile);
-                    } else {
-                        logger.debug("Found older version of remote file {} created at {} but ignored",
-                                siaFile.getName(), siaFile.getCreationTime());
-                    }
-
-                } else {
-                    logger.debug("Found remote file {} created at {}", siaFile.getName(),
+                final SiaFile prev = fileMap.get(siaFile.getName());
+                if (siaFile.getCreationTime().orElse(0L) > prev.getCreationTime().orElse(0L)) {
+                    logger.debug("Found newer version of remote file {} created at {}", siaFile.getName(),
                             siaFile.getCreationTime());
                     fileMap.put(siaFile.getName(), siaFile);
+                } else {
+                    logger.debug("Found older version of remote file {} created at {} but ignored",
+                            siaFile.getName(), siaFile.getCreationTime());
                 }
 
-            });
+            } else {
+                logger.debug("Found remote file {} created at {}", siaFile.getName(),
+                        siaFile.getCreationTime());
+                fileMap.put(siaFile.getName(), siaFile);
+            }
 
-        }
+        });
         return fileMap.values();
+
+    }
+
+    /**
+     * Handles the given cloud file and returns the name.
+     *
+     * @param file to be processed
+     * @return the name of the processed file
+     */
+    @NotNull
+    private String processCloudFile(@NotNull SiaFile file) {
+
+        try {
+
+            final Optional<SyncFile> syncFileOpt = DB.get(file);
+            if (syncFileOpt.isPresent()) {
+
+                final SyncFile syncFile = syncFileOpt.get();
+                switch (syncFile.getState()) {
+                    case SYNCED:
+
+                        // This file was synced.
+                        if (file.getCreationTime().orElse(0L) > syncFile.getLocalModificationTime().orElse(0L)) {
+                            // The cloud file was updated, and it will be downloaded.
+                            logger.info("Cloud file {} is going to be downloaded", file.getName());
+                            this.enqueueForDownload(file);
+                        }
+                        break;
+
+                    case MODIFIED:
+
+                        // This file has been modified.
+                        if (file.getCreationTime().orElse(0L) < syncFile.getLocalModificationTime().orElse(0L)) {
+
+                            // The newer local file will be uploaded.
+                            // Even if the file in cloud was also modified, i.e. there is conflict,
+                            // the cloud network supports versioning and the conflict can be solved.
+                            logger.info("Local file {} is going to be uploaded", file.getName());
+                            this.enqueueForUpload(file.getLocalPath());
+
+                        } else {
+
+                            // Both cloud and local files are modified and it is a conflict.
+                            // The cloud file should be downloaded and the local file should be renamed and kept it
+                            // too.
+                            logger.debug("Conflict detected: file {} is modified in both cloud and local", file.getName());
+                            logger.info("Cloud file {} is going to be downloaded", file.getName());
+                            this.enqueueForDownload(file);
+
+                        }
+                        break;
+
+                    case DELETED:
+
+                        // Since this file has been deleted from the local directory.
+                        // it will be deleted from the cloud network, too.
+                        logger.info("Remote file {} is going to be deleted", file.getName());
+                        this.enqueueForCloudDelete(file);
+                        break;
+
+                    case UPLOAD_FAILED:
+                        logger.info("Retry to upload file {}", file.getName());
+                        this.enqueueForUpload(file.getLocalPath());
+                        break;
+
+                    case DOWNLOAD_FAILED:
+                        // TODO: Check the cloud file is still newer than the local one / local file doesn't exist.
+                        // -> retry to download
+
+                    case CONFLICT:
+                        // TODO: Handle this case.
+
+                    case FOR_DOWNLOAD:
+                    case DOWNLOADING:
+                    case FOR_UPLOAD:
+                    case UPLOADING:
+                    case FOR_LOCAL_DELETE:
+                    case FOR_CLOUD_DELETE:
+                    default:
+                        logger.debug("File {} is marked as {}", file.getName(), syncFile.getState());
+                        break;
+
+                }
+
+            } else {
+
+                logger.debug("Cloud file {} is not found in the sync DB", file.getName());
+                if (Files.exists(file.getLocalPath())) {
+
+                    // The file exists in the local directory but not in the sync DB.
+                    // It means the file still invokes modify event e.g. still being copied etc.
+                    // This kind of file should be pended until the modify events end and the file is added to the
+                    // sync DB.
+                    logger.debug("The file {} is also found in the local storage, pending", file.getName());
+
+                } else {
+
+                    // The file also doesn't exist in the local directory.
+                    logger.info("Remote file {} is going to be downloaded", file.getName());
+                    this.enqueueForDownload(file);
+
+                }
+
+            }
+
+        } catch (final IOException e) {
+            logger.error("Failed to handle file {}: {}", file.getName(), e.getMessage());
+        }
+        return file.getName();
 
     }
 
@@ -281,18 +298,28 @@ public class CheckStateTask implements Callable<Void> {
      * @param localPath to the file to be uploaded.
      * @throws IOException if failed to access the local file.
      */
-    private void enqueueForUpload(final Path localPath) throws IOException {
+    private void enqueueForUpload(@NotNull final Path localPath) throws IOException {
 
-        final Path name = this.ctx.config.getSyncDir().relativize(localPath);
-        final Path cloudPath = this.ctx.pathPrefix.resolve(name).resolve(String.valueOf(localPath.toFile().lastModified()));
+        final Path name = this.ctx.getConfig().getSyncDir().relativize(localPath);
+
+        long lastModifiedTime;
+        try {
+            lastModifiedTime = Files.getLastModifiedTime(localPath).toMillis();
+        } catch (final IOException e) {
+            logger.error("Failed to get the time stamp of {}: {}", localPath, e.getMessage());
+            lastModifiedTime = System.currentTimeMillis();
+        }
+        final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(Long.toString(lastModifiedTime));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
-            if (localPath.toFile().exists()) {
+            if (Files.exists(localPath)) {
                 throw e;
             }
             logger.info("File {} was deleted", name);
+            // For now, marks the file was deleted, next round of CheckStateTask will update it to FOR_CLOUD_DELETE, etc.
             DB.setDeleted(this.ctx.getName(localPath));
         }
 
@@ -303,9 +330,12 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param file to be downloaded.
      */
-    private void enqueueForDownload(final SiaFile file) throws IOException {
+    private void enqueueForDownload(@NotNull final SiaFile file) throws IOException {
 
         DB.addForDownload(file, file.getLocalPath());
+        if (Files.exists(file.getLocalPath())) {
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+        }
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
     }
@@ -315,7 +345,7 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param file to be deleted from the cloud network.
      */
-    private void enqueueForCloudDelete(final SiaFile file) {
+    private void enqueueForCloudDelete(@NotNull final SiaFile file) {
 
         DB.setForCloudDelete(file);
         this.executor.execute(new RetryableTask(new DeleteCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
@@ -327,9 +357,10 @@ public class CheckStateTask implements Callable<Void> {
      *
      * @param localPath to the file to be deleted from the local directory.
      */
-    private void enqueueForLocalDelete(final Path localPath) {
+    private void enqueueForLocalDelete(@NotNull final Path localPath) {
 
         DB.setForLocalDelete(this.ctx.getName(localPath));
+        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
         this.executor.execute(new DeleteLocalFileTask(this.ctx, localPath));
 
     }

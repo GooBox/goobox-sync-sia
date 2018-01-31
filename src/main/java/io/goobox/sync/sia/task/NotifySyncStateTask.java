@@ -19,13 +19,13 @@ package io.goobox.sync.sia.task;
 
 import com.google.gson.Gson;
 import io.goobox.sync.sia.db.DB;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NotifySyncStateTask implements Runnable {
 
-    private static Logger logger = LogManager.getLogger();
+    private static Logger logger = LoggerFactory.getLogger(NotifySyncStateTask.class);
 
     public enum State {
         // Notify when consensus DB is synchronized and start Goobox's synchronization.
@@ -64,7 +64,7 @@ public class NotifySyncStateTask implements Runnable {
 
     @Override
     public void run() {
-        logger.traceEntry();
+        logger.trace("Enter run");
 
         State e;
         if (DB.isSynced()) {
