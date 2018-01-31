@@ -211,7 +211,8 @@ public class GetWalletInfoTaskTest {
             final WaitSynchronizationTask waitSynchronization = new WaitSynchronizationTask(ctx);
             waitSynchronization.call();
 
-            wallet.walletInitSeedPost(null, primarySeed, true, null);
+            wallet.walletInitPost("", null, true);
+            wallet.walletInitSeedPost("", primarySeed, true, null);
 
             final InlineResponse20014 res2 = new InlineResponse20014();
             res2.setAddress(address);
@@ -249,7 +250,7 @@ public class GetWalletInfoTaskTest {
 
             final InlineResponse20016 seed = new InlineResponse20016();
             seed.setPrimaryseed(primarySeed);
-            wallet.walletInitPost(null, null, false);
+            wallet.walletInitPost("", null, false);
             result = seed;
 
             wallet.walletUnlockPost(primarySeed);
@@ -289,7 +290,7 @@ public class GetWalletInfoTaskTest {
             wallet.walletUnlockPost("");
             result = new ApiException();
 
-            wallet.walletInitPost(null, null, false);
+            wallet.walletInitPost("", null, false);
             result = new ApiException("Wallet is already initialized with a primary seed");
         }};
 
@@ -317,7 +318,7 @@ public class GetWalletInfoTaskTest {
 
             final InlineResponse20016 seed = new InlineResponse20016();
             seed.setPrimaryseed(primarySeed);
-            wallet.walletInitPost(null, null, true);
+            wallet.walletInitPost("", null, true);
             result = seed;
 
             wallet.walletUnlockPost(primarySeed);

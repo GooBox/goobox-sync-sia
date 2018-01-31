@@ -101,14 +101,14 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
                     throw e;
                 }
 
-
+                logger.debug("No wallet seems to be initialized: {}", APIUtils.getErrorMessage(e));
                 if (this.ctx.getConfig().getPrimarySeed().isEmpty()) {
 
                     // Create a new wallet.
                     logger.info("Initializing the wallet");
                     try {
 
-                        final InlineResponse20016 seed = walletApi.walletInitPost(null, null, this.force);
+                        final InlineResponse20016 seed = walletApi.walletInitPost("", null, this.force);
                         this.ctx.getConfig().setPrimarySeed(seed.getPrimaryseed());
                         this.ctx.getConfig().save();
 
@@ -117,7 +117,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
                         logger.error("Cannot initialize the wallet: {}", APIUtils.getErrorMessage(e1));
                         throw new WalletException("Cannot initialize the wallet. It may be locked with another seed");
 
-                    } catch (IOException e1) {
+                    } catch (final IOException e1) {
 
                         logger.error("Failed to save the wallet information: {}", e1.getMessage());
                         throw new WalletException("Cannot save the wallet information");
@@ -125,10 +125,11 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
                     }
 
                 } else {
-                    logger.info("Initializing a wallet with the given primary seed");
                     final WaitSynchronizationTask waitSynchronization = new WaitSynchronizationTask(this.ctx);
                     waitSynchronization.call();
-                    walletApi.walletInitSeedPost(null, this.ctx.getConfig().getPrimarySeed(), true, null);
+                    logger.info("Initializing a wallet with the given primary seed");
+                    walletApi.walletInitPost("", null, true);
+                    walletApi.walletInitSeedPost("", this.ctx.getConfig().getPrimarySeed(), true, null);
                 }
 
                 if (!walletApi.walletGet().getUnlocked()) {
