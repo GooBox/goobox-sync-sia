@@ -184,6 +184,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
                     logger.trace(
                             "name = {}, cloudCreationTime = {}, localCreationTime = {}, syncTime = {}",
                             syncFile.getName(), cloudCreationTime, localCreationTime, syncTime);
+
                     if (cloudCreationTime > localCreationTime) {
 
                         logger.info("File {} has been downloaded", file.getName());
@@ -197,10 +198,6 @@ public class CheckDownloadStateTask implements Callable<Void> {
                             Files.setLastModifiedTime(localPath, FileTime.fromMillis(cloudCreationTime));
                         } catch (final IOException e) {
                             logger.error("Failed to set timestamp of {}, expected = {}: {}", file.getName(), cloudCreationTime, e.getMessage());
-                        }
-                        if (syncFile.getState() == SyncState.DOWNLOADING) {
-                            DB.setSynced(file, file.getLocalPath());
-                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
                         }
 
                     } else if (cloudCreationTime < localCreationTime) {
@@ -243,7 +240,13 @@ public class CheckDownloadStateTask implements Callable<Void> {
                         }
 
                     } else {
-                        logger.trace("File {} has not been changed", file.getName());
+                        logger.debug("File {} has not been changed", file.getName());
+                    }
+
+                    Files.deleteIfExists(tempPath);
+                    if (syncFile.getState() == SyncState.DOWNLOADING) {
+                        DB.setSynced(file, file.getLocalPath());
+                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
                     }
 
                 } catch (final IOException e) {

@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -505,7 +506,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     /**
-     * Test a case that a file being downloaded is also created/modified in the local directory. In this case, the
+     * Test the case where a file being downloaded is also created/modified in the local directory. In this case, the
      * downloaded file don't have to be copied to the sync dir and should be deleted. CheckStateTask is responsible for
      * solving the conflict between the local and cloud files.
      */
@@ -546,7 +547,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     /**
-     * As same as testDownloadingFileModified, test a case that the downloaded file is also created/modified.
+     * As same as testDownloadingFileModified, test the case where the downloaded file is also created/modified.
      * <p>
      * This test is related to issue #18.
      */
@@ -604,7 +605,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     /**
-     * As same as testDownloadingFileModified, test a case that the downloaded file is also created/modified.
+     * As same as testDownloadingFileModified, test the case where the downloaded file is also created/modified.
      * <p>
      * This test is related to issue #18.
      */
@@ -683,6 +684,213 @@ public class CheckDownloadStateTaskTest {
         assertTrue(localPath.getParent().resolve(conflictedFileName).toFile().exists());
 
     }
+
+    /**
+     * Test the case where a cloud file and the associated local file has a same last modification time but it is newer
+     * than the last synchronization time, and those two files have a same hash value. In this case, downloaded file
+     * should be deleted and the file should be marked as synced.
+     */
+    @Test
+    public void bothFilesAreNewerThanTheLastSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 10000));
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+    }
+
+    /**
+     * Test the case where a cloud file and the associated local file has a same last modification time but it is newer
+     * than the last synchronization time, and those two files don't have a same hash value. In this case, downloaded
+     * file should be renamed and kept in the sync folder, and the file should be marked as synced.
+     */
+    @Test
+    public void differentFilesAreNewerThanTheLastSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final String dummyFileBody2 = "other dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody2.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 10000));
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+        final String conflictedFileName = String.format(
+                "%s (%s's conflicted copy %s)",
+                localPath.getFileName().toString(),
+                System.getProperty("user.name"),
+                ISODateTimeFormat.date().print(System.currentTimeMillis()));
+        assertTrue(localPath.getParent().resolve(conflictedFileName).toFile().exists());
+
+    }
+
+    /**
+     * Test the case where the last modification time of the downloaded file is same as the last synchronization time,
+     * which means the cloud file is not modified. In this case, delete the downloaded file and the local file will be
+     * marked as synced.
+     */
+    @Test
+    public void lastModificationTimeOfDownloadedFileIsSameAsTheSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+    }
+
 
     @Test
     public void parseDate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
