@@ -38,8 +38,8 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -143,7 +143,7 @@ public class CheckStateTask implements Callable<Void> {
     private Collection<SiaFile> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
 
         if (files == null) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         // Key: file name, Value: file object.
@@ -153,7 +153,7 @@ public class CheckStateTask implements Callable<Void> {
             final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
             if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
                 // This file isn't managed by Goobox.
-                logger.debug(
+                logger.trace(
                         "Found remote file {} but it's not managed by Goobox (not starts with {})",
                         siaFile.getCloudPath(),
                         this.ctx.getPathPrefix());
@@ -173,7 +173,7 @@ public class CheckStateTask implements Callable<Void> {
                 }
 
             } else {
-                logger.debug("Found remote file {} created at {}", siaFile.getName(),
+                logger.trace("Found remote file {} created at {}", siaFile.getName(),
                         siaFile.getCreationTime());
                 fileMap.put(siaFile.getName(), siaFile);
             }
@@ -212,7 +212,15 @@ public class CheckStateTask implements Callable<Void> {
                     case MODIFIED:
 
                         // This file has been modified.
-                        if (file.getCreationTime().orElse(0L) < syncFile.getLocalModificationTime().orElse(0L)) {
+                        final long remoteCreationTime = file.getCreationTime().orElse(0L);
+                        final long localModificationTime = syncFile.getLocalModificationTime().orElse(0L);
+                        if (remoteCreationTime == localModificationTime) {
+
+                            logger.info("File {} was marked as modified but cloud/local files are same", file.getName());
+                            DB.setSynced(file, file.getLocalPath());
+                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+
+                        } else if (remoteCreationTime < localModificationTime) {
 
                             // The newer local file will be uploaded.
                             // Even if the file in cloud was also modified, i.e. there is conflict,
@@ -255,7 +263,7 @@ public class CheckStateTask implements Callable<Void> {
                     case FOR_DOWNLOAD:
                     case DOWNLOADING:
                     case FOR_UPLOAD:
-                    case UPLOADING:
+                    case UPLOADING: // In this case, the file's availability is false, and not reach here.
                     case FOR_LOCAL_DELETE:
                     case FOR_CLOUD_DELETE:
                     default:
