@@ -48,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -83,7 +84,7 @@ public class DeleteCloudFileTaskTest {
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
-        assertTrue(this.localPath.toFile().createNewFile());
+        Files.createFile(localPath);
         this.cloudPath = this.ctx.getPathPrefix().resolve(this.name);
 
         APIUtilsMock.toSlashPaths.clear();
@@ -134,7 +135,7 @@ public class DeleteCloudFileTaskTest {
             }
         };
         DB.setSynced(cloudFile, this.localPath);
-        assertTrue(this.localPath.toFile().delete());
+        Files.deleteIfExists(localPath);
         DB.setForCloudDelete(cloudFile);
 
         new Expectations() {{
@@ -168,18 +169,14 @@ public class DeleteCloudFileTaskTest {
     @Test
     public void deleteNotExistingFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(this.cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file.setLocalpath(this.localPath.toString());
-        file.setAvailable(true);
-        file.setFilesize(1234L);
+        final InlineResponse20011Files file = this.createCloudFile(new Date(30000), 1234);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
 
         new Expectations() {{
             final InlineResponse20011 list = new InlineResponse20011();
-            list.setFiles(null);
+            list.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = list;
         }};
@@ -192,14 +189,7 @@ public class DeleteCloudFileTaskTest {
     @Test
     public void toBeCloudDeleteFileModified() throws Exception {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        file.setSiapath(this.cloudPath.resolve(String.valueOf(new Date(30000).getTime())).toString());
-        file.setLocalpath(this.localPath.toString());
-        file.setAvailable(true);
-        file.setFilesize(1234L);
-        files.add(file);
-
+        final InlineResponse20011Files file = this.createCloudFile(new Date(30000), 1234);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
@@ -207,7 +197,7 @@ public class DeleteCloudFileTaskTest {
         // expecting the api won't be called.
         new Expectations() {{
             final InlineResponse20011 list = new InlineResponse20011();
-            list.setFiles(files);
+            list.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = list;
             times = 0;
@@ -224,6 +214,17 @@ public class DeleteCloudFileTaskTest {
 
         // check after conditions.
         assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
+
+    }
+
+    private InlineResponse20011Files createCloudFile(final Date lastModified, final long size) {
+
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        file.setSiapath(this.cloudPath.resolve(String.valueOf(lastModified.getTime())).toString());
+        file.setLocalpath(this.localPath.toString());
+        file.setAvailable(true);
+        file.setFilesize(size);
+        return file;
 
     }
 

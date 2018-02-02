@@ -40,7 +40,6 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -453,7 +452,6 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud no, local yes, db yes.
      */
-    @Ignore
     @Test
     public void uploadFailedFile() throws IOException, ApiException {
 

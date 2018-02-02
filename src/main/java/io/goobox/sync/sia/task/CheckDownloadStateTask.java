@@ -41,8 +41,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -93,7 +93,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
     private Collection<InlineResponse20010Downloads> getRecentDownloads(@Nullable final Collection<InlineResponse20010Downloads> list) {
 
         if (list == null) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         final Map<String, InlineResponse20010Downloads> map = new HashMap<>();

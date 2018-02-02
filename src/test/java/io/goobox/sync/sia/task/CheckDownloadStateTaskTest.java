@@ -136,10 +136,9 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void apiReturnsNullCollection() throws ApiException {
 
-        final InlineResponse20010 downloads = new InlineResponse20010();
-        downloads.setDownloads(null);
-
         new Expectations() {{
+            final InlineResponse20010 downloads = new InlineResponse20010();
+            downloads.setDownloads(null);
             api.renterDownloadsGet();
             result = downloads;
         }};
@@ -191,7 +190,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
-        assertTrue(localPath.toFile().exists());
+        assertTrue(Files.exists(localPath));
         assertArrayEquals(data, Files.readAllBytes(localPath));
         assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
@@ -234,7 +233,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -266,7 +265,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -300,7 +299,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -364,7 +363,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
-        assertTrue(localPath.toFile().exists());
+        assertTrue(Files.exists(localPath));
         assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
     }
@@ -380,13 +379,11 @@ public class CheckDownloadStateTaskTest {
                 currentDate
         );
         file1.setError("expected error");
-        final List<InlineResponse20010Downloads> files = Collections.singletonList(file1);
-
         DB.setDownloading(syncFile.getName());
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
-            res.setDownloads(files);
+            res.setDownloads(Collections.singletonList(file1));
             api.renterDownloadsGet();
             result = res;
 
@@ -402,7 +399,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(name).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -422,11 +419,10 @@ public class CheckDownloadStateTaskTest {
                 currentDate
         );
         file.setError("expected error");
-        final List<InlineResponse20010Downloads> files = Collections.singletonList(file);
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
-            res.setDownloads(files);
+            res.setDownloads(Collections.singletonList(file));
             api.renterDownloadsGet();
             result = res;
 
@@ -437,7 +433,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -500,8 +496,8 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
-        assertEquals(targetDate / 1000, localPath.toFile().lastModified() / 1000);
-        assertTrue(localPath.toFile().exists());
+        assertEquals(targetDate / 1000, Files.getLastModifiedTime(localPath).toMillis() / 1000);
+        assertTrue(Files.exists(localPath));
 
     }
 
@@ -569,7 +565,7 @@ public class CheckDownloadStateTaskTest {
         final String dummyData = "dummy data";
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name, localPath);
-        assertTrue(localPath.toFile().setLastModified(currentMillis + 20000));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -590,9 +586,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
-        assertFalse(
-                syncFile.getTemporaryPath().get().toString(),
-                syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toString(), Files.exists(syncFile.getTemporaryPath().get()));
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -650,12 +644,12 @@ public class CheckDownloadStateTaskTest {
 
         final String dummyData = "dummy data";
         final Path parent = localPath.getParent();
-        if (!parent.toFile().exists()) {
+        if (!Files.exists(parent)) {
             Files.createDirectories(parent);
         }
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name.toString(), localPath);
-        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 20000));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(System.currentTimeMillis() + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -671,9 +665,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name.toString()).get().getState());
-        assertFalse(
-                syncFile.getTemporaryPath().get().toString(),
-                syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toString(), Files.exists(syncFile.getTemporaryPath().get()));
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -681,7 +673,7 @@ public class CheckDownloadStateTaskTest {
                 localPath.getFileName().toString(),
                 System.getProperty("user.name"),
                 ISODateTimeFormat.date().print(System.currentTimeMillis()));
-        assertTrue(localPath.getParent().resolve(conflictedFileName).toFile().exists());
+        assertTrue(Files.exists(localPath.getParent().resolve(conflictedFileName)));
 
     }
 
@@ -821,7 +813,7 @@ public class CheckDownloadStateTaskTest {
                 localPath.getFileName().toString(),
                 System.getProperty("user.name"),
                 ISODateTimeFormat.date().print(System.currentTimeMillis()));
-        assertTrue(localPath.getParent().resolve(conflictedFileName).toFile().exists());
+        assertTrue(Files.exists(localPath.getParent().resolve(conflictedFileName)));
 
     }
 
