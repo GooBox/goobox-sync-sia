@@ -266,7 +266,7 @@ public final class App implements Callable<Integer> {
                     return OverlayIcon.WARNING;
                 }
             }).orElse(OverlayIcon.NONE);
-            logger.debug("Updating the icon of {} to {}", name, icon);
+            logger.trace("Updating the icon of {} to {}", name, icon);
             return icon;
         });
         Runtime.getRuntime().addShutdownHook(new Thread(overlayHelper::shutdown));
@@ -317,6 +317,7 @@ public final class App implements Callable<Integer> {
             return 1;
         }
 
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         int retry = 0;
         while (true) {
 
@@ -331,6 +332,9 @@ public final class App implements Callable<Integer> {
                 if (this.outputEvents) {
                     final NotifyEmptyFundTask notifyEmptyFundTask = new NotifyEmptyFundTask(this.ctx);
                     notifyEmptyFundTask.run();
+
+                    executor.scheduleWithFixedDelay(
+                            new NotifyFundInfoTask(ctx, !this.ctx.getConfig().isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
                 }
 
                 final WaitContractsTask waitContractsTask = new WaitContractsTask(this.ctx);
@@ -369,7 +373,6 @@ public final class App implements Callable<Integer> {
         this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
         this.synchronizeDeletedFiles();
 
-        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         this.resumeTasks(ctx, executor);
 
         final RecoveryTask startSiaDaemonTask = new StartSiaDaemonTask();
@@ -384,8 +387,6 @@ public final class App implements Callable<Integer> {
                 45, 60, TimeUnit.SECONDS);
         if (this.outputEvents) {
             executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
-            executor.scheduleWithFixedDelay(
-                    new NotifyFundInfoTask(ctx, !this.ctx.getConfig().isDisableAutoAllocation()), 0, 1, TimeUnit.HOURS);
         }
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
