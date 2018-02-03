@@ -95,7 +95,7 @@ public class NotifyFundInfoTaskTest {
 
     @Test
     public void checksRemainingFunds() throws GetWalletInfoTask.WalletException, ApiException {
-        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
@@ -113,7 +113,7 @@ public class NotifyFundInfoTaskTest {
 
     @Test
     public void notifyInsufficientFunds() throws GetWalletInfoTask.WalletException, ApiException {
-        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).divide(BigInteger.valueOf(2)));
@@ -184,7 +184,7 @@ public class NotifyFundInfoTaskTest {
     @Test
     public void skipAllocation() throws GetWalletInfoTask.WalletException, ApiException {
         final NotifyFundInfoTask task = new NotifyFundInfoTask(this.ctx, true);
-        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
         final BigInteger newFunds = threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2));
         Deencapsulation.setField(walletInfo, "funds", newFunds);
         Deencapsulation.setField(walletInfo, "balance", newFunds);
@@ -202,7 +202,7 @@ public class NotifyFundInfoTaskTest {
 
     @Test
     public void handleAPIError(@SuppressWarnings("unused") @Mocked APIUtils utils) throws GetWalletInfoTask.WalletException, ApiException {
-        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
@@ -222,7 +222,7 @@ public class NotifyFundInfoTaskTest {
 
     @Test
     public void handleWalletException() throws GetWalletInfoTask.WalletException, ApiException {
-        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+        final BigInteger threshold = priceInfo.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
         Deencapsulation.setField(
                 walletInfo, "funds",
                 threshold.add(walletInfo.getTotalSpending()).multiply(BigInteger.valueOf(2)));
