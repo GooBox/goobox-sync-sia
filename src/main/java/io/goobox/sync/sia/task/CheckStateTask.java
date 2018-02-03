@@ -254,11 +254,24 @@ public class CheckStateTask implements Callable<Void> {
                         break;
 
                     case DOWNLOAD_FAILED:
-                        // TODO: Check the cloud file is still newer than the local one / local file doesn't exist.
-                        // -> retry to download
+                        if (Files.exists(file.getLocalPath())) {
+                            final long localTimeStamp = Files.getLastModifiedTime(file.getLocalPath()).toMillis();
+                            final long cloudTimeStamp = file.getCreationTime().orElse(0L);
+                            if (localTimeStamp >= cloudTimeStamp) {
+                                logger.info("File {} is marked as {} but then the local file is modified", syncFile.getName(), syncFile.getState());
+                                DB.setModified(syncFile.getName(), file.getLocalPath());
+                                App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                                break;
+                            }
+                        }
+                        logger.info("File {} is marked as {}, retry to download it", syncFile.getName(), syncFile.getState());
+                        this.enqueueForDownload(file);
+                        break;
 
                     case CONFLICT:
                         // TODO: Handle this case.
+                        logger.warn("File {} is marked as {}", file.getName(), syncFile.getState());
+                        break;
 
                     case FOR_DOWNLOAD:
                     case DOWNLOADING:

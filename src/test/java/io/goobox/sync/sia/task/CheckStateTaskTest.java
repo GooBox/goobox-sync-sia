@@ -642,9 +642,78 @@ public class CheckStateTaskTest {
 
     }
 
+    /**
+     * Test the case where downloading a file failed, and the cloud file is still newer than the corresponding
+     * local file. In this case, retry to download that file.
+     */
+    @Test
+    public void downloadFailedButCloudFileIsStillNewer() throws IOException, ApiException {
 
-    // downloadFailedButCloudFileIsStillNewer -> re-download
-    // downloadFailedAndLocalFileIsNotFound -> re-download
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+        DB.setModified(name, localPath);
+        DB.setDownloadFailed(name);
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
+        assertEquals(1, executor.queue.size());
+
+    }
+
+    /**
+     * Test the case where downloading a file failed, and the corresponding local file is not found. In this csse,
+     * retry to download the file.
+     */
+    @Test
+    public void downloadFailedAndLocalFileIsNotFound() throws ApiException, IOException {
+
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        DB.addForDownload(siaFile, localPath);
+        DB.setDownloadFailed(name);
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            times = 0;
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
+        assertEquals(1, executor.queue.size());
+
+    }
 
     private InlineResponse20011Files createCloudFile(final Date timeStamp, final boolean availability, final long fileSize) {
         final InlineResponse20011Files file = new InlineResponse20011Files();
