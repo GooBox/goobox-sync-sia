@@ -2,7 +2,6 @@ package io.goobox.sync.sia.db;
 
 import io.goobox.sync.common.Utils;
 import org.dizitart.no2.Nitrite;
-import org.dizitart.no2.objects.Cursor;
 import org.dizitart.no2.objects.ObjectFilter;
 import org.dizitart.no2.objects.ObjectRepository;
 import org.jetbrains.annotations.NotNull;
@@ -12,8 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.dizitart.no2.objects.filters.ObjectFilters.eq;
 import static org.dizitart.no2.objects.filters.ObjectFilters.not;
@@ -210,8 +210,8 @@ public class DB {
         setState(name, SyncState.DELETE_FAILED);
     }
 
-    public synchronized static Cursor<SyncFile> getFiles(final SyncState state) {
-        return repo().find(eq("state", state));
+    public synchronized static Stream<SyncFile> getFiles(final SyncState state) {
+        return StreamSupport.stream(repo().find(eq("state", state)).spliterator(), false);
     }
 
     public synchronized static boolean isSynced() {
@@ -219,10 +219,7 @@ public class DB {
     }
 
     public static void main(String[] args) {
-        List<SyncFile> files = repo().find().toList();
-        for (SyncFile file : files) {
-            System.out.println(file);
-        }
+        repo().find().forEach(System.out::println);
     }
 
 }

@@ -453,7 +453,7 @@ public class CheckStateTaskTest {
      * Target file condition: cloud no, local yes, db yes.
      */
     @Test
-    public void uploadFailedFile() throws IOException, ApiException {
+    public void uploadFailed() throws IOException, ApiException {
 
         final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
@@ -469,6 +469,99 @@ public class CheckStateTaskTest {
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
             res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
+
+        // Check enqueued task.
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
+        assertTrue(task instanceof UploadLocalFileTask);
+        assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
+
+    }
+
+    /**
+     * Test the case where uploading a file failed and the file is not available yet. In this case,
+     * the file looks only existing in local but might be in a contract. Thus, before restarting
+     */
+    @Test
+    public void uploadFailedAndNoAvailableCloudFile() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        file.setAvailable(false);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
+
+        // Check enqueued task.
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
+        assertTrue(task instanceof UploadLocalFileTask);
+        assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
+
+    }
+
+    /**
+     * Test the case where uploading a file failed and the file is not included in /renter/files. In this case,
+     * the file looks only existing in local but might be in a contract. Thus, before restarting
+     */
+    @Test
+    public void uploadFailedAndNoCloudFile() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
 

@@ -81,45 +81,62 @@ public class CheckStateTask implements Callable<Void> {
                     .collect(Collectors.toSet());
 
             logger.debug("Processing files stored only in the local directory and modified");
-            DB.getFiles(SyncState.MODIFIED).forEach(syncFile -> {
-                if (processedFiles.contains(syncFile.getName())) {
-                    return;
-                }
-                // This file is not stored in the cloud network and modified from the local directory.
-                // It should be uploaded.
-                try {
-                    logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                    this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
-                } catch (IOException e) {
-                    logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
-                }
-                processedFiles.add(syncFile.getName());
-            });
+            DB.getFiles(SyncState.MODIFIED)
+                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                    .map(syncFile -> {
+                        // This file is not stored in the cloud network and modified from the local directory.
+                        // It should be uploaded.
+                        try {
+                            logger.info("Local file {} is going to be uploaded", syncFile.getName());
+                            this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                        } catch (final IOException e) {
+                            logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                            DB.setUploadFailed(syncFile.getName());
+                        }
+                        return syncFile.getName();
+                    })
+                    .forEach(processedFiles::add);
 
             logger.debug("Processing files stored only in the local directory but deleted");
-            DB.getFiles(SyncState.DELETED).forEach(syncFile -> {
-                if (processedFiles.contains(syncFile.getName())) {
-                    return;
-                }
-                // This file exist in neither the cloud network nor the local directory, but in the sync DB.
-                // It should be deleted from the DB.
-                logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
-                DB.remove(syncFile.getName());
-                processedFiles.add(syncFile.getName());
-            });
+            DB.getFiles(SyncState.DELETED)
+                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                    .map(syncFile -> {
+                        // This file exist in neither the cloud network nor the local directory, but in the sync DB.
+                        // It should be deleted from the DB.
+                        logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
+                        DB.remove(syncFile.getName());
+                        return syncFile.getName();
+                    })
+                    .forEach(processedFiles::add);
 
             logger.debug("Processing files stored only in the local directory but marked as synced");
-            DB.getFiles(SyncState.SYNCED).forEach(syncFile -> {
-                if (processedFiles.contains(syncFile.getName())) {
-                    return;
-                }
-                // This file has been synced but now exists only in the local directory.
-                // It means this file was deleted from the cloud network by another client.
-                // This file should be deleted from the local directory, too.
-                logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
-                this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
-                processedFiles.add(syncFile.getName());
-            });
+            DB.getFiles(SyncState.SYNCED)
+                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                    .map(syncFile -> {
+                        // This file has been synced but now exists only in the local directory.
+                        // It means this file was deleted from the cloud network by another client.
+                        // This file should be deleted from the local directory, too.
+                        logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
+                        this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                        return syncFile.getName();
+                    })
+                    .forEach(processedFiles::add);
+
+            logger.debug("Processing files filed to be uploaded");
+            DB.getFiles(SyncState.UPLOAD_FAILED)
+                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                    .map(syncFile -> {
+                        // This file is marked as filed to upload and don't exist in the available file list.
+                        // This file should be uploaded again.
+                        try {
+                            logger.info("Retry to upload file {}", syncFile.getName());
+                            this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                        } catch (final IOException e) {
+                            logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                        }
+                        return syncFile.getName();
+                    })
+                    .forEach(processedFiles::add);
 
         } catch (final ApiException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -249,6 +266,7 @@ public class CheckStateTask implements Callable<Void> {
                         break;
 
                     case UPLOAD_FAILED:
+
                         logger.info("Retry to upload file {}", file.getName());
                         this.enqueueForUpload(file.getLocalPath());
                         break;
