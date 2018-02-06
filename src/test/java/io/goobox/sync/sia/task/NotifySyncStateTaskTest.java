@@ -18,6 +18,8 @@
 package io.goobox.sync.sia.task;
 
 import com.google.gson.Gson;
+import io.goobox.sync.common.overlay.OverlayHelper;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.db.DB;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -30,13 +32,21 @@ import org.junit.runner.RunWith;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static io.goobox.sync.sia.task.NotifySyncStateTask.State;
 import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
 @RunWith(JMockit.class)
 public class NotifySyncStateTaskTest {
+
+    @Mocked
+    private App app;
+    @Mocked
+    private OverlayHelper overlayHelper;
+    @Mocked
+    private DB db;
 
     private ByteArrayOutputStream out;
     private PrintStream oldOut;
@@ -56,6 +66,16 @@ public class NotifySyncStateTaskTest {
     @Test
     public void notifyStartingSynchronization() {
 
+        new Expectations() {{
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.setSynchronizing();
+        }};
+
         final NotifySyncStateTask task = new NotifySyncStateTask();
         System.err.println(this.out.toString());
 
@@ -70,11 +90,22 @@ public class NotifySyncStateTaskTest {
     }
 
     @Test
-    public void notifyIdle(@Mocked DB db) {
+    public void notifyIdle() {
 
         new Expectations() {{
             DB.isSynced();
             result = true;
+
+            App.getInstance();
+            result = Optional.of(app);
+            times = 2;
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+            times = 2;
+
+            overlayHelper.setSynchronizing();
+            overlayHelper.setOK();
         }};
 
         final NotifySyncStateTask task = new NotifySyncStateTask();
@@ -93,11 +124,22 @@ public class NotifySyncStateTaskTest {
     }
 
     @Test
-    public void notifySynchronizing(@Mocked DB db) {
+    public void notifySynchronizing() {
 
         new Expectations() {{
             DB.isSynced();
             result = false;
+
+            App.getInstance();
+            result = Optional.of(app);
+            times = 2;
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+            times = 2;
+
+            overlayHelper.setSynchronizing();
+            times = 2;
         }};
 
         final NotifySyncStateTask task = new NotifySyncStateTask();

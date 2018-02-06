@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import com.google.gson.Gson;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.db.DB;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -59,21 +60,26 @@ public class NotifySyncStateTask implements Runnable {
     private final Gson gson = new Gson();
 
     public NotifySyncStateTask() {
-        System.out.println(this.gson.toJson(new Event(State.startSynchronization)));
+        App.getInstance().ifPresent(app -> app.getOverlayHelper().setSynchronizing());
+        this.sendState(State.startSynchronization);
     }
 
     @Override
     public void run() {
         logger.trace("Enter run");
 
-        State e;
         if (DB.isSynced()) {
-            e = State.idle;
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().setOK());
+            this.sendState(State.idle);
         } else {
-            e = State.synchronizing;
+            App.getInstance().ifPresent(app -> app.getOverlayHelper().setSynchronizing());
+            this.sendState(State.synchronizing);
         }
-        System.out.println(this.gson.toJson(new Event(e)));
 
+    }
+
+    private void sendState(final State e) {
+        System.out.println(this.gson.toJson(new Event(e)));
     }
 
 }

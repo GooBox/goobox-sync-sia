@@ -89,7 +89,7 @@ public class UploadLocalFileTaskTest {
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
         this.cloudPath = this.context.getPathPrefix().resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
-        assertTrue(this.localPath.toFile().createNewFile());
+        Files.createFile(this.localPath);
         DB.addNewFile(this.name, this.localPath);
         DB.setForUpload(this.name, this.localPath, this.cloudPath);
 
@@ -135,6 +135,9 @@ public class UploadLocalFileTaskTest {
 
     }
 
+    /**
+     * Test the case where after retrying to upload the files MaxRetry times, set UPLOAD_FAILED.
+     */
     @Test
     public void failedToUpload() throws ApiException {
 
@@ -147,6 +150,7 @@ public class UploadLocalFileTaskTest {
 
             api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
             result = new ApiException();
+            times = UploadLocalFileTask.MaxRetry;
 
             App.getInstance();
             result = Optional.of(app);
@@ -163,7 +167,7 @@ public class UploadLocalFileTaskTest {
     }
 
     /**
-     * Test a case that a file is modified while it is waiting to start uploading.
+     * Test the case where a file is modified while it is waiting to start uploading.
      * In this case, upload should be canceled and delegate CheckStateTask to decide uploading the new file or not.
      */
     @Test
@@ -193,7 +197,7 @@ public class UploadLocalFileTaskTest {
     }
 
     /**
-     * Test a cast that a file is deleted while it is waiting to start uploading.
+     * Test the cast where a file is deleted while it is waiting to start uploading.
      * In this case, upload must be canceled.
      */
     @Test
@@ -222,5 +226,41 @@ public class UploadLocalFileTaskTest {
         assertEquals(SyncState.DELETED, DB.get(this.name).get().getState());
 
     }
+
+    /**
+     * Test the case where an exception thrown because an old broken file occupies the sia path where the new uploading
+     * file will be stored. In this case, delete the old file and retry to upload.
+     */
+    @Test
+    public void retryUpload() throws ApiException {
+
+        new Expectations(APIUtils.class) {{
+            APIUtils.toSlash(localPath);
+            result = slashedLocalPath;
+
+            APIUtils.toSlash(cloudPath);
+            result = slashedCloudPath;
+
+            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            // At first time, the API call throws an exception.
+            result = new ApiException();
+            result = null;
+
+            api.renterDeleteSiapathPost(slashedCloudPath);
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+        new UploadLocalFileTask(this.context, this.localPath).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.UPLOADING, DB.get(this.name).get().getState());
+
+    }
+
 
 }

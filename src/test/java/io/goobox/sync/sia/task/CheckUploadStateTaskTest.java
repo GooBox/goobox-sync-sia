@@ -49,7 +49,6 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -83,7 +82,7 @@ public class CheckUploadStateTaskTest {
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.cloudPath = this.ctx.getPathPrefix().resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
         this.localPath = this.tmpDir.resolve(this.name);
-        assertTrue(this.localPath.toFile().createNewFile());
+        Files.createFile(localPath);
 
     }
 
@@ -96,15 +95,14 @@ public class CheckUploadStateTaskTest {
     @Test
     public void uploadFile(@Mocked App app, @Mocked OverlayHelper overlayHelper) throws ApiException, IOException {
 
-        final List<InlineResponse20011Files> files = Collections.singletonList(
-                createCloudFile(1234, 100)
-        );
         DB.addNewFile(name, localPath);
         DB.setUploading(name);
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(
+                    createCloudFile(1234, 100)
+            ));
             renterApi.renterFilesGet();
             result = res;
 
@@ -126,15 +124,14 @@ public class CheckUploadStateTaskTest {
     @Test
     public void stillUploadingFile() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = Collections.singletonList(
-                createCloudFile(1234, 95.2)
-        );
         DB.addNewFile(this.name, this.localPath);
         DB.setUploading(this.name);
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(
+                    createCloudFile(1234, 95.2)
+            ));
             renterApi.renterFilesGet();
             result = res;
         }};
@@ -206,12 +203,11 @@ public class CheckUploadStateTaskTest {
         final ObjectRepository<SyncFile> repository = (ObjectRepository<SyncFile>) repo.invoke(DB.class);
         repository.update(syncFile);
 
-        final List<InlineResponse20011Files> files = Collections.singletonList(
-                createCloudFile(1234L, 100)
-        );
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(
+                    createCloudFile(1234L, 100)
+            ));
             renterApi.renterFilesGet();
             result = res;
         }};
@@ -225,12 +221,11 @@ public class CheckUploadStateTaskTest {
     @Test
     public void notManagedFile() throws ApiException {
 
-        final List<InlineResponse20011Files> files = Collections.singletonList(
-                createCloudFile(1234L, 100)
-        );
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(
+                    createCloudFile(1234L, 100)
+            ));
             renterApi.renterFilesGet();
             result = res;
         }};

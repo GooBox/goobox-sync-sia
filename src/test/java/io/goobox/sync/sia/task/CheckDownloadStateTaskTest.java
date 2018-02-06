@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -135,10 +136,9 @@ public class CheckDownloadStateTaskTest {
     @Test
     public void apiReturnsNullCollection() throws ApiException {
 
-        final InlineResponse20010 downloads = new InlineResponse20010();
-        downloads.setDownloads(null);
-
         new Expectations() {{
+            final InlineResponse20010 downloads = new InlineResponse20010();
+            downloads.setDownloads(null);
             api.renterDownloadsGet();
             result = downloads;
         }};
@@ -190,7 +190,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
-        assertTrue(localPath.toFile().exists());
+        assertTrue(Files.exists(localPath));
         assertArrayEquals(data, Files.readAllBytes(localPath));
         assertEquals(DigestUtils.sha512Hex(data), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
@@ -233,7 +233,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -265,7 +265,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOADING, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -299,7 +299,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(syncFile.getName()).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -363,7 +363,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(syncFile.getName()).get().getState());
-        assertTrue(localPath.toFile().exists());
+        assertTrue(Files.exists(localPath));
         assertEquals(DigestUtils.sha512Hex(fileData), DB.get(syncFile.getName()).get().getLocalDigest().get());
 
     }
@@ -379,13 +379,11 @@ public class CheckDownloadStateTaskTest {
                 currentDate
         );
         file1.setError("expected error");
-        final List<InlineResponse20010Downloads> files = Collections.singletonList(file1);
-
         DB.setDownloading(syncFile.getName());
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
-            res.setDownloads(files);
+            res.setDownloads(Collections.singletonList(file1));
             api.renterDownloadsGet();
             result = res;
 
@@ -401,7 +399,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.DOWNLOAD_FAILED, DB.get(name).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -421,11 +419,10 @@ public class CheckDownloadStateTaskTest {
                 currentDate
         );
         file.setError("expected error");
-        final List<InlineResponse20010Downloads> files = Collections.singletonList(file);
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
-            res.setDownloads(files);
+            res.setDownloads(Collections.singletonList(file));
             api.renterDownloadsGet();
             result = res;
 
@@ -436,7 +433,7 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
-        assertFalse(localPath.toFile().exists());
+        assertFalse(Files.exists(localPath));
 
     }
 
@@ -499,13 +496,13 @@ public class CheckDownloadStateTaskTest {
         new CheckDownloadStateTask(this.ctx).call();
         assertTrue(DBMock.committed);
         assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
-        assertEquals(targetDate / 1000, localPath.toFile().lastModified() / 1000);
-        assertTrue(localPath.toFile().exists());
+        assertEquals(targetDate / 1000, Files.getLastModifiedTime(localPath).toMillis() / 1000);
+        assertTrue(Files.exists(localPath));
 
     }
 
     /**
-     * Test a case that a file being downloaded is also created/modified in the local directory. In this case, the
+     * Test the case where a file being downloaded is also created/modified in the local directory. In this case, the
      * downloaded file don't have to be copied to the sync dir and should be deleted. CheckStateTask is responsible for
      * solving the conflict between the local and cloud files.
      */
@@ -546,7 +543,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     /**
-     * As same as testDownloadingFileModified, test a case that the downloaded file is also created/modified.
+     * As same as testDownloadingFileModified, test the case where the downloaded file is also created/modified.
      * <p>
      * This test is related to issue #18.
      */
@@ -568,7 +565,7 @@ public class CheckDownloadStateTaskTest {
         final String dummyData = "dummy data";
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name, localPath);
-        assertTrue(localPath.toFile().setLastModified(currentMillis + 20000));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -589,9 +586,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name).get().getState());
-        assertFalse(
-                syncFile.getTemporaryPath().get().toString(),
-                syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toString(), Files.exists(syncFile.getTemporaryPath().get()));
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -604,7 +599,7 @@ public class CheckDownloadStateTaskTest {
     }
 
     /**
-     * As same as testDownloadingFileModified, test a case that the downloaded file is also created/modified.
+     * As same as testDownloadingFileModified, test the case where the downloaded file is also created/modified.
      * <p>
      * This test is related to issue #18.
      */
@@ -649,12 +644,12 @@ public class CheckDownloadStateTaskTest {
 
         final String dummyData = "dummy data";
         final Path parent = localPath.getParent();
-        if (!parent.toFile().exists()) {
+        if (!Files.exists(parent)) {
             Files.createDirectories(parent);
         }
         Files.write(localPath, dummyData.getBytes(), StandardOpenOption.CREATE);
         DB.setModified(name.toString(), localPath);
-        assertTrue(localPath.toFile().setLastModified(System.currentTimeMillis() + 20000));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(System.currentTimeMillis() + 20000));
 
         new Expectations() {{
             final InlineResponse20010 res = new InlineResponse20010();
@@ -670,9 +665,7 @@ public class CheckDownloadStateTaskTest {
         assertTrue(DBMock.committed);
 
         assertEquals(SyncState.MODIFIED, DB.get(name.toString()).get().getState());
-        assertFalse(
-                syncFile.getTemporaryPath().get().toString(),
-                syncFile.getTemporaryPath().get().toFile().exists());
+        assertFalse(syncFile.getTemporaryPath().get().toString(), Files.exists(syncFile.getTemporaryPath().get()));
         assertArrayEquals(dummyData.getBytes(), Files.readAllBytes(localPath));
 
         final String conflictedFileName = String.format(
@@ -680,9 +673,216 @@ public class CheckDownloadStateTaskTest {
                 localPath.getFileName().toString(),
                 System.getProperty("user.name"),
                 ISODateTimeFormat.date().print(System.currentTimeMillis()));
-        assertTrue(localPath.getParent().resolve(conflictedFileName).toFile().exists());
+        assertTrue(Files.exists(localPath.getParent().resolve(conflictedFileName)));
 
     }
+
+    /**
+     * Test the case where a cloud file and the associated local file has a same last modification time but it is newer
+     * than the last synchronization time, and those two files have a same hash value. In this case, downloaded file
+     * should be deleted and the file should be marked as synced.
+     */
+    @Test
+    public void bothFilesAreNewerThanTheLastSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 10000));
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+    }
+
+    /**
+     * Test the case where a cloud file and the associated local file has a same last modification time but it is newer
+     * than the last synchronization time, and those two files don't have a same hash value. In this case, downloaded
+     * file should be renamed and kept in the sync folder, and the file should be marked as synced.
+     */
+    @Test
+    public void differentFilesAreNewerThanTheLastSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final String dummyFileBody2 = "other dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody2.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis + 10000));
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+        final String conflictedFileName = String.format(
+                "%s (%s's conflicted copy %s)",
+                localPath.getFileName().toString(),
+                System.getProperty("user.name"),
+                ISODateTimeFormat.date().print(System.currentTimeMillis()));
+        assertTrue(Files.exists(localPath.getParent().resolve(conflictedFileName)));
+
+    }
+
+    /**
+     * Test the case where the last modification time of the downloaded file is same as the last synchronization time,
+     * which means the cloud file is not modified. In this case, delete the downloaded file and the local file will be
+     * marked as synced.
+     */
+    @Test
+    public void lastModificationTimeOfDownloadedFileIsSameAsTheSyncTime() throws IOException, ApiException {
+
+        final String dummyFileBody = "dummy data";
+        final long currentMillis = System.currentTimeMillis();
+        Files.write(localPath, dummyFileBody.getBytes());
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(currentMillis));
+        DB.setSynced(new CloudFile() {
+            @NotNull
+            @Override
+            public String getName() {
+                return syncFile.getName();
+            }
+
+            @NotNull
+            @Override
+            public Path getCloudPath() {
+                return syncFile.getCloudPath().get();
+            }
+
+            @Override
+            public long getFileSize() {
+                return syncFile.getCloudSize().get();
+            }
+        }, localPath);
+
+        DB.setDownloading(name);
+        Files.write(DB.get(name).get().getTemporaryPath().get(), dummyFileBody.getBytes());
+
+        final List<InlineResponse20010Downloads> files = Collections.singletonList(
+                createCloudFile(
+                        syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000)),
+                        syncFile.getTemporaryPath().get(),
+                        syncFile.getCloudSize().get(),
+                        syncFile.getCloudSize().get(),
+                        currentDate
+                )
+        );
+
+        new Expectations() {{
+            final InlineResponse20010 res = new InlineResponse20010();
+            res.setDownloads(files);
+            api.renterDownloadsGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        new CheckDownloadStateTask(this.ctx).call();
+        assertTrue(DBMock.committed);
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertFalse(Files.exists(DB.get(name).get().getTemporaryPath().get()));
+
+    }
+
 
     @Test
     public void parseDate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {

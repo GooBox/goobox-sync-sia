@@ -61,7 +61,8 @@ public enum SyncState {
                 || this == FOR_UPLOAD
                 || this == UPLOADING
                 || this == FOR_LOCAL_DELETE
-                || this == FOR_CLOUD_DELETE;
+                || this == FOR_CLOUD_DELETE
+                || this == MODIFIED;
     }
 
     public boolean isFailed() {

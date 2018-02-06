@@ -61,7 +61,7 @@ public class DeleteLocalFileTaskTest {
 
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
-        assertTrue(this.localPath.toFile().createNewFile());
+        Files.createFile(localPath);
         DB.setSynced(new CloudFile() {
             @NotNull
             @Override
@@ -96,16 +96,15 @@ public class DeleteLocalFileTaskTest {
         new DeleteLocalFileTask(this.ctx, this.localPath).run();
         assertTrue(DBMock.committed);
         assertFalse(DB.get(this.name).isPresent());
-        assertFalse(this.localPath.toFile().exists());
+        assertFalse(Files.exists(this.localPath));
 
     }
 
     @Test
-    public void deleteNotExistingFile() {
+    public void deleteNotExistingFile() throws IOException {
 
         // Delete the target file in advance.
-        assertTrue(this.localPath.toFile().delete());
-        assertFalse(this.localPath.toFile().exists());
+        Files.deleteIfExists(this.localPath);
 
         new DeleteLocalFileTask(this.ctx, this.localPath).run();
         assertTrue(DBMock.committed);
@@ -132,7 +131,7 @@ public class DeleteLocalFileTaskTest {
 
         // check after conditions.
         assertEquals(SyncState.MODIFIED, DB.get(this.name).get().getState());
-        assertTrue(this.localPath.toFile().exists());
+        assertTrue(Files.exists(this.localPath));
 
     }
 

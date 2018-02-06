@@ -169,6 +169,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     @Override
     public void close() {
         try {
+            logger.info("Closing the file watcher");
             this.watcher.close();
         } catch (final IOException e) {
             logger.error("Failed to stop file watching service: {}", e.getMessage());

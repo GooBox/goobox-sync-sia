@@ -41,6 +41,8 @@ public class UploadLocalFileTask implements Callable<Void> {
 
     private static final Logger logger = LoggerFactory.getLogger(UploadLocalFileTask.class);
 
+    static final int MaxRetry = 2;
+
     @NotNull
     private final Context ctx;
 
@@ -70,32 +72,45 @@ public class UploadLocalFileTask implements Callable<Void> {
         }
 
         if (!syncFile.getCloudPath().isPresent()) {
-            logger.debug("File {} was enqueued but it doesn't cloud path", syncFile.getName());
+            logger.debug("File {} was enqueued but it doesn't have the cloud path", syncFile.getName());
             return null;
         }
 
-        final Path cloudPath = syncFile.getCloudPath().get();
         final RenterApi api = new RenterApi(this.ctx.getApiClient());
-        try {
+        final String slashedCloudPath = APIUtils.toSlash(syncFile.getCloudPath().get());
+        final String slashedLocalPath = APIUtils.toSlash(this.localPath);
+        for (int i = 0; i != MaxRetry; i++) {
 
-            api.renterUploadSiapathPost(
-                    APIUtils.toSlash(cloudPath),
-                    this.ctx.getConfig().getDataPieces(), this.ctx.getConfig().getParityPieces(),
-                    APIUtils.toSlash(this.localPath));
-            DB.setUploading(this.ctx.getName(this.localPath));
+            try {
 
-        } catch (ApiException e) {
+                api.renterUploadSiapathPost(
+                        slashedCloudPath,
+                        this.ctx.getConfig().getDataPieces(),
+                        this.ctx.getConfig().getParityPieces(),
+                        slashedLocalPath);
+                DB.setUploading(this.ctx.getName(this.localPath));
+                break;
 
-            if (e.getCause() instanceof ConnectException) {
-                throw e;
+            } catch (final ApiException e) {
+
+                if (e.getCause() instanceof ConnectException) {
+                    throw e;
+                }
+                logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
+                DB.setUploadFailed(this.ctx.getName(this.localPath));
+
             }
-            logger.error("Failed to upload {}: {}", this.localPath, APIUtils.getErrorMessage(e));
-            DB.setUploadFailed(this.ctx.getName(this.localPath));
 
-        } finally {
-            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(this.localPath));
-            DB.commit();
+            try {
+                api.renterDeleteSiapathPost(slashedCloudPath);
+            } catch (final ApiException e) {
+                logger.error("Failed to delete {}: {}", slashedCloudPath, APIUtils.getErrorMessage(e));
+            }
+
         }
+
+        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(this.localPath));
+        DB.commit();
         return null;
 
     }

@@ -102,7 +102,7 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
-        assertTrue(localPath.toFile().createNewFile());
+        Files.createFile(localPath);
 
         new SystemMock();
 
@@ -206,7 +206,7 @@ public class FileWatcherTest {
         }};
 
         final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
-        assertTrue(localPath.toFile().createNewFile());
+        Files.createFile(localPath);
 
         new SystemMock();
 
@@ -318,7 +318,7 @@ public class FileWatcherTest {
 
                 final String name = String.format("test-%s-%x", event, System.currentTimeMillis());
                 final Path localPath = this.tmpDir.resolve(name);
-                assertTrue(localPath.toFile().createNewFile());
+                Files.createFile(localPath);
                 DB.addNewFile(name, localPath);
                 this.updateStatus(name, before);
 
@@ -445,7 +445,7 @@ public class FileWatcherTest {
         // Directory deleted.
         try (final FileWatcher watcher = new FileWatcher(this.tmpDir, executor)) {
 
-            assertTrue(localPath.toFile().createNewFile());
+            Files.createFile(localPath);
             DB.addNewFile(name, localPath);
             this.updateStatus(name, before);
 
@@ -464,7 +464,7 @@ public class FileWatcherTest {
 
             final String name = String.format("test-file-2-%x", System.currentTimeMillis());
             final Path localPath = this.tmpDir.resolve(name);
-            assertTrue(localPath.toFile().createNewFile());
+            Files.createFile(localPath);
             DB.addNewFile(name, localPath);
             this.updateStatus(name, before);
 

@@ -18,7 +18,6 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
-import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.model.AllowanceInfo;
@@ -33,6 +32,12 @@ import java.math.BigInteger;
 public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
 
     private static Logger logger = LoggerFactory.getLogger(NotifyFundInfoTask.class);
+
+    /**
+     * If the funds are lower than the amount to cover the minimum sets of contracts,
+     * this task notifying the user.
+     */
+    public static int MinContractSets = 2;
 
     @NotNull
     private final Context ctx;
@@ -73,7 +78,7 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
             }
 
             final BigInteger remaining = info.getFunds().subtract(info.getTotalSpending());
-            final BigInteger threshold = prices.getContract().multiply(BigInteger.valueOf(App.MinContracts));
+            final BigInteger threshold = prices.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
             if (remaining.compareTo(threshold) < 0) {
                 this.sendEvent(
                         EventType.InsufficientFunds,

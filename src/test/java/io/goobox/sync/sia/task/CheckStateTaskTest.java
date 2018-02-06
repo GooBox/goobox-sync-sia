@@ -40,16 +40,16 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.nio.file.attribute.FileTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -107,27 +107,16 @@ public class CheckStateTaskTest {
     @Test
     public void cloudFileModified() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
-        final File localFile = siaFile.getLocalPath().toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
         DB.setSynced(siaFile, siaFile.getLocalPath());
-        files.add(file);
 
-        final InlineResponse20011Files newerFile = new InlineResponse20011Files();
-        final Path newerRemotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
-        newerFile.setSiapath(newerRemotePath.toString());
-        newerFile.setAvailable(true);
-        newerFile.setFilesize(10L);
-        files.add(newerFile);
+        final List<InlineResponse20011Files> files = Arrays.asList(
+                file, this.createCloudFile(newTimeStamp, true, 10)
+        );
 
         DB.commit();
         new Expectations() {{
@@ -142,7 +131,7 @@ public class CheckStateTaskTest {
             app.getOverlayHelper();
             result = overlayHelper;
 
-            overlayHelper.refresh(localFile.toPath());
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -167,29 +156,21 @@ public class CheckStateTaskTest {
     @Test
     public void syncedFileModified() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-        files.add(file);
-
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        final File localFile = localPath.toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
         DB.setSynced(siaFile, localPath);
 
-        assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
         Files.write(localPath, "new data".getBytes());
         DB.setModified(name, localPath);
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
 
@@ -199,7 +180,7 @@ public class CheckStateTaskTest {
             app.getOverlayHelper();
             result = overlayHelper;
 
-            overlayHelper.refresh(localFile.toPath());
+            overlayHelper.refresh(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -212,7 +193,7 @@ public class CheckStateTaskTest {
 
         final long time1 = Long.valueOf(expected.getFileName().toString());
         final long time2 = Long.valueOf(DB.get(siaFile).get().getCloudPath().get().getFileName().toString());
-        assertTrue(Math.abs(time1 - time2) < 1000);
+        assertTrue(String.format("time1 = %d, time2 = %d", time1, time2), Math.abs(time1 - time2) < 2000);
 
         // Check enqueued task.
         final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
@@ -229,20 +210,13 @@ public class CheckStateTaskTest {
     @Test
     public void newCloudFile() throws ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(10L);
-        files.add(file);
-
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 10);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
 
@@ -273,16 +247,14 @@ public class CheckStateTaskTest {
     public void newLocalFile() throws IOException, ApiException {
 
         final Path localPath = this.tmpDir.resolve(name);
-        final File localFile = localPath.toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
-
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
         DB.addNewFile(name, localPath);
         DB.commit();
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(new ArrayList<>());
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
 
@@ -315,27 +287,19 @@ public class CheckStateTaskTest {
     @Test
     public void toBeDeletedFromCloudFile() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        final File localFile = siaFile.getLocalPath().toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
 
         DB.addNewFile(name, localPath);
         DB.setDeleted(name);
-        files.add(file);
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
 
@@ -366,9 +330,8 @@ public class CheckStateTaskTest {
     public void toBeDeletedFromLocalFile() throws IOException, ApiException {
 
         final Path localPath = this.tmpDir.resolve(name);
-        final File localFile = localPath.toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
 
         DB.addNewFile(name, localPath);
         DB.setSynced(new CloudFile() {
@@ -393,8 +356,7 @@ public class CheckStateTaskTest {
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            final List<InlineResponse20011Files> files = new ArrayList<>();
-            res.setFiles(files);
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
 
@@ -428,27 +390,19 @@ public class CheckStateTaskTest {
     @Test
     public void uploadingFile() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path cloudPath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
-        file.setSiapath(cloudPath.toString());
-        file.setAvailable(false);
-        file.setFilesize(0L);
-
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, false, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        final File localFile = siaFile.getLocalPath().toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
 
         DB.addNewFile(name, localPath);
-        DB.setForUpload(name, localPath, cloudPath);
-        files.add(file);
+        DB.setForUpload(name, localPath, Paths.get(file.getSiapath()));
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
         }};
@@ -471,16 +425,16 @@ public class CheckStateTaskTest {
     public void deletedLocalFile() throws ApiException, IOException {
 
         final Path localPath = this.tmpDir.resolve("file");
-        assertTrue(localPath.toFile().createNewFile());
+        Files.createFile(localPath);
         DB.addNewFile(name, localPath);
 
-        assertTrue(localPath.toFile().delete());
+        Files.deleteIfExists(localPath);
         DB.setDeleted(name);
         DB.commit();
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(new ArrayList<>());
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
         }};
@@ -498,31 +452,116 @@ public class CheckStateTaskTest {
      * <p>
      * Target file condition: cloud no, local yes, db yes.
      */
-    @Ignore
     @Test
-    public void uploadFailedFile() throws IOException, ApiException {
+    public void uploadFailed() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        final File localFile = localPath.toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
 
         DB.addNewFile(name, localPath);
         DB.setUploadFailed(name);
-        assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
+
+        // Check enqueued task.
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
+        assertTrue(task instanceof UploadLocalFileTask);
+        assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
+
+    }
+
+    /**
+     * Test the case where uploading a file failed and the file is not available yet. In this case,
+     * the file looks only existing in local but might be in a contract. Thus, before restarting
+     */
+    @Test
+    public void uploadFailedAndNoAvailableCloudFile() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        file.setAvailable(false);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+
+        assertEquals(SyncState.FOR_UPLOAD, DB.get(siaFile).get().getState());
+
+        // Check enqueued task.
+        final Callable<Void> task = Deencapsulation.getField(executor.queue.get(0), "task");
+        assertTrue(task instanceof UploadLocalFileTask);
+        assertEquals(localPath, Deencapsulation.getField(task, "localPath"));
+
+    }
+
+    /**
+     * Test the case where uploading a file failed and the file is not included in /renter/files. In this case,
+     * the file looks only existing in local but might be in a contract. Thus, before restarting
+     */
+    @Test
+    public void uploadFailedAndNoCloudFile() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+
+        DB.addNewFile(name, localPath);
+        DB.setUploadFailed(name);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
 
@@ -551,18 +590,11 @@ public class CheckStateTaskTest {
     @Test
     public void toBeDownloadedFileModified() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(newTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-        files.add(file);
-
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        assertTrue(localPath.toFile().createNewFile());
-        assertTrue(localPath.toFile().setLastModified(this.oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
 
         DB.addNewFile(name, localPath);
         DB.setModified(name, localPath);
@@ -571,7 +603,7 @@ public class CheckStateTaskTest {
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
 
@@ -604,8 +636,7 @@ public class CheckStateTaskTest {
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            final List<InlineResponse20011Files> files = new ArrayList<>();
-            res.setFiles(files);
+            res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
 
@@ -615,11 +646,11 @@ public class CheckStateTaskTest {
         }};
 
         final Path localPath = tmpDir.resolve(name);
-        assertTrue(localPath.toFile().createNewFile());
+        Files.createFile(localPath);
         DB.addNewFile(name, localPath);
         DB.setModified(name, localPath);
 
-        assertTrue(localPath.toFile().delete());
+        Files.deleteIfExists(localPath);
         final ExecutorMock executor = new ExecutorMock();
         new CheckStateTask(this.ctx, executor).call();
 
@@ -632,30 +663,22 @@ public class CheckStateTaskTest {
     @Test
     public void toBeUploadedFileIsDeleted() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
-        final InlineResponse20011Files file = new InlineResponse20011Files();
-        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(oldTimeStamp.getTime())));
-        file.setSiapath(remotePath.toString());
-        file.setAvailable(true);
-        file.setFilesize(0L);
-        files.add(file);
-
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
-        final File localFile = localPath.toFile();
-        assertTrue(localFile.createNewFile());
-        assertTrue(localFile.setLastModified(oldTimeStamp.getTime()));
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
         DB.setSynced(siaFile, localPath);
 
-        assertTrue(localFile.setLastModified(newTimeStamp.getTime()));
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(newTimeStamp.getTime()));
         Files.write(localPath, "new data".getBytes());
         DB.setModified(name, localPath);
-        assertTrue(localFile.delete());
+        Files.deleteIfExists(localPath);
 
         DB.commit();
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
-            res.setFiles(files);
+            res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
 
@@ -673,7 +696,125 @@ public class CheckStateTaskTest {
 
     }
 
-    // downloadFailedButCloudFileIsStillNewer -> re-download
-    // downloadFailedAndLocalFileIsNotFound -> re-download
+    /**
+     * Test the case where a file is marked as modified but the last modification times of local/cloud files are same.
+     * In this case, just setting the sync state to Synced.
+     */
+    @Test
+    public void modifiedButTimeStampIsSame() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+        DB.setModified(name, localPath);
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.SYNCED, DB.get(name).get().getState());
+        assertEquals(0, executor.queue.size());
+
+    }
+
+    /**
+     * Test the case where downloading a file failed, and the cloud file is still newer than the corresponding
+     * local file. In this case, retry to download that file.
+     */
+    @Test
+    public void downloadFailedButCloudFileIsStillNewer() throws IOException, ApiException {
+
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        Files.createFile(localPath);
+        Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
+        DB.setModified(name, localPath);
+        DB.setDownloadFailed(name);
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            result = Optional.of(app);
+
+            app.getOverlayHelper();
+            result = overlayHelper;
+
+            overlayHelper.refresh(localPath);
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
+        assertEquals(1, executor.queue.size());
+
+    }
+
+    /**
+     * Test the case where downloading a file failed, and the corresponding local file is not found. In this csse,
+     * retry to download the file.
+     */
+    @Test
+    public void downloadFailedAndLocalFileIsNotFound() throws ApiException, IOException {
+
+        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+        final Path localPath = siaFile.getLocalPath();
+        DB.addForDownload(siaFile, localPath);
+        DB.setDownloadFailed(name);
+
+        DB.commit();
+        new Expectations() {{
+            final InlineResponse20011 res = new InlineResponse20011();
+            res.setFiles(Collections.singletonList(file));
+            api.renterFilesGet();
+            result = res;
+
+            App.getInstance();
+            times = 0;
+        }};
+
+        final ExecutorMock executor = new ExecutorMock();
+        new CheckStateTask(this.ctx, executor).call();
+        assertTrue(DBMock.committed);
+        assertTrue(DB.get(name).isPresent());
+        assertEquals(SyncState.FOR_DOWNLOAD, DB.get(name).get().getState());
+        assertEquals(1, executor.queue.size());
+
+    }
+
+    private InlineResponse20011Files createCloudFile(final Date timeStamp, final boolean availability, final long fileSize) {
+        final InlineResponse20011Files file = new InlineResponse20011Files();
+        final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(timeStamp.getTime())));
+        file.setSiapath(remotePath.toString());
+        file.setAvailable(availability);
+        file.setFilesize(fileSize);
+        return file;
+    }
 
 }

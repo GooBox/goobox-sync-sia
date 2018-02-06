@@ -39,9 +39,10 @@
     </encoder>
   </appender>
 
-  <logger name="io.goobox.sync.sia" level="debug"/>
+  <logger name="io.goobox.sync" level="debug"/>
   <logger name="org.dizitart" level="info"/>
   <logger name="net.harawata" level="info"/>
+  <logger name="com.liferay" level="info"/>
 
   <root>
     <appender-ref ref="FILE"/>
