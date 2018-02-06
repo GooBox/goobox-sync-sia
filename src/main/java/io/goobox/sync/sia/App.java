@@ -253,6 +253,7 @@ public final class App implements Callable<Integer> {
             this.cfg.setSyncDir(syncDir);
         }
 
+        logger.debug("Loading icon overlay libraries");
         this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
             final String name = cfg.getSyncDir().relativize(path).toString();
             final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
@@ -269,7 +270,10 @@ public final class App implements Callable<Integer> {
             logger.trace("Updating the icon of {} to {}", name, icon);
             return icon;
         });
-        Runtime.getRuntime().addShutdownHook(new Thread(overlayHelper::shutdown));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Shutting down the overlay helper");
+            overlayHelper.shutdown();
+        }));
     }
 
     void setOutputEvents() {
@@ -307,6 +311,8 @@ public final class App implements Callable<Integer> {
 
     /**
      * Initialize the app and starts an event loop.
+     *
+     * @return 0 if no error occurs otherwise exit code.
      */
     public Integer call() throws IOException {
 
