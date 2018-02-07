@@ -47,6 +47,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 
 public class SiaDaemon extends Thread implements Closeable {
 
@@ -55,8 +56,8 @@ public class SiaDaemon extends Thread implements Closeable {
     private static final String SiaDaemonFolderName = "sia";
     private static final String SiaDaemonName = "siad";
     private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
-    private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db";
-    static final String CheckSumURL = "https://consensus.siahub.info/sha256sum.txt";
+    private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db.gz";
+    static final String CheckSumURL = "https://consensus.siahub.info/consensus.db.gz.sha256sum";
     static final String DefaultUserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
 
     static final int MaxRetry = 5;
@@ -97,7 +98,7 @@ public class SiaDaemon extends Thread implements Closeable {
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(this.process.getInputStream()))) {
                 in.lines().forEach(logger::debug);
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             logger.error("Failed to start sia daemon: {}", e.getMessage());
         }
         synchronized (this) {
@@ -145,11 +146,11 @@ public class SiaDaemon extends Thread implements Closeable {
     boolean checkAndDownloadConsensusDB() throws IOException {
 
         final Path dbPath = this.dataDir.resolve(ConsensusDBPath);
-        if (dbPath.toFile().exists() && dbPath.toFile().length() > ConsensusDBThreshold) {
+        if (Files.exists(dbPath) && Files.size(dbPath) > ConsensusDBThreshold) {
             return false;
         }
 
-        if (!dbPath.getParent().toFile().exists()) {
+        if (!Files.exists(dbPath.getParent())) {
             Files.createDirectories(dbPath.getParent());
         }
 
@@ -167,17 +168,21 @@ public class SiaDaemon extends Thread implements Closeable {
             final ExecutorService executor = Executors.newFixedThreadPool(2);
             try {
 
-
                 final URL url = new URL(ConsensusDBURL);
                 final URLConnection conn = url.openConnection();
                 conn.setRequestProperty("User-Agent", DefaultUserAgent);
                 conn.setRequestProperty("Accept-Encoding", "identity");
                 conn.connect();
 
+                // Calculating the download progress.
                 executor.submit(() -> {
                     try {
-                        while (tempFile.toFile().exists()) {
-                            logger.info("Downloading consensus database... ({} MB)", tempFile.toFile().length() / 1000000);
+                        while (Files.exists(tempFile)) {
+                            try {
+                                logger.info("Downloading consensus database... ({} MB)", Files.size(tempFile) / 1000000);
+                            } catch (final IOException e) {
+                                logger.error("Failed to get the file size fo consensus database: {}", e.getMessage());
+                            }
                             Thread.sleep(5000);
                         }
                     } catch (final InterruptedException e) {
@@ -189,8 +194,8 @@ public class SiaDaemon extends Thread implements Closeable {
                 final PipedOutputStream pipedOut = new PipedOutputStream(pipedIn);
                 @SuppressWarnings("unchecked") final Future checkSumFuture = executor.submit((Callable) () -> DigestUtils.sha256Hex(pipedIn));
 
-                try (final InputStream in = new TeeInputStream(conn.getInputStream(), pipedOut, true)) {
-                    Files.copy(new BufferedInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
+                try (final InputStream in = new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true)) {
+                    Files.copy(new GZIPInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
                 if (!checkSumOpt.get().equals(checkSumFuture.get())) {
@@ -207,10 +212,10 @@ public class SiaDaemon extends Thread implements Closeable {
                 logger.error("Failed to compute the check sum of the bootstrap DB: {}", e.getMessage());
             } finally {
 
-                if (tempFile.toFile().exists()) {
-                    if (tempFile.toFile().delete()) {
-                        logger.warn("Failed to delete temporary file {}", tempFile);
-                    }
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (final IOException e) {
+                    logger.error("Failed to delete temporary file {}: {}", tempFile, e.getMessage());
                 }
                 executor.shutdown();
                 try {

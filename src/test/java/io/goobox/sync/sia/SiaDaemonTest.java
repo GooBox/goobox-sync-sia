@@ -24,30 +24,34 @@ import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.zip.GZIPOutputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 
 @RunWith(JMockit.class)
@@ -104,21 +108,20 @@ public class SiaDaemonTest {
     }
 
     /**
-     * checkAndDownloadConsensusDB checks {DataDIR}/consensus/consensus.db, and if not exists download it from
-     * https://consensus.siahub.info/consensus.db with a check sum in https://consensus.siahub.info/sha256sum.txt
+     * checkAndDownloadConsensusDB checks {DataDIR}/consensus/consensus.db, and if not exists download it.
      */
     @Test
-    public void checkAndDownloadConsensusDB() throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void checkAndDownloadConsensusDB() throws IOException {
 
         // Case 1: consensus.db doesn't exist.
-        Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
-        assertFalse(consensusDB.toFile().exists());
+        final Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
+        assertFalse(Files.exists(consensusDB));
 
-        final List<String> dummyData = new ArrayList<>();
-        dummyData.add("abcdefg");
-        dummyData.add("012345");
+        final List<String> dummyData = Arrays.asList("abcdefg", "012345");
         final Path dummyPath = Files.createTempFile(tempDir, null, null);
-        Files.write(dummyPath, dummyData);
+        try (final OutputStream out = new GZIPOutputStream(Files.newOutputStream(dummyPath))) {
+            IOUtils.copy(new ByteArrayInputStream(String.join("\n", dummyData).getBytes()), out);
+        }
 
         final String checkSum = DigestUtils.sha256Hex(Files.readAllBytes(dummyPath));
         new Expectations(daemon) {{
@@ -144,7 +147,7 @@ public class SiaDaemonTest {
 
         assertTrue(daemon.checkAndDownloadConsensusDB());
 
-        assertTrue(consensusDB.toFile().exists());
+        assertTrue(Files.exists(consensusDB));
         final List<String> contents = Files.readAllLines(consensusDB);
         assertEquals(dummyData.size(), contents.size());
         for (int i = 0; i != dummyData.size(); ++i) {
@@ -157,19 +160,15 @@ public class SiaDaemonTest {
     public void checkAndDownloadConsensusDBWithExistingDBFile() throws IOException {
 
         // Case 2: consensus.db exists and the sile size is bigger than the threshold.
-        Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
-        assertFalse(consensusDB.toFile().exists());
+        final Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
+        assertFalse(Files.exists(consensusDB));
         Files.createDirectories(consensusDB.getParent());
-        assertTrue(consensusDB.toFile().createNewFile());
+        Files.createFile(consensusDB);
 
-        @SuppressWarnings("unused")
-        class FileMock extends MockUp<File> {
-            @Mock
-            public long length() {
-                return SiaDaemon.ConsensusDBThreshold * 2L;
-            }
-        }
-        new FileMock();
+        new Expectations(Files.class) {{
+            Files.size(consensusDB);
+            result = SiaDaemon.ConsensusDBThreshold * 2L;
+        }};
 
         assertFalse(daemon.checkAndDownloadConsensusDB());
 
@@ -181,13 +180,13 @@ public class SiaDaemonTest {
         // Case 3: consensus.db exists but the file size is less than the threshold.
         Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
         Files.createDirectories(consensusDB.getParent());
-        assertTrue(consensusDB.toFile().createNewFile());
+        Files.createFile(consensusDB);
 
-        final List<String> dummyData = new ArrayList<>();
-        dummyData.add("abcdefg");
-        dummyData.add("012345");
+        final List<String> dummyData = Arrays.asList("abcdefg", "012345");
         final Path dummyPath = Files.createTempFile(tempDir, null, null);
-        Files.write(dummyPath, dummyData);
+        try (final OutputStream out = new GZIPOutputStream(Files.newOutputStream(dummyPath))) {
+            IOUtils.copy(new ByteArrayInputStream(String.join("\n", dummyData).getBytes()), out);
+        }
 
         final String checkSum = DigestUtils.sha256Hex(Files.readAllBytes(dummyPath));
         new Expectations(daemon) {{
@@ -208,7 +207,7 @@ public class SiaDaemonTest {
 
         assertTrue(daemon.checkAndDownloadConsensusDB());
 
-        assertTrue(consensusDB.toFile().exists());
+        assertTrue(Files.exists(consensusDB));
         final List<String> contents = Files.readAllLines(consensusDB);
         assertEquals(dummyData.size(), contents.size());
         for (int i = 0; i != dummyData.size(); ++i) {
@@ -223,11 +222,11 @@ public class SiaDaemonTest {
         Path consensusDB = dataDir.resolve(Paths.get("consensus", "consensus.db"));
         Files.createDirectories(consensusDB.getParent());
 
-        final List<String> dummyData = new ArrayList<>();
-        dummyData.add("abcdefg");
-        dummyData.add("012345");
+        final List<String> dummyData = Arrays.asList("abcdefg", "012345");
         final Path dummyPath = Files.createTempFile(tempDir, null, null);
-        Files.write(dummyPath, dummyData);
+        try (final OutputStream out = new GZIPOutputStream(Files.newOutputStream(dummyPath))) {
+            IOUtils.copy(new ByteArrayInputStream(String.join("\n", dummyData).getBytes()), out);
+        }
 
         new Expectations(daemon) {{
             daemon.getCheckSum();
@@ -252,16 +251,16 @@ public class SiaDaemonTest {
             conn.connect();
             conn.getInputStream();
             returns(
-                    new FileInputStream(dummyPath.toFile()),
-                    new FileInputStream(dummyPath.toFile()),
-                    new FileInputStream(dummyPath.toFile()),
-                    new FileInputStream(dummyPath.toFile()),
-                    new FileInputStream(dummyPath.toFile())
+                    Files.newInputStream(dummyPath),
+                    Files.newInputStream(dummyPath),
+                    Files.newInputStream(dummyPath),
+                    Files.newInputStream(dummyPath),
+                    Files.newInputStream(dummyPath)
             );
         }};
 
         assertFalse(daemon.checkAndDownloadConsensusDB());
-        assertFalse(consensusDB.toFile().exists());
+        assertFalse(Files.exists(consensusDB));
 
     }
 
@@ -312,7 +311,7 @@ public class SiaDaemonTest {
     }
 
     @Test
-    public void runAndClose() throws IOException {
+    public void runAndClose() {
 
         final Path daemonPath = Paths.get(System.getProperty("java.io.tmpdir"), "daemon");
         new Expectations(daemon) {{
@@ -346,13 +345,12 @@ public class SiaDaemonTest {
 
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Test
-    public void getCheckSum() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
+    public void getCheckSum() throws IOException {
 
         final String checkSum = "abcdefghijklmn";
-        final List<String> testData = new ArrayList<>();
-        testData.add("012345 another.db");
-        testData.add(String.format("%s %s", checkSum, "consensus.db"));
-        testData.add("012345 consensus.db");
+        final List<String> testData = Arrays.asList(
+                "012345 another.db", String.format("%s %s", checkSum, "consensus.db"), "012345 consensus.db"
+        );
 
         final Path dummyPath = Files.createTempFile(tempDir, null, null);
         Files.write(dummyPath, testData);
