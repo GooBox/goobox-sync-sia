@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -123,7 +124,11 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.InsufficientFunds, anyString);
+            task.sendEvent(
+                    AbstractNotifyWalletInfoTask.EventType.InsufficientFunds,
+                    String.format(
+                            "Should have more than %d SC",
+                            APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger()));
         }};
         task.run();
     }
@@ -171,7 +176,10 @@ public class NotifyFundInfoTaskTest {
             createAllowanceTask.call();
             result = allowanceInfo;
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Allocated, anyString);
+            task.sendEvent(
+                    AbstractNotifyWalletInfoTask.EventType.Allocated,
+                    String.format("Allocated %d SC", APIUtils.toSiacoin(
+                            allowanceInfo.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger()));
         }};
         task.run();
 

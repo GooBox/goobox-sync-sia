@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
 
@@ -70,7 +71,8 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
                     final AllowanceInfo allowance = createAllowance.call();
                     this.sendEvent(
                             EventType.Allocated,
-                            String.format("Allocated %.4f SC", APIUtils.toSiacoin(allowance.getFunds()))
+                            String.format("Allocated %d SC", APIUtils.toSiacoin(
+                                    allowance.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger())
                     );
                     info = wallet.call().getWalletInfo();
                     logger.info("Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
@@ -82,7 +84,9 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
             if (remaining.compareTo(threshold) < 0) {
                 this.sendEvent(
                         EventType.InsufficientFunds,
-                        String.format("Should have more than %.4f SC", APIUtils.toSiacoin(threshold))
+                        String.format(
+                                "Should have more than %d SC",
+                                APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger())
                 );
             }
 
