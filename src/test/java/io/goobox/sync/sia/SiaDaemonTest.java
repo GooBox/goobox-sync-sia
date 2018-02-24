@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia;
 
+import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mock;
 import mockit.MockUp;
@@ -67,15 +68,17 @@ public class SiaDaemonTest {
     public void setUp() throws IOException {
         cfgPath = Files.createTempFile(null, null);
         cfg = new Config(cfgPath);
-        dataDir = Files.createTempDirectory(null);
+        Deencapsulation.setField(cfg, "dataDir", Files.createTempDirectory(null));
+
         tempDir = Files.createTempDirectory(null);
-        daemon = new SiaDaemon(cfg, dataDir);
+        daemon = new SiaDaemon(cfg);
+        dataDir = Deencapsulation.getField(daemon, "dataDir");
     }
 
     @After
     public void tearDown() throws IOException {
         Files.deleteIfExists(cfgPath);
-        FileUtils.deleteDirectory(dataDir.toFile());
+        FileUtils.deleteDirectory(cfg.getDataDir().toFile());
         FileUtils.deleteDirectory(tempDir.toFile());
     }
 
@@ -268,7 +271,6 @@ public class SiaDaemonTest {
         assertFalse(Files.exists(consensusDB));
 
     }
-
 
     @SuppressWarnings("unused")
     @Test

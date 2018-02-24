@@ -941,7 +941,7 @@ public class AppTest {
 
         final Config cfg = ctx.getConfig();
         new Expectations() {{
-            new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
+            new SiaDaemon(cfg);
             result = daemon;
             daemon.checkAndDownloadConsensusDB();
             daemon.start();

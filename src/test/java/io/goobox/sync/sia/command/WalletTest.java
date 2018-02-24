@@ -156,7 +156,7 @@ public class WalletTest {
             result = new GetWalletInfoTask.InfoPair(walletInfo, priceInfo);
 
             // Starting sia daemon.
-            new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
+            new SiaDaemon(cfg);
             result = daemon;
             daemon.start();
 

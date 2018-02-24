@@ -294,7 +294,7 @@ public final class App implements Callable<Integer> {
 
         if (this.daemon == null || this.daemon.isClosed()) {
 
-            this.daemon = new SiaDaemon(this.cfg, this.cfg.getDataDir().resolve("sia"));
+            this.daemon = new SiaDaemon(this.cfg);
             try {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));

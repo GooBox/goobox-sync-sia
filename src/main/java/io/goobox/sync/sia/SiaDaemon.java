@@ -56,16 +56,22 @@ public class SiaDaemon extends Thread implements Closeable {
 
     @NotNull
     private static final String SiaDaemonDirectory;
+
     @NotNull
     private static final String SiaDaemonName;
+
     @NotNull
     private static final Path ConsensusDBPath;
+
     @NotNull
     private static final String ConsensusDBURL;
+
     @NotNull
     static final String CheckSumURL;
+
     @NotNull
     static final String DefaultUserAgent;
+
     static final int MaxRetry;
 
     /**
@@ -92,7 +98,7 @@ public class SiaDaemon extends Thread implements Closeable {
         CheckSumURL = bundle.getString("bootstrap-db-checksum-url");
         DefaultUserAgent = bundle.getString("user-agent");
 
-        MaxRetry = Integer.valueOf(bundle.getString("max-retry-downalod"));
+        MaxRetry = Integer.valueOf(bundle.getString("max-retry-download"));
 
     }
 
@@ -103,14 +109,15 @@ public class SiaDaemon extends Thread implements Closeable {
     @Nullable
     private Process process;
 
-    public SiaDaemon(@NotNull final Config cfg, @NotNull final Path dataDir) {
+    public SiaDaemon(@NotNull final Config cfg) {
         this.cfg = cfg;
-        this.dataDir = dataDir.toAbsolutePath();
+        this.dataDir = cfg.getDataDir().resolve(SiaDaemonDirectory);
     }
 
     /**
      * Start sia daemon. This method blocks until the child process ends.
      */
+    @SuppressWarnings("SpellCheckingInspection")
     @Override
     public void run() {
 

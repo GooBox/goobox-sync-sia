@@ -121,7 +121,7 @@ public final class Wallet implements Runnable {
 
                     logger.info("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
-                        daemon = new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
+                        daemon = new SiaDaemon(cfg);
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
 
                         logger.info("Starting a sia daemon");

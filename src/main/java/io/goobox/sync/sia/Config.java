@@ -50,7 +50,9 @@ public class Config {
     static final String DataPieces = "data-pieces";
     static final String ParityPieces = "parity-pieces";
     static final String DisableAutoAllocation = "disable-auto-allocation";
+    @SuppressWarnings("SpellCheckingInspection")
     static final String SiadApiAddress = "siad-api-address";
+    @SuppressWarnings("SpellCheckingInspection")
     static final String SiadGatewayAddress = "siad-gateway-address";
 
     static final int MinimumParityPieces = 12;
