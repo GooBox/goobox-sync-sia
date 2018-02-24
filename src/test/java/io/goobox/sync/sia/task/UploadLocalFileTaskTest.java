@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -52,9 +51,6 @@ public class UploadLocalFileTaskTest {
 
     @Mocked
     private App app;
-
-    @Mocked
-    private OverlayHelper overlayHelper;
 
     @Mocked
     private RenterApi api;
