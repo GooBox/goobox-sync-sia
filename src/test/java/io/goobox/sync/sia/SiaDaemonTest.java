@@ -295,7 +295,6 @@ public class SiaDaemonTest {
         new Expectations() {{
             final ProcessBuilder cmd = new ProcessBuilder(daemonPath.toString(),
                     "--api-addr=127.0.0.1:9980",
-                    "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
@@ -331,7 +330,6 @@ public class SiaDaemonTest {
         new Expectations(ProcessBuilder.class) {{
             new ProcessBuilder(daemonPath.toString(),
                     "--api-addr=127.0.0.1:9980",
-                    "--host-addr=:9982",
                     "--rpc-addr=:9981",
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");

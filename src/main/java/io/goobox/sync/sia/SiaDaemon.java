@@ -41,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -53,20 +54,47 @@ public class SiaDaemon extends Thread implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(SiaDaemon.class);
 
-    private static final String SiaDaemonFolderName = "sia";
-    private static final String SiaDaemonName = "siad";
-    private static final Path ConsensusDBPath = Paths.get("consensus", "consensus.db");
-    private static final String ConsensusDBURL = "https://consensus.siahub.info/consensus.db.gz";
-    static final String CheckSumURL = "https://consensus.siahub.info/consensus.db.gz.sha256sum";
-    static final String DefaultUserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
-
-    static final int MaxRetry = 5;
+    @NotNull
+    private static final String SiaDaemonDirectory;
+    @NotNull
+    private static final String SiaDaemonName;
+    @NotNull
+    private static final Path ConsensusDBPath;
+    @NotNull
+    private static final String ConsensusDBURL;
+    @NotNull
+    static final String CheckSumURL;
+    @NotNull
+    static final String DefaultUserAgent;
+    static final int MaxRetry;
 
     /**
      * Threshold file size of the consensus.db. (2GB)
      * If current file size is smaller than this, the database snapshot will be downloaded.
      */
     static final long ConsensusDBThreshold = 2L * 1024L * 1024L * 1024L;
+
+    static {
+
+        //noinspection SpellCheckingInspection
+        final ResourceBundle bundle = ResourceBundle.getBundle("siad");
+        SiaDaemonDirectory = bundle.getString("sia-daemon-directory");
+
+        String cmd = bundle.getString("sia-daemon-name");
+        if (SystemUtils.IS_OS_WINDOWS) {
+            cmd = cmd + ".exe";
+        }
+        SiaDaemonName = cmd;
+
+        ConsensusDBPath = Paths.get(
+                bundle.getString("consensus-db-directory"), bundle.getString("consensus-db-name"));
+        ConsensusDBURL = bundle.getString("bootstrap-db-url");
+        CheckSumURL = bundle.getString("bootstrap-db-checksum-url");
+        DefaultUserAgent = bundle.getString("user-agent");
+
+        MaxRetry = Integer.valueOf(bundle.getString("max-retry-downalod"));
+
+    }
 
     @NotNull
     private final Path dataDir;
@@ -86,7 +114,6 @@ public class SiaDaemon extends Thread implements Closeable {
         final ProcessBuilder cmd = new ProcessBuilder(
                 this.getDaemonPath().toString(),
                 "--api-addr=127.0.0.1:9980",
-                "--host-addr=:9982",
                 "--rpc-addr=:9981",
                 String.format("--sia-directory=%s", this.dataDir),
                 "--modules=cgrtw");
@@ -130,16 +157,11 @@ public class SiaDaemon extends Thread implements Closeable {
     @NotNull
     Path getDaemonPath() {
 
-        String cmd = SiaDaemonName;
-        if (SystemUtils.IS_OS_WINDOWS) {
-            cmd = cmd + ".exe";
-        }
-
         final Path wd = SystemUtils.getUserDir().toPath();
         if (wd.getFileName().toString().equals("bin")) {
-            return wd.getParent().resolve(SiaDaemonFolderName).resolve(cmd);
+            return wd.getParent().resolve(SiaDaemonDirectory).resolve(SiaDaemonName);
         }
-        return wd.resolve(SiaDaemonFolderName).resolve(cmd);
+        return wd.resolve(SiaDaemonDirectory).resolve(SiaDaemonName);
 
     }
 

@@ -103,7 +103,11 @@ public class CreateAllowanceTaskTest {
             result = renterGetResponse;
 
             final BigInteger newFund = APIUtils.toHasting(balance);
-            renter.renterPost(newFund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    newFund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -119,7 +123,11 @@ public class CreateAllowanceTaskTest {
             renter.renterGet();
             result = renterGetResponse;
 
-            renter.renterPost(fund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    fund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -140,7 +148,11 @@ public class CreateAllowanceTaskTest {
             result = renterGetResponse;
 
             final BigInteger newFund = APIUtils.toHasting(balance);
-            renter.renterPost(newFund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    newFund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -161,7 +173,11 @@ public class CreateAllowanceTaskTest {
             renter.renterGet();
             result = renterGetResponse;
 
-            renter.renterPost(fund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    fund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());
