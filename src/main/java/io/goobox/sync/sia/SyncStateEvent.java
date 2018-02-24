@@ -20,7 +20,7 @@ package io.goobox.sync.sia;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 
-public enum SyncState {
+public enum SyncStateEvent implements Event {
 
     // Notify when consensus DB is synchronized and start Goobox's synchronization.
     startSynchronization,
@@ -31,9 +31,9 @@ public enum SyncState {
 
     public class Args {
         @NotNull
-        final SyncState newState;
+        final SyncStateEvent newState;
 
-        Args(@NotNull final SyncState state) {
+        Args(@NotNull final SyncStateEvent state) {
             this.newState = state;
         }
     }
@@ -42,16 +42,17 @@ public enum SyncState {
         @SuppressWarnings("unused")
         final String method = "syncState";
         @NotNull
-        final SyncState.Args args;
+        final SyncStateEvent.Args args;
 
-        Event(@NotNull final SyncState state) {
-            this.args = new SyncState.Args(state);
+        Event(@NotNull final SyncStateEvent state) {
+            this.args = new SyncStateEvent.Args(state);
         }
     }
 
-    private final Gson gson = new Gson();
-
+    @NotNull
+    @Override
     public String toJson() {
+        final Gson gson = new Gson();
         return gson.toJson(new Event(this));
     }
 

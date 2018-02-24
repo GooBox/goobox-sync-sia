@@ -283,21 +283,20 @@ public final class App implements Callable<Integer> {
 
     public void refreshOverlayIcon(@NotNull Path localPath) {
         this.overlayHelper.refresh(localPath);
-
         if (DB.isSynced()) {
             this.overlayHelper.setOK();
-            if (this.outputEvents) {
-                System.out.println(io.goobox.sync.sia.SyncState.idle.toJson());
-            }
+            this.notifyEvent(SyncStateEvent.idle);
         } else {
             this.overlayHelper.setSynchronizing();
-            if (this.outputEvents) {
-                System.out.println(io.goobox.sync.sia.SyncState.synchronizing.toJson());
-            }
+            this.notifyEvent(SyncStateEvent.synchronizing);
         }
-
     }
 
+    public void notifyEvent(@NotNull Event e) {
+        if (this.outputEvents) {
+            System.out.println(e.toJson());
+        }
+    }
 
     synchronized void startSiaDaemon() {
 
@@ -404,7 +403,7 @@ public final class App implements Callable<Integer> {
                 45, 60, TimeUnit.SECONDS);
 
         if (this.outputEvents) {
-            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }
 
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);

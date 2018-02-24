@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.model.AllowanceInfo;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 
-public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
+public class NotifyFundInfoTask implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(NotifyFundInfoTask.class);
 
@@ -69,11 +70,12 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
                 if (info.getBalance().compareTo(info.getFunds()) > 0) {
                     final CreateAllowanceTask createAllowance = new CreateAllowanceTask(this.ctx);
                     final AllowanceInfo allowance = createAllowance.call();
-                    this.sendEvent(
-                            EventType.Allocated,
+
+                    App.getInstance().ifPresent(app -> app.notifyEvent(new FundEvent(
+                            FundEvent.EventType.Allocated,
                             String.format("Allocated %d SC", APIUtils.toSiacoin(
-                                    allowance.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger())
-                    );
+                                    allowance.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger()))));
+
                     info = wallet.call().getWalletInfo();
                     logger.info("Current balance = {} H, funds = {} H", info.getBalance(), info.getFunds());
                 }
@@ -82,23 +84,24 @@ public class NotifyFundInfoTask extends AbstractNotifyWalletInfoTask {
             final BigInteger remaining = info.getFunds().subtract(info.getTotalSpending());
             final BigInteger threshold = prices.getContract().multiply(BigInteger.valueOf(NotifyFundInfoTask.MinContractSets));
             if (remaining.compareTo(threshold) < 0) {
-                this.sendEvent(
-                        EventType.InsufficientFunds,
+                App.getInstance().ifPresent(app -> app.notifyEvent(new FundEvent(
+                        FundEvent.EventType.InsufficientFunds,
                         String.format(
                                 "Should have more than %d SC",
-                                APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger())
-                );
+                                APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger()))));
             }
 
         } catch (final ApiException e) {
 
             logger.error(APIUtils.getErrorMessage(e));
-            this.sendEvent(EventType.Error, APIUtils.getErrorMessage(e));
+            App.getInstance().ifPresent(app -> app.notifyEvent(
+                    new FundEvent(FundEvent.EventType.Error, APIUtils.getErrorMessage(e))));
 
         } catch (final GetWalletInfoTask.WalletException e) {
 
             logger.error(e.getMessage());
-            this.sendEvent(EventType.Error, e.getMessage());
+            App.getInstance().ifPresent(app -> app.notifyEvent(
+                    new FundEvent(FundEvent.EventType.Error, e.getMessage())));
 
         }
     }

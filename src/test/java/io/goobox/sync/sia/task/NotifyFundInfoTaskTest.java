@@ -45,7 +45,9 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 @RunWith(JMockit.class)
 public class NotifyFundInfoTaskTest {
 
@@ -57,6 +59,8 @@ public class NotifyFundInfoTaskTest {
     private GetWalletInfoTask walletInfoTask;
     @Mocked
     private CreateAllowanceTask createAllowanceTask;
+    @Mocked
+    private App app = new App();
 
     private Path configPath;
     private Context ctx;
@@ -87,7 +91,6 @@ public class NotifyFundInfoTaskTest {
         this.priceInfo = new PriceInfo(prices);
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @After
     public void tearDown() {
         this.configPath.toFile().delete();
@@ -105,7 +108,8 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent((AbstractNotifyWalletInfoTask.EventType) any, anyString);
+            App.getInstance();
+            result = Optional.of(app);
             times = 0;
         }};
         task.run();
@@ -123,11 +127,13 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent(
-                    AbstractNotifyWalletInfoTask.EventType.InsufficientFunds,
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(
+                    FundEvent.EventType.InsufficientFunds,
                     String.format(
                             "Should have more than %d SC",
-                            APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger()));
+                            APIUtils.toSiacoin(threshold).setScale(0, RoundingMode.UP).toBigInteger())));
         }};
         task.run();
     }
@@ -175,10 +181,12 @@ public class NotifyFundInfoTaskTest {
             createAllowanceTask.call();
             result = allowanceInfo;
 
-            task.sendEvent(
-                    AbstractNotifyWalletInfoTask.EventType.Allocated,
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(
+                    FundEvent.EventType.Allocated,
                     String.format("Allocated %d SC", APIUtils.toSiacoin(
-                            allowanceInfo.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger()));
+                            allowanceInfo.getFunds()).setScale(0, RoundingMode.HALF_UP).toBigInteger())));
         }};
         task.run();
 
@@ -201,7 +209,8 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent((AbstractNotifyWalletInfoTask.EventType) any, anyString);
+            App.getInstance();
+            result = Optional.of(app);
             times = 0;
         }};
         task.run();
@@ -222,7 +231,9 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = new ApiException();
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(FundEvent.EventType.Error, err));
         }};
         task.run();
     }
@@ -239,7 +250,9 @@ public class NotifyFundInfoTaskTest {
             walletInfoTask.call();
             result = new GetWalletInfoTask.WalletException(err);
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(FundEvent.EventType.Error, err));
         }};
         task.run();
     }

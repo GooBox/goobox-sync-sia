@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 
-public class NotifyEmptyFundTask extends AbstractNotifyWalletInfoTask {
+public class NotifyEmptyFundTask implements Runnable {
 
     private final Logger logger = LoggerFactory.getLogger(NotifyEmptyFundTask.class);
 
@@ -45,14 +46,16 @@ public class NotifyEmptyFundTask extends AbstractNotifyWalletInfoTask {
             final WalletInfo info = wallet.call().getWalletInfo();
             logger.debug("Current balance: {} hastings", info.getBalance());
             if (info.getBalance().equals(BigInteger.ZERO)) {
-                this.sendEvent(EventType.NoFunds);
+                App.getInstance().ifPresent(app -> app.notifyEvent(new FundEvent(FundEvent.EventType.NoFunds)));
             }
         } catch (final ApiException e) {
             logger.error(APIUtils.getErrorMessage(e));
-            this.sendEvent(EventType.Error, APIUtils.getErrorMessage(e));
+            App.getInstance().ifPresent(
+                    app -> app.notifyEvent(new FundEvent(FundEvent.EventType.Error, APIUtils.getErrorMessage(e))));
         } catch (final GetWalletInfoTask.WalletException e) {
             logger.error(e.getMessage());
-            this.sendEvent(EventType.Error, e.getMessage());
+            App.getInstance().ifPresent(
+                    app -> app.notifyEvent(new FundEvent(FundEvent.EventType.Error, e.getMessage())));
         }
     }
 

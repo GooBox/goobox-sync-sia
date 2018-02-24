@@ -18,6 +18,7 @@
 package io.goobox.sync.sia.task;
 
 import io.goobox.sync.sia.APIUtils;
+import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
@@ -42,12 +43,17 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 @RunWith(JMockit.class)
 public class NotifyEmptyFundTaskTest {
 
     @Mocked
     private GetWalletInfoTask walletInfoTask;
+
+    @Mocked
+    private App app = new App();
 
     private Path configPath;
     private NotifyEmptyFundTask task;
@@ -111,7 +117,6 @@ public class NotifyEmptyFundTaskTest {
         this.priceInfo = new PriceInfo(prices);
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @After
     public void tearDown() {
         this.configPath.toFile().delete();
@@ -124,7 +129,8 @@ public class NotifyEmptyFundTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent((AbstractNotifyWalletInfoTask.EventType) any, anyString);
+            App.getInstance();
+            result = Optional.of(app);
             times = 0;
         }};
         this.task.run();
@@ -138,7 +144,9 @@ public class NotifyEmptyFundTaskTest {
             walletInfoTask.call();
             result = pair;
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.NoFunds);
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(FundEvent.EventType.NoFunds));
         }};
         this.task.run();
     }
@@ -153,7 +161,9 @@ public class NotifyEmptyFundTaskTest {
             walletInfoTask.call();
             result = new ApiException();
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(FundEvent.EventType.Error, err));
         }};
         this.task.run();
     }
@@ -165,7 +175,9 @@ public class NotifyEmptyFundTaskTest {
             walletInfoTask.call();
             result = new GetWalletInfoTask.WalletException(err);
 
-            task.sendEvent(AbstractNotifyWalletInfoTask.EventType.Error, err);
+            App.getInstance();
+            result = Optional.of(app);
+            app.notifyEvent(new FundEvent(FundEvent.EventType.Error, err));
         }};
         this.task.run();
     }

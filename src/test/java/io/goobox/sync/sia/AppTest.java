@@ -413,7 +413,7 @@ public class AppTest {
         }};
 
         new Expectations(System.class) {{
-            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
         app.call();
@@ -500,7 +500,7 @@ public class AppTest {
         }};
 
         new Expectations(System.class) {{
-            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
         app.call();
@@ -1007,16 +1007,14 @@ public class AppTest {
     public void refreshOverlayIconWithSyncedDB(@SuppressWarnings("unused") @Mocked DB db) {
 
         final App app = new App();
-        app.enableOutputEvents();
-
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
-        new Expectations(overlayHelper, System.class) {{
+        new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = true;
-            overlayHelper.setOK();
 
-            System.out.println(io.goobox.sync.sia.SyncState.idle.toJson());
+            overlayHelper.setOK();
+            app.notifyEvent(SyncStateEvent.idle);
         }};
         app.refreshOverlayIcon(tmpDir);
 
@@ -1026,18 +1024,44 @@ public class AppTest {
     public void refreshOverlayIconWithSynchronizingDB(@SuppressWarnings("unused") @Mocked DB db) {
 
         final App app = new App();
-        app.enableOutputEvents();
-
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
-        new Expectations(overlayHelper, System.class) {{
+        new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = false;
-            overlayHelper.setSynchronizing();
 
-            System.out.println(io.goobox.sync.sia.SyncState.synchronizing.toJson());
+            overlayHelper.setSynchronizing();
+            app.notifyEvent(SyncStateEvent.synchronizing);
         }};
         app.refreshOverlayIcon(tmpDir);
+
+    }
+
+    @Test
+    public void notifyEvent() {
+
+        final Event e = SyncStateEvent.synchronizing;
+        new Expectations(System.class) {{
+            System.out.println(e.toJson());
+        }};
+
+        final App app = new App();
+        app.enableOutputEvents();
+        app.notifyEvent(e);
+
+    }
+
+    @Test
+    public void notifyEventWithDisableNotificationApp() {
+
+        final Event e = SyncStateEvent.synchronizing;
+        new Expectations(System.class) {{
+            System.out.println(e.toJson());
+            times = 0;
+        }};
+
+        final App app = new App();
+        app.notifyEvent(e);
 
     }
 
