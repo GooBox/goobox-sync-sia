@@ -20,7 +20,6 @@ package io.goobox.sync.sia.task;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
@@ -58,7 +57,7 @@ public class NotifyEmptyFundTaskTest {
     @Before
     public void setUp() throws IOException {
         this.configPath = Files.createTempFile(null, null);
-        this.task = new NotifyEmptyFundTask(new Context(new Config(this.configPath), new ApiClient()));
+        this.task = new NotifyEmptyFundTask(new Context(new Config(this.configPath)));
 
         final String address = "01234567890123456789";
         final String primarySeed = "sample primary seed";

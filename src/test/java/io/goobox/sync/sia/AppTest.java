@@ -18,7 +18,6 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -99,9 +98,7 @@ public class AppTest {
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
         cfg.save();
-
-        final ApiClient apiClient = APIUtils.getApiClient(cfg);
-        this.ctx = new Context(cfg, apiClient);
+        this.ctx = new Context(cfg);
 
     }
 

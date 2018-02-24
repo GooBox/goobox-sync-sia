@@ -246,7 +246,7 @@ public final class App implements Callable<Integer> {
         this.cfg = APIUtils.loadConfig(configPath);
 
         final ApiClient apiClient = APIUtils.getApiClient(cfg);
-        this.ctx = new Context(cfg, apiClient);
+        this.ctx = new Context(cfg);
 
         if (syncDir != null) {
             logger.info("Overwrite the sync directory: {}", syncDir);

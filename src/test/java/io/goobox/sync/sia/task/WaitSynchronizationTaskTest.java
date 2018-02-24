@@ -20,7 +20,6 @@ package io.goobox.sync.sia.task;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse2006;
@@ -48,7 +47,7 @@ public class WaitSynchronizationTaskTest {
     @Before
     public void setUp() throws IOException {
         this.configPath = Files.createTempFile(null, null);
-        this.task = new WaitSynchronizationTask(new Context(new Config(this.configPath), new ApiClient()));
+        this.task = new WaitSynchronizationTask(new Context(new Config(this.configPath)));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

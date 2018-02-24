@@ -98,7 +98,7 @@ public class CheckDownloadStateTaskTest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
         final Path cloudPath = this.ctx.getPathPrefix().resolve(this.name);

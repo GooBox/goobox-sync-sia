@@ -21,7 +21,6 @@ import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
@@ -64,7 +63,7 @@ public class CreateAllowanceTaskTest {
     @Before
     public void setUp() throws IOException {
         this.configPath = Files.createTempFile(null, null);
-        this.ctx = new Context(new Config(this.configPath.resolve(App.ConfigFileName)), new ApiClient());
+        this.ctx = new Context(new Config(this.configPath.resolve(App.ConfigFileName)));
 
         final double fund = 2234.85;
         final int host = 10;

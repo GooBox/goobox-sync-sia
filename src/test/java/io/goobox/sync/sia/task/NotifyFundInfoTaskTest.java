@@ -21,7 +21,6 @@ import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
@@ -70,7 +69,7 @@ public class NotifyFundInfoTaskTest {
     @Before
     public void setUp() throws IOException {
         this.configPath = Files.createTempFile(null, null);
-        this.ctx = new Context(new Config(this.configPath), new ApiClient());
+        this.ctx = new Context(new Config(this.configPath));
         this.task = new NotifyFundInfoTask(this.ctx);
 
         this.walletInfo = this.createWalletInfo();

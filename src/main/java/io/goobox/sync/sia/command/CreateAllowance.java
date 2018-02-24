@@ -108,7 +108,7 @@ public final class CreateAllowance implements Runnable {
     @Override
     public void run() {
 
-        final CreateAllowanceTask task = new CreateAllowanceTask(new Context(this.cfg, APIUtils.getApiClient(this.cfg)), this.fund);
+        final CreateAllowanceTask task = new CreateAllowanceTask(new Context(this.cfg), this.fund);
         int retry = 0;
         while (true) {
 

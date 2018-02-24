@@ -84,7 +84,7 @@ public class UploadLocalFileTaskTest {
         Deencapsulation.setField(this.cfg, "dataPieces", 120);
         Deencapsulation.setField(this.cfg, "parityPieces", 50);
         Deencapsulation.setField(this.cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.context = new Context(this.cfg, null);
+        this.context = new Context(this.cfg);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);

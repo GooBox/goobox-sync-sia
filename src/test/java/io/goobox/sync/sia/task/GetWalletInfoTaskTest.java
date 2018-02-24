@@ -20,7 +20,6 @@ package io.goobox.sync.sia.task;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
@@ -93,7 +92,7 @@ public class GetWalletInfoTaskTest {
             cfg.save();
             minTimes = 0;
         }};
-        ctx = new Context(cfg, new ApiClient());
+        ctx = new Context(cfg);
         task = new GetWalletInfoTask(ctx);
 
         walletGetResponse = new InlineResponse20013();
