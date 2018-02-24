@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -54,9 +53,6 @@ public class DownloadCloudFileTaskTest {
 
     @Mocked
     private App app;
-
-    @Mocked
-    private OverlayHelper overlayHelper;
 
     @Mocked
     private RenterApi api;
@@ -132,11 +128,7 @@ public class DownloadCloudFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);
@@ -185,11 +177,7 @@ public class DownloadCloudFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);

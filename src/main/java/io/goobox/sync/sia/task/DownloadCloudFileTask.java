@@ -93,7 +93,7 @@ public class DownloadCloudFileTask implements Callable<Void> {
             DB.setDownloadFailed(this.name);
 
         } finally {
-            App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(localPath -> app.getOverlayHelper().refresh(localPath)));
+            App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(app::refreshOverlayIcon));
             DB.commit();
         }
         return null;

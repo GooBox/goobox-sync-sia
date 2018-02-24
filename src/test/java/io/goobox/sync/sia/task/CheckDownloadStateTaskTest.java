@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -74,9 +73,6 @@ public class CheckDownloadStateTaskTest {
 
     @Mocked
     private App app;
-
-    @Mocked
-    private OverlayHelper overlayHelper;
 
     @Mocked
     private RenterApi api;
@@ -181,10 +177,7 @@ public class CheckDownloadStateTaskTest {
             App.getInstance();
             result = Optional.of(app);
 
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -353,11 +346,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -389,11 +378,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -486,11 +471,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -729,11 +710,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -796,11 +773,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();
@@ -869,11 +842,7 @@ public class CheckDownloadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckDownloadStateTask(this.ctx).call();

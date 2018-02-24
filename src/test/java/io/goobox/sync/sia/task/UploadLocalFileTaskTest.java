@@ -123,11 +123,7 @@ public class UploadLocalFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
@@ -154,11 +150,7 @@ public class UploadLocalFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
@@ -250,11 +242,7 @@ public class UploadLocalFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);

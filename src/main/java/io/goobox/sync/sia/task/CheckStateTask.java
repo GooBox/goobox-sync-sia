@@ -235,7 +235,7 @@ public class CheckStateTask implements Callable<Void> {
 
                             logger.info("File {} was marked as modified but cloud/local files are same", file.getName());
                             DB.setSynced(file, file.getLocalPath());
-                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
 
                         } else if (remoteCreationTime < localModificationTime) {
 
@@ -278,7 +278,7 @@ public class CheckStateTask implements Callable<Void> {
                             if (localTimeStamp >= cloudTimeStamp) {
                                 logger.info("File {} is marked as {} but then the local file is modified", syncFile.getName(), syncFile.getState());
                                 DB.setModified(syncFile.getName(), file.getLocalPath());
-                                App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                                App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
                                 break;
                             }
                         }
@@ -351,7 +351,7 @@ public class CheckStateTask implements Callable<Void> {
         final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(Long.toString(lastModifiedTime));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
-            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
             if (Files.exists(localPath)) {
@@ -373,7 +373,7 @@ public class CheckStateTask implements Callable<Void> {
 
         DB.addForDownload(file, file.getLocalPath());
         if (Files.exists(file.getLocalPath())) {
-            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
         }
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
@@ -399,7 +399,7 @@ public class CheckStateTask implements Callable<Void> {
     private void enqueueForLocalDelete(@NotNull final Path localPath) {
 
         DB.setForLocalDelete(this.ctx.getName(localPath));
-        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
         this.executor.execute(new DeleteLocalFileTask(this.ctx, localPath));
 
     }

@@ -109,7 +109,7 @@ public class UploadLocalFileTask implements Callable<Void> {
 
         }
 
-        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(this.localPath));
+        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(this.localPath));
         DB.commit();
         return null;
 

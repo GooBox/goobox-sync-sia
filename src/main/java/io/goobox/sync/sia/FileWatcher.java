@@ -150,7 +150,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     try {
                         logger.info("Found modified file {}", name);
                         DB.addNewFile(name, localPath);
-                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+                        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
                         removePaths.add(localPath);
                     } catch (IOException e) {
                         logger.error("Failed to add a new file {} to the sync DB: {}", name, e.getMessage());

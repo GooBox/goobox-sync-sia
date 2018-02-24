@@ -87,7 +87,7 @@ public class CheckUploadStateTask implements Callable<Void> {
                                 logger.error("Failed to update the sync db: {}", e.getMessage());
                                 DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
                             }
-                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(siaFile.getLocalPath()));
+                            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(siaFile.getLocalPath()));
                         } else {
                             final BigDecimal progress = siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP);
                             logger.info("File {} is now being uploaded ({}%)", siaFile.getName(), progress);

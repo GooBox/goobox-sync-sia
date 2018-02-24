@@ -18,6 +18,7 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -39,7 +40,6 @@ import io.goobox.sync.sia.task.DownloadCloudFileTask;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
 import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
-import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import io.goobox.sync.sia.task.WaitContractsTask;
 import io.goobox.sync.sia.task.WaitSynchronizationTask;
@@ -175,7 +175,7 @@ public class AppTest {
         new Expectations(App.class) {{
             final App app = new App();
             result = app;
-            app.setOutputEvents();
+            app.enableOutputEvents();
             app.call();
             result = 0;
         }};
@@ -311,7 +311,9 @@ public class AppTest {
         final Context ctx = app.getContext();
         assertEquals(this.ctx.getConfig(), ctx.getConfig());
         assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
-        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(overlayHelper, "syncDir"));
     }
 
     @Test
@@ -329,7 +331,9 @@ public class AppTest {
         assertEquals(this.ctx.getConfig(), ctx.getConfig());
         assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
         assertEquals(this.tmpDir, ctx.getConfig().getSyncDir());
-        assertEquals(this.tmpDir, Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        assertEquals(this.tmpDir, Deencapsulation.getField(overlayHelper, "syncDir"));
     }
 
     /**
@@ -379,7 +383,9 @@ public class AppTest {
             result = executor;
         }};
 
-        new Expectations(app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class, FileWatcher.class) {{
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(app, overlayHelper, executor, StartSiaDaemonTask.class,
+                CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -402,6 +408,12 @@ public class AppTest {
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
+        }};
+
+        new Expectations(System.class) {{
+            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
         }};
 
         app.call();
@@ -454,9 +466,10 @@ public class AppTest {
             result = executor;
         }};
 
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
         new Expectations(
-                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
-                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+                app, executor, overlayHelper, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class,
+                CheckUploadStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -478,13 +491,16 @@ public class AppTest {
             new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
-            new NotifySyncStateTask();
-            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
-
             new NotifyFundInfoTask(ctx, true);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
+        }};
+
+        new Expectations(System.class) {{
+            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
         }};
 
         app.call();
@@ -538,9 +554,10 @@ public class AppTest {
             result = executor;
         }};
 
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
         new Expectations(
-                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
-                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+                app, executor, overlayHelper, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class,
+                CheckUploadStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -562,13 +579,12 @@ public class AppTest {
             new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
-            new NotifySyncStateTask();
-            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
-
             new NotifyFundInfoTask(ctx, false);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
         }};
 
         app.call();
@@ -984,6 +1000,44 @@ public class AppTest {
         final App app = new App();
         Deencapsulation.setField(app, "daemon", daemon);
         app.startSiaDaemon();
+
+    }
+
+    @Test
+    public void refreshOverlayIconWithSyncedDB(@SuppressWarnings("unused") @Mocked DB db) {
+
+        final App app = new App();
+        app.enableOutputEvents();
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(overlayHelper, System.class) {{
+            overlayHelper.refresh(tmpDir);
+            DB.isSynced();
+            result = true;
+            overlayHelper.setOK();
+
+            System.out.println(io.goobox.sync.sia.SyncState.idle.toJson());
+        }};
+        app.refreshOverlayIcon(tmpDir);
+
+    }
+
+    @Test
+    public void refreshOverlayIconWithSynchronizingDB(@SuppressWarnings("unused") @Mocked DB db) {
+
+        final App app = new App();
+        app.enableOutputEvents();
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(overlayHelper, System.class) {{
+            overlayHelper.refresh(tmpDir);
+            DB.isSynced();
+            result = false;
+            overlayHelper.setSynchronizing();
+
+            System.out.println(io.goobox.sync.sia.SyncState.synchronizing.toJson());
+        }};
+        app.refreshOverlayIcon(tmpDir);
 
     }
 

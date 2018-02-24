@@ -130,7 +130,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
                 logger.error("Failed to download {}: {}", file.getName(), err);
                 if (syncFile.getState() == SyncState.DOWNLOADING) {
                     DB.setDownloadFailed(file.getName());
-                    App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(localPath -> app.getOverlayHelper().refresh(localPath)));
+                    App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(app::refreshOverlayIcon));
                 }
                 return;
             }
@@ -167,7 +167,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
                             }
                         });
                         DB.setSynced(file, file.getLocalPath());
-                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
                         return;
                     }
 
@@ -246,7 +246,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
                     Files.deleteIfExists(tempPath);
                     if (syncFile.getState() == SyncState.DOWNLOADING) {
                         DB.setSynced(file, file.getLocalPath());
-                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
                     }
 
                 } catch (final IOException e) {

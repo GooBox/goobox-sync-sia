@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -93,7 +92,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void uploadFile(@Mocked App app, @Mocked OverlayHelper overlayHelper) throws ApiException, IOException {
+    public void uploadFile(@Mocked App app) throws ApiException, IOException {
 
         DB.addNewFile(name, localPath);
         DB.setUploading(name);
@@ -108,11 +107,7 @@ public class CheckUploadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckUploadStateTask(this.ctx).call();

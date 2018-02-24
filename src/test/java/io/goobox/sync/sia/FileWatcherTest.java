@@ -18,7 +18,6 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -59,9 +58,6 @@ public class FileWatcherTest {
 
     @Mocked
     private App app;
-
-    @Mocked
-    private OverlayHelper overlayHelper;
 
     @Mocked
     private DirectoryWatcher watchService;
@@ -198,11 +194,7 @@ public class FileWatcherTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
@@ -326,11 +318,7 @@ public class FileWatcherTest {
                 new Expectations() {{
                     App.getInstance();
                     result = Optional.of(app);
-
-                    app.getOverlayHelper();
-                    result = overlayHelper;
-
-                    overlayHelper.refresh(localPath);
+                    app.refreshOverlayIcon(localPath);
                 }};
 
                 Files.write(localPath, dummyData.getBytes());

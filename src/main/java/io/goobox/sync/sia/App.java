@@ -36,7 +36,6 @@ import io.goobox.sync.sia.task.DownloadCloudFileTask;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
 import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
-import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import io.goobox.sync.sia.task.WaitContractsTask;
 import io.goobox.sync.sia.task.WaitSynchronizationTask;
@@ -191,7 +190,7 @@ public final class App implements Callable<Integer> {
             App.app = app;
 
             if (cmd.hasOption("output-events")) {
-                app.setOutputEvents();
+                app.enableOutputEvents();
             }
 
             // Start the app.
@@ -273,7 +272,7 @@ public final class App implements Callable<Integer> {
         }));
     }
 
-    void setOutputEvents() {
+    void enableOutputEvents() {
         this.outputEvents = true;
     }
 
@@ -282,10 +281,23 @@ public final class App implements Callable<Integer> {
         return ctx;
     }
 
-    @NotNull
-    public OverlayHelper getOverlayHelper() {
-        return overlayHelper;
+    public void refreshOverlayIcon(@NotNull Path localPath) {
+        this.overlayHelper.refresh(localPath);
+
+        if (DB.isSynced()) {
+            this.overlayHelper.setOK();
+            if (this.outputEvents) {
+                System.out.println(io.goobox.sync.sia.SyncState.idle.toJson());
+            }
+        } else {
+            this.overlayHelper.setSynchronizing();
+            if (this.outputEvents) {
+                System.out.println(io.goobox.sync.sia.SyncState.synchronizing.toJson());
+            }
+        }
+
     }
+
 
     synchronized void startSiaDaemon() {
 
@@ -312,6 +324,8 @@ public final class App implements Callable<Integer> {
      * @return 0 if no error occurs otherwise exit code.
      */
     public Integer call() throws IOException {
+
+        this.overlayHelper.setSynchronizing();
 
         if (!checkAndCreateSyncDir()) {
             return 1;
@@ -388,9 +402,11 @@ public final class App implements Callable<Integer> {
         executor.scheduleWithFixedDelay(
                 new RetryableTask(new CheckUploadStateTask(ctx), startSiaDaemonTask),
                 45, 60, TimeUnit.SECONDS);
+
         if (this.outputEvents) {
-            executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
+            System.out.println(io.goobox.sync.sia.SyncState.startSynchronization.toJson());
         }
+
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
         return 0;
@@ -495,7 +511,7 @@ public final class App implements Callable<Integer> {
                     try {
                         logger.debug("File {} has been modified", localPath);
                         DB.setModified(name, localPath);
-                        this.getOverlayHelper().refresh(localPath);
+                        this.refreshOverlayIcon(localPath);
                     } catch (IOException e) {
                         logger.error("Failed to update state of {}: {}", localPath, e.getMessage());
                     }
@@ -517,7 +533,7 @@ public final class App implements Callable<Integer> {
             if (!localPath.toFile().exists()) {
                 logger.debug("File {} has been deleted", localPath);
                 DB.setDeleted(ctx.getName(localPath));
-                this.getOverlayHelper().refresh(localPath);
+                this.refreshOverlayIcon(localPath);
             }
 
         }));
