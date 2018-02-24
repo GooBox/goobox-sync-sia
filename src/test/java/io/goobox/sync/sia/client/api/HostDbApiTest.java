@@ -26,12 +26,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * API tests for HostDBApi
+ * API tests for HostDbApi
  */
 @Ignore
-public class HostDBApiTest {
+public class HostDbApiTest {
 
-    private final HostDBApi api = new HostDBApi();
+    private final HostDbApi api = new HostDbApi();
 
     
     /**

@@ -13,17 +13,21 @@
 
 package io.goobox.sync.sia.client.api.model;
 
+import java.util.Objects;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-
-import java.util.Objects;
+import java.io.IOException;
 
 /**
- * AllowanceInfo dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.
+ * Allowance dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.
  */
-@ApiModel(description = "AllowanceInfo dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@ApiModel(description = "Allowance dictates how much the renter is allowed to spend in a given period. Note that funds are spent on both storage and bandwidth.")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2008SettingsAllowance {
   @SerializedName("funds")
   private String funds = null;
@@ -154,6 +158,6 @@ public class InlineResponse2008SettingsAllowance {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

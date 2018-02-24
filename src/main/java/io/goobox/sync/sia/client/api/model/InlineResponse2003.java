@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse2003
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2003 {
   @SerializedName("blocksmined")
   private Integer blocksmined = null;
@@ -86,7 +86,7 @@ public class InlineResponse2003 {
    * @return cpumining
   **/
   @ApiModelProperty(example = "false", value = "true if the cpu miner is active.")
-  public Boolean getCpumining() {
+  public Boolean isCpumining() {
     return cpumining;
   }
 
@@ -157,6 +157,6 @@ public class InlineResponse2003 {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

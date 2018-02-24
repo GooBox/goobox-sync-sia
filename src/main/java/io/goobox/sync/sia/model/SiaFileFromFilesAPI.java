@@ -48,7 +48,7 @@ public class SiaFileFromFilesAPI extends AbstractSiaFile {
     }
 
     public boolean getAvailable() {
-        return this.rawFile.getAvailable();
+        return this.rawFile.isAvailable();
     }
 
     @NotNull

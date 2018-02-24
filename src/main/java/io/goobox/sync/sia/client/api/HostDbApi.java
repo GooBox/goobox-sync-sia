@@ -37,14 +37,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HostDBApi {
+public class HostDbApi {
     private ApiClient apiClient;
 
-    public HostDBApi() {
+    public HostDbApi() {
         this(Configuration.getDefaultApiClient());
     }
 
-    public HostDBApi(ApiClient apiClient) {
+    public HostDbApi(ApiClient apiClient) {
         this.apiClient = apiClient;
     }
 
@@ -66,13 +66,14 @@ public class HostDBApi {
      */
     public com.squareup.okhttp.Call hostdbActiveGetCall(Integer numhosts, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/hostdb/active";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (numhosts != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "numhosts", numhosts));
+        localVarQueryParams.addAll(apiClient.parameterToPair("numhosts", numhosts));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -103,20 +104,16 @@ public class HostDBApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostdbActiveGetValidateBeforeCall(Integer numhosts, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostdbActiveGetCall(numhosts, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -187,11 +184,12 @@ public class HostDBApi {
      */
     public com.squareup.okhttp.Call hostdbAllGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/hostdb/all";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -222,20 +220,16 @@ public class HostDBApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostdbAllGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostdbAllGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -304,12 +298,13 @@ public class HostDBApi {
      */
     public com.squareup.okhttp.Call hostdbHostsPubkeyGetCall(String pubkey, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/hostdb/hosts/{pubkey}"
             .replaceAll("\\{" + "pubkey" + "\\}", apiClient.escapeString(pubkey.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -340,9 +335,9 @@ public class HostDBApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostdbHostsPubkeyGetValidateBeforeCall(String pubkey, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -351,14 +346,10 @@ public class HostDBApi {
             throw new ApiException("Missing the required parameter 'pubkey' when calling hostdbHostsPubkeyGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = hostdbHostsPubkeyGetCall(pubkey, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**

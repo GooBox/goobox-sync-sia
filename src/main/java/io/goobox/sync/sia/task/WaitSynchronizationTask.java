@@ -47,7 +47,7 @@ public class WaitSynchronizationTask implements Callable<Void> {
         while (true) {
 
             final InlineResponse2006 res = api.consensusGet();
-            if (res.getSynced()) {
+            if (res.isSynced()) {
 
                 logger.info("Consensus DB is synchronized");
                 return null;

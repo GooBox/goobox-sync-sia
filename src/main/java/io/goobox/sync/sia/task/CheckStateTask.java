@@ -165,7 +165,7 @@ public class CheckStateTask implements Callable<Void> {
 
         // Key: file name, Value: file object.
         final Map<String, SiaFile> fileMap = new HashMap<>();
-        files.stream().filter(InlineResponse20011Files::getAvailable).forEach(file -> {
+        files.stream().filter(InlineResponse20011Files::isAvailable).forEach(file -> {
 
             final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
             if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {

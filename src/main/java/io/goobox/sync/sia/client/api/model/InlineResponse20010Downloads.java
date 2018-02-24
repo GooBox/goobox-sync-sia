@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse20010Downloads
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse20010Downloads {
   @SerializedName("siapath")
   private String siapath = null;
@@ -203,6 +203,6 @@ public class InlineResponse20010Downloads {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

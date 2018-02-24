@@ -27,7 +27,7 @@ import java.io.IOException;
  * A set of scores as determined by the renter. Generally, the host&#39;s final final score is all of the values multiplied together. Modified renters may have additional criteria that they use to judge a host, or may ignore certin criteia. In general, these fields should only be used as a loose guide for the score of a host, as every renter sees the world differently and uses different metrics to evaluate hosts. 
  */
 @ApiModel(description = "A set of scores as determined by the renter. Generally, the host's final final score is all of the values multiplied together. Modified renters may have additional criteria that they use to judge a host, or may ignore certin criteia. In general, these fields should only be used as a loose guide for the score of a host, as every renter sees the world differently and uses different metrics to evaluate hosts. ")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2002EntryScorebreakdown {
   @SerializedName("score")
   private Integer score = null;
@@ -250,6 +250,6 @@ public class InlineResponse2002EntryScorebreakdown {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

@@ -85,7 +85,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
         final InlineResponse20013 walletInfo = wallet.walletGet();
 
         // If the wallet is locked, unlock it first.
-        if (!walletInfo.getUnlocked()) {
+        if (!walletInfo.isUnlocked()) {
             logger.info("Unlocking the wallet");
             wallet.walletUnlockPost(this.ctx.getConfig().getPrimarySeed());
         }

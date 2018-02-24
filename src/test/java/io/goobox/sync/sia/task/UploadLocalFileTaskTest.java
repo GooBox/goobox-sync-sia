@@ -119,7 +119,7 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(cloudPath);
             result = slashedCloudPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
 
             App.getInstance();
             result = Optional.of(app);
@@ -144,7 +144,7 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(localPath);
             result = slashedLocalPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             result = new ApiException();
             times = UploadLocalFileTask.MaxRetry;
 
@@ -167,7 +167,7 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             times = 0;
 
             App.getInstance();
@@ -197,7 +197,7 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             times = 0;
 
             App.getInstance();
@@ -233,7 +233,7 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(cloudPath);
             result = slashedCloudPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             // At first time, the API call throws an exception.
             result = new ApiException();
             result = null;
