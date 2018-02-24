@@ -108,7 +108,7 @@ public final class CreateAllowance implements Runnable {
     @Override
     public void run() {
 
-        final CreateAllowanceTask task = new CreateAllowanceTask(new Context(this.cfg, APIUtils.getApiClient()), this.fund);
+        final CreateAllowanceTask task = new CreateAllowanceTask(new Context(this.cfg, APIUtils.getApiClient(this.cfg)), this.fund);
         int retry = 0;
         while (true) {
 
@@ -129,7 +129,7 @@ public final class CreateAllowance implements Runnable {
 
                     logger.info("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
-                        daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
+                        daemon = new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
 
                         logger.info("Starting a sia daemon");

@@ -245,7 +245,7 @@ public final class App implements Callable<Integer> {
         final Path configPath = Utils.getDataDir().resolve(ConfigFileName);
         this.cfg = APIUtils.loadConfig(configPath);
 
-        final ApiClient apiClient = APIUtils.getApiClient();
+        final ApiClient apiClient = APIUtils.getApiClient(cfg);
         this.ctx = new Context(cfg, apiClient);
 
         if (syncDir != null) {
@@ -294,7 +294,7 @@ public final class App implements Callable<Integer> {
 
         if (this.daemon == null || this.daemon.isClosed()) {
 
-            this.daemon = new SiaDaemon(this.cfg.getDataDir().resolve("sia"));
+            this.daemon = new SiaDaemon(this.cfg, this.cfg.getDataDir().resolve("sia"));
             try {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));

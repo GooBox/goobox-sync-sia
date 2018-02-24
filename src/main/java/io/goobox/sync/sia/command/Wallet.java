@@ -100,7 +100,7 @@ public final class Wallet implements Runnable {
     @Override
     public void run() {
 
-        final GetWalletInfoTask task = new GetWalletInfoTask(new Context(this.cfg, APIUtils.getApiClient()), this.force);
+        final GetWalletInfoTask task = new GetWalletInfoTask(new Context(this.cfg, APIUtils.getApiClient(this.cfg)), this.force);
         int retry = 0;
         while (true) {
 
@@ -121,7 +121,7 @@ public final class Wallet implements Runnable {
 
                     logger.info("Failed to access sia daemon: {}", APIUtils.getErrorMessage(e));
                     if (daemon == null) {
-                        daemon = new SiaDaemon(cfg.getDataDir().resolve("sia"));
+                        daemon = new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
                         Runtime.getRuntime().addShutdownHook(new Thread(() -> daemon.close()));
 
                         logger.info("Starting a sia daemon");

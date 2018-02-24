@@ -26,6 +26,8 @@ import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.lang3.SystemUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -41,6 +43,18 @@ import static org.junit.Assume.assumeFalse;
 
 @RunWith(JMockit.class)
 public class APIUtilsTest {
+
+    private Path cfgPath;
+
+    @Before
+    public void setUp() throws IOException {
+        cfgPath = Files.createTempFile(null, null);
+    }
+
+    @After
+    public void tearDown() throws IOException {
+        Files.deleteIfExists(cfgPath);
+    }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
@@ -84,17 +98,21 @@ public class APIUtilsTest {
     public void getApiClient(@Mocked ApiClient apiClient) {
 
         final OkHttpClient httpClient = new OkHttpClient();
+        final String siadAddress = "192.168.0.1:9985";
+
+        final Config cfg = new Config(cfgPath);
+        cfg.setSiadApiAddress(siadAddress);
         new Expectations(httpClient) {{
             new ApiClient();
             result = apiClient;
-            apiClient.setBasePath("http://localhost:9980");
+            apiClient.setBasePath(String.format("http://%s", siadAddress));
 
             apiClient.getHttpClient();
             result = httpClient;
             httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
             httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
         }};
-        APIUtils.getApiClient();
+        APIUtils.getApiClient(cfg);
 //        assertEquals(apiClient, APIUtils.getApiClient());
 
     }

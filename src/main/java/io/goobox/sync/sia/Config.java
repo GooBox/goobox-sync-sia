@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,8 @@ import java.util.Properties;
 @SuppressWarnings("WeakerAccess")
 public class Config {
 
+    static final Logger logger = LoggerFactory.getLogger(Config.class);
+
     static final String UserName = "username";
     static final String PrimarySeed = "primary-seed";
     static final String SyncDir = "sync-folder";
@@ -47,11 +50,12 @@ public class Config {
     static final String DataPieces = "data-pieces";
     static final String ParityPieces = "parity-pieces";
     static final String DisableAutoAllocation = "disable-auto-allocation";
-    static final Logger logger = LoggerFactory.getLogger(Config.class);
+    static final String SiadApiAddress = "siad-api-address";
+    static final String SiadGatewayAddress = "siad-gateway-address";
 
-    static final int DefaultDataPieces = 10;
-    static final int DefaultParityPieces = 20;
     static final int MinimumParityPieces = 12;
+    static final String DefaultApiAddress = "127.0.0.1:9983";
+    static final String DefaultGatewayAddress = ":9984";
 
     /**
      * Path to this config file.
@@ -83,20 +87,39 @@ public class Config {
 
     /**
      * The number of data pieces to use when erasure coding the file.
+     * According to https://github.com/NebulousLabs/Sia/blob/80cb4bdf63ba45227e62613694d553d09e95bc9f/node/api/renter.go#L536
+     * it can be null.
      */
-    private int dataPieces;
+    @Nullable
+    private Integer dataPieces;
 
     /**
      * The number of parity pieces to use when erasure coding the file. Total
      * redundancy of the file is (datapieces+paritypieces)/datapieces. Minimum
      * required: 12
+     * <p>
+     * According to https://github.com/NebulousLabs/Sia/blob/80cb4bdf63ba45227e62613694d553d09e95bc9f/node/api/renter.go#L536
+     * it can be null.
      */
-    private int parityPieces;
+    @Nullable
+    private Integer parityPieces;
 
     /**
      * If true, disable auto funds allocation;
      */
     private boolean disableAutoAllocation;
+
+    /**
+     * Which host:port the API server listens on.
+     */
+    @NotNull
+    private String siadApiAddress;
+
+    /**
+     * Which port the gateway listens on.
+     */
+    @NotNull
+    private String siadGatewayAddress;
 
     /**
      * Create a config object associated with a given path.
@@ -111,9 +134,11 @@ public class Config {
         this.primarySeed = "";
         this.syncDir = Utils.getSyncDir().toAbsolutePath();
         this.dataDir = Utils.getDataDir().toAbsolutePath();
-        this.dataPieces = DefaultDataPieces;
-        this.parityPieces = DefaultParityPieces;
+        this.dataPieces = null;
+        this.parityPieces = null;
         this.disableAutoAllocation = false;
+        this.siadApiAddress = DefaultApiAddress;
+        this.siadGatewayAddress = DefaultGatewayAddress;
     }
 
     @NotNull
@@ -153,19 +178,21 @@ public class Config {
         return dataDir;
     }
 
-    public int getDataPieces() {
+    @Nullable
+    public Integer getDataPieces() {
         return dataPieces;
     }
 
-    void setDataPieces(int dataPieces) {
+    void setDataPieces(@Nullable Integer dataPieces) {
         this.dataPieces = dataPieces;
     }
 
-    public int getParityPieces() {
+    @Nullable
+    public Integer getParityPieces() {
         return parityPieces;
     }
 
-    void setParityPieces(int parityPieces) {
+    void setParityPieces(@Nullable Integer parityPieces) {
         this.parityPieces = parityPieces;
     }
 
@@ -175,6 +202,24 @@ public class Config {
 
     public boolean isDisableAutoAllocation() {
         return disableAutoAllocation;
+    }
+
+    @NotNull
+    public String getSiadApiAddress() {
+        return siadApiAddress;
+    }
+
+    public void setSiadApiAddress(@NotNull String siadApiAddress) {
+        this.siadApiAddress = siadApiAddress;
+    }
+
+    @NotNull
+    public String getSiadGatewayAddress() {
+        return siadGatewayAddress;
+    }
+
+    public void setSiadGatewayAddress(@NotNull String siadGatewayAddress) {
+        this.siadGatewayAddress = siadGatewayAddress;
     }
 
     @Override
@@ -187,18 +232,23 @@ public class Config {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Config config = (Config) o;
-        return dataPieces == config.dataPieces &&
-                parityPieces == config.parityPieces &&
-                disableAutoAllocation == config.disableAutoAllocation &&
+        return disableAutoAllocation == config.disableAutoAllocation &&
+                Objects.equals(filePath, config.filePath) &&
                 Objects.equals(userName, config.userName) &&
                 Objects.equals(primarySeed, config.primarySeed) &&
                 Objects.equals(syncDir, config.syncDir) &&
-                Objects.equals(dataDir, config.dataDir);
+                Objects.equals(dataDir, config.dataDir) &&
+                Objects.equals(dataPieces, config.dataPieces) &&
+                Objects.equals(parityPieces, config.parityPieces) &&
+                Objects.equals(siadApiAddress, config.siadApiAddress) &&
+                Objects.equals(siadGatewayAddress, config.siadGatewayAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userName, primarySeed, syncDir, dataDir, dataPieces, parityPieces, disableAutoAllocation);
+        return Objects.hash(
+                filePath, userName, primarySeed, syncDir, dataDir, dataPieces,
+                parityPieces, disableAutoAllocation, siadApiAddress, siadGatewayAddress);
     }
 
     /**
@@ -209,13 +259,26 @@ public class Config {
     public void save() throws IOException {
 
         final Properties props = new Properties();
-        props.setProperty(UserName, this.userName);
+        if (!this.userName.isEmpty()) {
+            props.setProperty(UserName, this.userName);
+        }
         props.setProperty(PrimarySeed, this.primarySeed);
         props.setProperty(SyncDir, this.syncDir.toAbsolutePath().toString());
         props.setProperty(DataDir, this.dataDir.toAbsolutePath().toString());
-        props.setProperty(DataPieces, String.valueOf(this.dataPieces));
-        props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
+        if (this.dataPieces != null) {
+            props.setProperty(DataPieces, String.valueOf(this.dataPieces));
+        }
+        if (this.parityPieces != null) {
+            props.setProperty(ParityPieces, String.valueOf(this.parityPieces));
+        }
         props.setProperty(DisableAutoAllocation, String.valueOf(this.disableAutoAllocation));
+
+        if (!this.siadApiAddress.equals(DefaultApiAddress)) {
+            props.setProperty(SiadApiAddress, this.siadApiAddress);
+        }
+        if (!this.siadGatewayAddress.equals(DefaultGatewayAddress)) {
+            props.setProperty(SiadGatewayAddress, this.siadGatewayAddress);
+        }
 
         try (final BufferedWriter output = Files.newBufferedWriter(this.filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             props.store(output, "");
@@ -253,24 +316,40 @@ public class Config {
             cfg.dataDir = Paths.get(props.getProperty(DataDir)).toAbsolutePath();
         }
 
-        try {
-            cfg.setDataPieces(Integer.valueOf(props.getProperty(DataPieces, String.valueOf(DefaultDataPieces))));
-        } catch (final NumberFormatException e) {
-            logger.warn("Invalid data pieces {}", props.getProperty(DataPieces));
+        final String dataPieces = props.getProperty(DataPieces);
+        if (dataPieces != null) {
+            try {
+                cfg.setDataPieces(Integer.valueOf(dataPieces));
+            } catch (final NumberFormatException e) {
+                logger.warn("Invalid data pieces {}", dataPieces);
+            }
         }
-
+        final String parityPieces = props.getProperty(ParityPieces);
         try {
-            final int parityPieces = Integer.valueOf(props.getProperty(ParityPieces, String.valueOf(DefaultParityPieces)));
-            if (parityPieces >= MinimumParityPieces) {
-                cfg.setParityPieces(parityPieces);
+            final int value = Integer.valueOf(parityPieces);
+            if (value >= MinimumParityPieces) {
+                cfg.setParityPieces(value);
             } else {
-                logger.warn("Invalid parity pieces {}, minimum {} pieces are required", cfg.parityPieces, MinimumParityPieces);
+                logger.warn("Invalid parity pieces {}, minimum {} pieces are required", value, MinimumParityPieces);
             }
         } catch (final NumberFormatException e) {
-            logger.warn("Invalid parity pieces {}", props.getProperty(ParityPieces));
+            logger.warn("Invalid parity pieces {}", parityPieces);
+        }
+        if (cfg.getDataPieces() == null || cfg.getParityPieces() == null) {
+            cfg.setDataPieces(null);
+            cfg.setParityPieces(null);
         }
 
         cfg.setDisableAutoAllocation(Boolean.parseBoolean(props.getProperty(DisableAutoAllocation, "false")));
+
+        final String apiAddress = props.getProperty(SiadApiAddress);
+        if (apiAddress != null) {
+            cfg.setSiadApiAddress(apiAddress);
+        }
+        final String gatewayAddress = props.getProperty(SiadGatewayAddress);
+        if (gatewayAddress != null) {
+            cfg.setSiadGatewayAddress(gatewayAddress);
+        }
 
         logger.info("Sync directory: {}", cfg.getSyncDir());
         logger.info(

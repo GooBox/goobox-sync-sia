@@ -97,11 +97,14 @@ public class SiaDaemon extends Thread implements Closeable {
     }
 
     @NotNull
+    private final Config cfg;
+    @NotNull
     private final Path dataDir;
     @Nullable
     private Process process;
 
-    public SiaDaemon(@NotNull final Path dataDir) {
+    public SiaDaemon(@NotNull final Config cfg, @NotNull final Path dataDir) {
+        this.cfg = cfg;
         this.dataDir = dataDir.toAbsolutePath();
     }
 
@@ -113,8 +116,8 @@ public class SiaDaemon extends Thread implements Closeable {
 
         final ProcessBuilder cmd = new ProcessBuilder(
                 this.getDaemonPath().toString(),
-                "--api-addr=127.0.0.1:9980",
-                "--rpc-addr=:9981",
+                String.format("--api-addr=%s", this.cfg.getSiadApiAddress()),
+                String.format("--rpc-addr=%s", this.cfg.getSiadGatewayAddress()),
                 String.format("--sia-directory=%s", this.dataDir),
                 "--modules=cgrtw");
         cmd.redirectErrorStream(true);

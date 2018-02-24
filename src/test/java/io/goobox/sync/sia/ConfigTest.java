@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -46,9 +47,11 @@ public class ConfigTest {
     private String primarySeed;
     private Path syncDir;
     private Path dataDir;
-    private int dataPieces;
-    private int parityPieces;
+    private Integer dataPieces;
+    private Integer parityPieces;
     private boolean disableAutoAllocation;
+    private String siadApiAddress;
+    private String siadGatewayAddress;
 
     private Path tmpPath;
 
@@ -74,6 +77,8 @@ public class ConfigTest {
         this.dataPieces = 5;
         this.parityPieces = 12;
         this.disableAutoAllocation = false;
+        this.siadApiAddress = "127.0.0.1:9980";
+        this.siadGatewayAddress = ":9999";
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -89,6 +94,8 @@ public class ConfigTest {
         assertEquals(dataPieces, cfg.getDataPieces());
         assertEquals(parityPieces, cfg.getParityPieces());
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(siadApiAddress, cfg.getSiadApiAddress());
+        assertEquals(siadGatewayAddress, cfg.getSiadGatewayAddress());
         assertEquals(tmpPath, cfg.getFilePath());
 
     }
@@ -101,6 +108,8 @@ public class ConfigTest {
         this.dataPieces = 5;
         this.parityPieces = 1;
         this.disableAutoAllocation = true;
+        this.siadApiAddress = "127.0.0.1:9980";
+        this.siadGatewayAddress = ":9999";
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -111,9 +120,11 @@ public class ConfigTest {
         final Config cfg = Config.load(tmpPath);
         assertEquals(userName, cfg.getUserName());
         assertEquals(primarySeed, cfg.getPrimarySeed());
-        assertEquals(dataPieces, cfg.getDataPieces());
-        assertEquals(Config.DefaultParityPieces, cfg.getParityPieces());
+        assertNull(cfg.getDataPieces());
+        assertNull(cfg.getParityPieces());
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(siadApiAddress, cfg.getSiadApiAddress());
+        assertEquals(siadGatewayAddress, cfg.getSiadGatewayAddress());
         assertEquals(tmpPath, cfg.getFilePath());
 
     }
@@ -148,6 +159,37 @@ public class ConfigTest {
     }
 
     @Test
+    public void loadWithoutSiadAddress() throws IOException {
+
+        this.userName = "testuser@sample.com";
+        this.primarySeed = "a b c d e f g";
+        this.syncDir = Paths.get("sync-dir");
+        this.dataDir = Paths.get("data-dir");
+        this.dataPieces = 5;
+        this.parityPieces = 12;
+        this.disableAutoAllocation = false;
+
+        final File tmpFile = tmpPath.toFile();
+        final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
+        writer.write(this.getPropertiesString());
+        writer.flush();
+        writer.close();
+
+        final Config cfg = Config.load(tmpPath);
+        assertEquals(userName, cfg.getUserName());
+        assertEquals(primarySeed, cfg.getPrimarySeed());
+        assertEquals(syncDir.toAbsolutePath(), cfg.getSyncDir());
+        assertEquals(dataDir.toAbsolutePath(), cfg.getDataDir());
+        assertEquals(dataPieces, cfg.getDataPieces());
+        assertEquals(parityPieces, cfg.getParityPieces());
+        assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
+        assertEquals(Config.DefaultApiAddress, cfg.getSiadApiAddress());
+        assertEquals(Config.DefaultGatewayAddress, cfg.getSiadGatewayAddress());
+        assertEquals(tmpPath, cfg.getFilePath());
+
+    }
+
+    @Test
     public void save() throws IOException {
 
         final Path syncDir = Paths.get("sync-dir");
@@ -158,6 +200,8 @@ public class ConfigTest {
         cfg.setDataPieces(5);
         cfg.setParityPieces(12);
         cfg.setSyncDir(syncDir);
+        cfg.setSiadApiAddress("192.168.0.1:9982");
+        cfg.setSiadGatewayAddress(":9999");
         Deencapsulation.setField(cfg, "dataDir", dataDir);
 
         cfg.save();
@@ -196,26 +240,34 @@ public class ConfigTest {
 
     private String getPropertiesString() {
 
+        final String KeyValue = "%s = %s";
         final ByteArrayOutputStream buf = new ByteArrayOutputStream();
         final PrintWriter writer = new PrintWriter(buf);
 
-        writer.println(String.format("%s = %s", Config.UserName, userName));
-        writer.println(String.format("%s = %s", Config.PrimarySeed, primarySeed));
-        writer.println(String.format("%s = %s", Config.DataPieces, dataPieces));
-        writer.println(String.format("%s = %s", Config.ParityPieces, parityPieces));
+        writer.println(String.format(KeyValue, Config.UserName, userName));
+        writer.println(String.format(KeyValue, Config.PrimarySeed, primarySeed));
+        writer.println(String.format(KeyValue, Config.DataPieces, dataPieces));
+        writer.println(String.format(KeyValue, Config.ParityPieces, parityPieces));
 
         if (syncDir != null) {
-            writer.println(String.format("%s = %s", Config.SyncDir, syncDir));
+            writer.println(String.format(KeyValue, Config.SyncDir, syncDir));
         }
 
         if (dataDir != null) {
-            writer.println(String.format("%s = %s", Config.DataDir, dataDir));
+            writer.println(String.format(KeyValue, Config.DataDir, dataDir));
         }
 
         if (disableAutoAllocation) {
-            writer.println(String.format("%s = %s", Config.DisableAutoAllocation, true));
+            writer.println(String.format(KeyValue, Config.DisableAutoAllocation, true));
         }
 
+        if (siadApiAddress != null) {
+            writer.println(String.format(KeyValue, Config.SiadApiAddress, siadApiAddress));
+        }
+
+        if (siadGatewayAddress != null) {
+            writer.println(String.format(KeyValue, Config.SiadGatewayAddress, siadGatewayAddress));
+        }
 
         writer.flush();
         System.out.println(buf.toString());

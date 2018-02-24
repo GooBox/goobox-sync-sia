@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia;
 
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
@@ -96,17 +95,12 @@ public class AppTest {
         new UtilsMock();
 
         this.tmpDir = UtilsMock.syncDir;
-        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
+        final Config cfg = new Config(UtilsMock.dataDir.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
+        cfg.save();
 
-        final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
-
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
-
+        final ApiClient apiClient = APIUtils.getApiClient(cfg);
         this.ctx = new Context(cfg, apiClient);
 
     }
@@ -312,7 +306,7 @@ public class AppTest {
             APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
             result = ctx.getConfig();
 
-            APIUtils.getApiClient();
+            APIUtils.getApiClient(ctx.getConfig());
             result = ctx.getApiClient();
         }};
 
@@ -329,7 +323,7 @@ public class AppTest {
             APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
             result = ctx.getConfig();
 
-            APIUtils.getApiClient();
+            APIUtils.getApiClient(ctx.getConfig());
             result = ctx.getApiClient();
         }};
 
@@ -948,8 +942,9 @@ public class AppTest {
     @Test
     public void startSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
 
+        final Config cfg = ctx.getConfig();
         new Expectations() {{
-            new SiaDaemon(Utils.getDataDir().resolve("sia"));
+            new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
             result = daemon;
             daemon.checkAndDownloadConsensusDB();
             daemon.start();

@@ -20,6 +20,7 @@ package io.goobox.sync.sia.command;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
+import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiException;
@@ -28,6 +29,7 @@ import io.goobox.sync.sia.mocks.SystemMock;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import io.goobox.sync.sia.task.CreateAllowanceTask;
+import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -52,11 +54,12 @@ public class CreateAllowanceTest {
     @Mocked
     private CreateAllowanceTask createAllowance;
 
+    private Path cfgPath;
     private Path tempDir;
     private AllowanceInfo allowanceInfo;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         final double fund = 2234.85;
         final int host = 10;
         final long period = 1234;
@@ -80,6 +83,8 @@ public class CreateAllowanceTest {
         tempDir = Files.createTempDirectory(null);
         UtilsMock.dataDir = tempDir;
         new UtilsMock();
+
+        cfgPath = tempDir.resolve(App.ConfigFileName);
     }
 
     /**
@@ -124,10 +129,14 @@ public class CreateAllowanceTest {
     }
 
     @Test
-    public void withoutRunningSiaDaemon(@Mocked SiaDaemon daemon) throws ApiException {
+    public void withoutRunningSiaDaemon(@Mocked SiaDaemon daemon) throws ApiException, IOException {
+        final Config cfg = new Config(cfgPath);
+        Deencapsulation.setField(cfg, "dataDir", Utils.getDataDir());
+        cfg.save();
+
         new Expectations(System.out) {{
             // Starting sia daemon.
-            new SiaDaemon(Utils.getDataDir().resolve("sia"));
+            new SiaDaemon(cfg, cfg.getDataDir().resolve("sia"));
             result = daemon;
             daemon.start();
 

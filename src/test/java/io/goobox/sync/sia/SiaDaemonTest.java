@@ -57,19 +57,24 @@ import static org.junit.Assert.fail;
 @RunWith(JMockit.class)
 public class SiaDaemonTest {
 
+    private Path cfgPath;
+    private Config cfg;
     private Path dataDir;
     private Path tempDir;
     private SiaDaemon daemon;
 
     @Before
     public void setUp() throws IOException {
+        cfgPath = Files.createTempFile(null, null);
+        cfg = new Config(cfgPath);
         dataDir = Files.createTempDirectory(null);
         tempDir = Files.createTempDirectory(null);
-        daemon = new SiaDaemon(dataDir);
+        daemon = new SiaDaemon(cfg, dataDir);
     }
 
     @After
     public void tearDown() throws IOException {
+        Files.deleteIfExists(cfgPath);
         FileUtils.deleteDirectory(dataDir.toFile());
         FileUtils.deleteDirectory(tempDir.toFile());
     }
@@ -294,8 +299,8 @@ public class SiaDaemonTest {
 
         new Expectations() {{
             final ProcessBuilder cmd = new ProcessBuilder(daemonPath.toString(),
-                    "--api-addr=127.0.0.1:9980",
-                    "--rpc-addr=:9981",
+                    String.format("--api-addr=%s", cfg.getSiadApiAddress()),
+                    String.format("--rpc-addr=%s", cfg.getSiadGatewayAddress()),
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
             cmd.redirectErrorStream(true);
@@ -329,8 +334,8 @@ public class SiaDaemonTest {
 
         new Expectations(ProcessBuilder.class) {{
             new ProcessBuilder(daemonPath.toString(),
-                    "--api-addr=127.0.0.1:9980",
-                    "--rpc-addr=:9981",
+                    String.format("--api-addr=%s", cfg.getSiadApiAddress()),
+                    String.format("--rpc-addr=%s", cfg.getSiadGatewayAddress()),
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
             result = dummyProc;
