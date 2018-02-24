@@ -39,7 +39,7 @@ apply plugin: "com.github.kt3k.coveralls"
 
 version = '0.1.2'
 mainClassName = 'io.goobox.sync.sia.App'
-applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.OnErrorConsoleStatusListener"]
+applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.NopStatusListener"]
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
