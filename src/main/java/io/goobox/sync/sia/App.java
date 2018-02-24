@@ -19,7 +19,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.common.overlay.OverlayIcon;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -244,8 +243,6 @@ public final class App implements Callable<Integer> {
     public App(@Nullable final Path syncDir) {
         final Path configPath = Utils.getDataDir().resolve(ConfigFileName);
         this.cfg = APIUtils.loadConfig(configPath);
-
-        final ApiClient apiClient = APIUtils.getApiClient(cfg);
         this.ctx = new Context(cfg);
 
         if (syncDir != null) {
