@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -80,12 +81,24 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
             return;
         }
 
-        if (Files.isDirectory(event.path())) {
-            logger.trace("{} is a directory and will be ignored", event.path());
-            return;
-        }
         if (Utils.isExcluded(event.path())) {
             logger.debug("{} is excluded", event.path());
+            return;
+        }
+
+        if (Files.isDirectory(event.path())) {
+            if (event.eventType() == DirectoryChangeEvent.EventType.CREATE) {
+                logger.trace("directory {} is created at {}", event.path(), now);
+                try {
+                    Files.walk(event.path())
+                            .filter(path -> !Files.isDirectory(path))
+                            .forEach(path -> trackingFiles.put(path, now));
+                } catch (IOException | UncheckedIOException e) {
+                    logger.error("Failed walking the file tree: {}", e.getMessage());
+                }
+            } else {
+                logger.trace("{} is a directory and will be ignored", event.path());
+            }
             return;
         }
 
