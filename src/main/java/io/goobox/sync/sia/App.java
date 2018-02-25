@@ -446,7 +446,7 @@ public final class App implements Callable<Integer> {
             return true;
         } else {
             try {
-                Files.createDirectory(path);
+                Files.createDirectories(path);
                 logger.info("Folder {} has been created", path);
                 return true;
             } catch (IOException e) {
