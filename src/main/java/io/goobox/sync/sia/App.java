@@ -527,7 +527,7 @@ public final class App implements Callable<Integer> {
     void synchronizeDeletedFiles() {
         logger.debug("Checking deleted files");
 
-        DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+        DB.getFiles().forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
 
             if (!localPath.toFile().exists()) {
                 logger.debug("File {} has been deleted", localPath);
