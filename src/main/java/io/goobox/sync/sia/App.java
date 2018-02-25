@@ -251,6 +251,9 @@ public final class App implements Callable<Integer> {
 
         logger.debug("Loading icon overlay libraries");
         this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
+            if (Files.isDirectory(path)) {
+                return OverlayIcon.OK;
+            }
             final String name = cfg.getSyncDir().relativize(path).toString();
             final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
                 if (state.isSynced()) {
