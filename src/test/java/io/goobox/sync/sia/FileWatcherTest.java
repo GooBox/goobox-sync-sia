@@ -575,4 +575,59 @@ public class FileWatcherTest {
 
     }
 
+    @Test
+    public void onCreateDirectory() throws IOException {
+
+        final Path dir = this.tmpDir.resolve("sub-directory");
+        Files.createDirectories(dir);
+        this.localPath = dir.resolve(this.name);
+        Files.createFile(this.localPath);
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.CREATE, dir, 0));
+
+        final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+        assertFalse(trackingFiles.containsKey(dir));
+        assertTrue(trackingFiles.containsKey(this.localPath));
+
+    }
+
+    @Test
+    public void onDeleteDirectory() throws IOException {
+
+        final Path dir = this.tmpDir.resolve("sub-directory");
+        Files.createDirectories(dir);
+        this.localPath = dir.resolve(this.name);
+        Files.createFile(this.localPath);
+
+        final String name = this.tmpDir.relativize(this.localPath).toString();
+        DB.setModified(name, this.localPath);
+
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        new Expectations(executor) {{
+            executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
+        }};
+        new Expectations() {{
+            watchService.watchAsync(executor);
+        }};
+
+        final FileWatcher watcher = new FileWatcher(this.tmpDir, executor);
+        watcher.onEvent(new DirectoryChangeEvent(DirectoryChangeEvent.EventType.DELETE, dir, 0));
+
+        final Map<Path, Long> trackingFiles = Deencapsulation.getField(watcher, "trackingFiles");
+        assertFalse(trackingFiles.containsKey(dir));
+        assertFalse(trackingFiles.containsKey(this.localPath));
+
+        assertEquals(SyncState.DELETED, DB.get(name).get().getState());
+
+    }
+
 }
