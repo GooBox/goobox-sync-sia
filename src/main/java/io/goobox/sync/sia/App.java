@@ -326,6 +326,8 @@ public final class App implements Callable<Integer> {
      * @return 0 if no error occurs otherwise exit code.
      */
     public Integer call() throws IOException {
+        this.dumpDatabase();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::dumpDatabase));
 
         this.overlayHelper.setSynchronizing();
 
@@ -335,6 +337,9 @@ public final class App implements Callable<Integer> {
         if (!checkAndCreateDataDir()) {
             return 1;
         }
+
+        this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
+        this.synchronizeDeletedFiles();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         int retry = 0;
@@ -388,9 +393,6 @@ public final class App implements Callable<Integer> {
             }
 
         }
-
-        this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
-        this.synchronizeDeletedFiles();
 
         this.resumeTasks(ctx, executor);
 
@@ -570,6 +572,11 @@ public final class App implements Callable<Integer> {
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(Name, Description, opts, buffer.toString(), true);
 
+    }
+
+    private void dumpDatabase() {
+        DB.getFiles().forEach(
+                syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
     }
 
 }
