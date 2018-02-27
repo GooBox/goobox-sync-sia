@@ -24,6 +24,7 @@ import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
 import io.goobox.sync.sia.model.SiaFileFromFilesAPI;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.ConnectException;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class CheckUploadStateTask implements Callable<Void> {
@@ -64,36 +67,48 @@ public class CheckUploadStateTask implements Callable<Void> {
                     .stream()
                     .map(file -> new SiaFileFromFilesAPI(this.ctx, file))
                     .filter(siaFile -> siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix()))
-                    .forEach(siaFile -> DB.get(siaFile).ifPresent(syncFile -> {
+                    .forEach(siaFile -> {
 
-                        if (syncFile.getState() == SyncState.DELETED) {
-                            logger.debug("Since found remote file {} was deleted, delete the remote file", syncFile.getName());
+                        final Optional<SyncFile> syncFileOpt = DB.get(siaFile);
+                        if (syncFileOpt.isPresent()) {
+
+                            final SyncFile syncFile = syncFileOpt.get();
+                            if (syncFile.getState() != SyncState.UPLOADING) {
+                                logger.debug("Cancel uploading {} because it's not marked as UPLOADING: {}", syncFile.getName(), syncFile.getState());
+                                try {
+                                    api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
+                                } catch (final ApiException e) {
+                                    logger.error("Failed to delete {}: {}", syncFile.getName(), APIUtils.getErrorMessage(e));
+                                }
+                                return;
+                            }
+
+                            if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
+                                logger.info("File {} has been uploaded", siaFile.getLocalPath());
+                                try {
+                                    DB.setSynced(siaFile, siaFile.getLocalPath());
+                                } catch (final IOException e) {
+                                    logger.error("Failed to update the sync db: {}", e.getMessage());
+                                    DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
+                                }
+                                App.getInstance().ifPresent(app -> app.refreshOverlayIcon(siaFile.getLocalPath()));
+                            } else {
+                                final BigDecimal progress = siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP);
+                                logger.info("File {} is now being uploaded ({}%)", siaFile.getName(), progress);
+                            }
+
+                        } else {
+
+                            logger.debug("Cancel uploading {} because it's deleted from the sync DB", siaFile.getName());
                             try {
                                 api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
                             } catch (final ApiException e) {
-                                logger.error("Failed to delete {}: {}", syncFile.getName(), APIUtils.getErrorMessage(e));
+                                logger.error("Failed to delete {}: {}", siaFile.getName(), APIUtils.getErrorMessage(e));
                             }
-                            return;
-                        } else if (syncFile.getState() != SyncState.UPLOADING) {
-                            logger.trace("Found remote file {} but it's not being uploaded", siaFile.getCloudPath());
-                            return;
+
                         }
 
-                        if (siaFile.getUploadProgress().compareTo(Completed) >= 0) {
-                            logger.info("File {} has been uploaded", siaFile.getLocalPath());
-                            try {
-                                DB.setSynced(siaFile, siaFile.getLocalPath());
-                            } catch (final IOException e) {
-                                logger.error("Failed to update the sync db: {}", e.getMessage());
-                                DB.setUploadFailed(this.ctx.getName(siaFile.getLocalPath()));
-                            }
-                            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(siaFile.getLocalPath()));
-                        } else {
-                            final BigDecimal progress = siaFile.getUploadProgress().setScale(3, RoundingMode.HALF_UP);
-                            logger.info("File {} is now being uploaded ({}%)", siaFile.getName(), progress);
-                        }
-
-                    }));
+                    });
 
         } catch (final ApiException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -112,12 +127,12 @@ public class CheckUploadStateTask implements Callable<Void> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CheckUploadStateTask that = (CheckUploadStateTask) o;
-        return ctx.equals(that.ctx);
+        return Objects.equals(ctx, that.ctx);
     }
 
     @Override
     public int hashCode() {
-        return ctx.hashCode();
+        return Objects.hash(ctx);
     }
 
 }

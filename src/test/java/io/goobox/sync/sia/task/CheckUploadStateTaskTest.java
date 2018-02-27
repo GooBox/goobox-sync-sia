@@ -214,7 +214,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void notManagedFile() throws ApiException {
+    public void deletedFileWhileBeingUploaded() throws ApiException {
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
@@ -223,6 +223,8 @@ public class CheckUploadStateTaskTest {
             ));
             renterApi.renterFilesGet();
             result = res;
+
+            renterApi.renterDeleteSiapathPost(APIUtils.toSlash(cloudPath));
         }};
 
         new CheckUploadStateTask(this.ctx).call();

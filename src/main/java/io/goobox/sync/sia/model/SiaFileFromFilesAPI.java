@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ public class SiaFileFromFilesAPI extends AbstractSiaFile {
         return this.rawFile.getFilesize();
     }
 
-    public boolean getAvailable() {
+    public boolean isAvailable() {
         return this.rawFile.isAvailable();
     }
 
