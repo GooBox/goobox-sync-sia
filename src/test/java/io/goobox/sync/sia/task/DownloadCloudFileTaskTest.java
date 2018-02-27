@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -56,9 +55,6 @@ public class DownloadCloudFileTaskTest {
     private App app;
 
     @Mocked
-    private OverlayHelper overlayHelper;
-
-    @Mocked
     private RenterApi api;
 
     private Path tmpDir;
@@ -78,7 +74,7 @@ public class DownloadCloudFileTaskTest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.remotePath = this.ctx.getPathPrefix().resolve(this.name);
@@ -132,11 +128,7 @@ public class DownloadCloudFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);
@@ -185,11 +177,7 @@ public class DownloadCloudFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new DownloadCloudFileTask(this.ctx, this.name).call();
         assertTrue(DBMock.committed);

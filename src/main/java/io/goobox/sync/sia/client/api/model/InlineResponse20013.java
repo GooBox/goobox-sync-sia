@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse20013
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse20013 {
   @SerializedName("encrypted")
   private Boolean encrypted = null;
@@ -65,7 +65,7 @@ public class InlineResponse20013 {
    * @return encrypted
   **/
   @ApiModelProperty(example = "true", value = "Indicates whether the wallet has been encrypted or not. If the wallet has not been encrypted, then no data has been generated at all, and the first time the wallet is unlocked, the password given will be used as the password for encrypting all of the data. 'encrypted' will only be set to false if the wallet has never been unlocked before (the unlocked wallet is still encryped - but the encryption key is in memory).")
-  public Boolean getEncrypted() {
+  public Boolean isEncrypted() {
     return encrypted;
   }
 
@@ -83,7 +83,7 @@ public class InlineResponse20013 {
    * @return unlocked
   **/
   @ApiModelProperty(example = "true", value = "Indicates whether the wallet is currently locked or unlocked. Some calls become unavailable when the wallet is locked.")
-  public Boolean getUnlocked() {
+  public Boolean isUnlocked() {
     return unlocked;
   }
 
@@ -101,7 +101,7 @@ public class InlineResponse20013 {
    * @return rescanning
   **/
   @ApiModelProperty(example = "false", value = "Indicates whether the wallet is currently rescanning the blockchain. This will be true for the duration of calls to /unlock, /seeds, /init/seed, and /sweep/seed.")
-  public Boolean getRescanning() {
+  public Boolean isRescanning() {
     return rescanning;
   }
 
@@ -272,6 +272,6 @@ public class InlineResponse20013 {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

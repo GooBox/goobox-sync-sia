@@ -21,7 +21,6 @@ import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
@@ -64,7 +63,7 @@ public class CreateAllowanceTaskTest {
     @Before
     public void setUp() throws IOException {
         this.configPath = Files.createTempFile(null, null);
-        this.ctx = new Context(new Config(this.configPath.resolve(App.ConfigFileName)), new ApiClient());
+        this.ctx = new Context(new Config(this.configPath.resolve(App.ConfigFileName)));
 
         final double fund = 2234.85;
         final int host = 10;
@@ -103,7 +102,11 @@ public class CreateAllowanceTaskTest {
             result = renterGetResponse;
 
             final BigInteger newFund = APIUtils.toHasting(balance);
-            renter.renterPost(newFund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    newFund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -119,7 +122,11 @@ public class CreateAllowanceTaskTest {
             renter.renterGet();
             result = renterGetResponse;
 
-            renter.renterPost(fund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    fund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -140,7 +147,11 @@ public class CreateAllowanceTaskTest {
             result = renterGetResponse;
 
             final BigInteger newFund = APIUtils.toHasting(balance);
-            renter.renterPost(newFund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    newFund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -161,7 +172,11 @@ public class CreateAllowanceTaskTest {
             renter.renterGet();
             result = renterGetResponse;
 
-            renter.renterPost(fund.toString(), null, CreateAllowanceTask.DefaultPeriod, null);
+            renter.renterPost(
+                    fund.toString(),
+                    CreateAllowanceTask.NHosts,
+                    CreateAllowanceTask.AllocationPeriod,
+                    CreateAllowanceTask.RenewWindow);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());

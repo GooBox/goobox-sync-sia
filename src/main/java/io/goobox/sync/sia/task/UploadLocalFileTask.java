@@ -85,9 +85,9 @@ public class UploadLocalFileTask implements Callable<Void> {
 
                 api.renterUploadSiapathPost(
                         slashedCloudPath,
+                        slashedLocalPath,
                         this.ctx.getConfig().getDataPieces(),
-                        this.ctx.getConfig().getParityPieces(),
-                        slashedLocalPath);
+                        this.ctx.getConfig().getParityPieces());
                 DB.setUploading(this.ctx.getName(this.localPath));
                 break;
 
@@ -109,7 +109,7 @@ public class UploadLocalFileTask implements Callable<Void> {
 
         }
 
-        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(this.localPath));
+        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(this.localPath));
         DB.commit();
         return null;
 

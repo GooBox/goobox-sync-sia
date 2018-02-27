@@ -27,7 +27,7 @@ import java.io.IOException;
  * The financial status of the host.
  */
 @ApiModel(description = "The financial status of the host.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse200Financialmetrics {
   @SerializedName("contractcount")
   private Integer contractcount = null;
@@ -388,6 +388,6 @@ public class InlineResponse200Financialmetrics {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

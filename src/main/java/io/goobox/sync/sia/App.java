@@ -19,7 +19,6 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.common.overlay.OverlayIcon;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -37,7 +36,6 @@ import io.goobox.sync.sia.task.DownloadCloudFileTask;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
 import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
-import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import io.goobox.sync.sia.task.WaitContractsTask;
 import io.goobox.sync.sia.task.WaitSynchronizationTask;
@@ -90,7 +88,7 @@ public final class App implements Callable<Integer> {
     /**
      * Version information.
      */
-    public static final String Version = "0.1.1";
+    public static final String Version = "0.1.2";
 
     /**
      * The number of the minimum required contracts.
@@ -192,7 +190,7 @@ public final class App implements Callable<Integer> {
             App.app = app;
 
             if (cmd.hasOption("output-events")) {
-                app.setOutputEvents();
+                app.enableOutputEvents();
             }
 
             // Start the app.
@@ -244,9 +242,7 @@ public final class App implements Callable<Integer> {
     public App(@Nullable final Path syncDir) {
         final Path configPath = Utils.getDataDir().resolve(ConfigFileName);
         this.cfg = APIUtils.loadConfig(configPath);
-
-        final ApiClient apiClient = APIUtils.getApiClient();
-        this.ctx = new Context(cfg, apiClient);
+        this.ctx = new Context(cfg);
 
         if (syncDir != null) {
             logger.info("Overwrite the sync directory: {}", syncDir);
@@ -255,6 +251,9 @@ public final class App implements Callable<Integer> {
 
         logger.debug("Loading icon overlay libraries");
         this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
+            if (Files.isDirectory(path)) {
+                return OverlayIcon.OK;
+            }
             final String name = cfg.getSyncDir().relativize(path).toString();
             final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
                 if (state.isSynced()) {
@@ -276,7 +275,7 @@ public final class App implements Callable<Integer> {
         }));
     }
 
-    void setOutputEvents() {
+    void enableOutputEvents() {
         this.outputEvents = true;
     }
 
@@ -285,16 +284,28 @@ public final class App implements Callable<Integer> {
         return ctx;
     }
 
-    @NotNull
-    public OverlayHelper getOverlayHelper() {
-        return overlayHelper;
+    public void refreshOverlayIcon(@NotNull Path localPath) {
+        this.overlayHelper.refresh(localPath);
+        if (DB.isSynced()) {
+            this.overlayHelper.setOK();
+            this.notifyEvent(SyncStateEvent.idle);
+        } else {
+            this.overlayHelper.setSynchronizing();
+            this.notifyEvent(SyncStateEvent.synchronizing);
+        }
+    }
+
+    public void notifyEvent(@NotNull Event e) {
+        if (this.outputEvents) {
+            System.out.println(e.toJson());
+        }
     }
 
     synchronized void startSiaDaemon() {
 
         if (this.daemon == null || this.daemon.isClosed()) {
 
-            this.daemon = new SiaDaemon(this.cfg.getDataDir().resolve("sia"));
+            this.daemon = new SiaDaemon(this.cfg);
             try {
                 this.daemon.checkAndDownloadConsensusDB();
                 Runtime.getRuntime().addShutdownHook(new Thread(this.daemon::close));
@@ -315,6 +326,10 @@ public final class App implements Callable<Integer> {
      * @return 0 if no error occurs otherwise exit code.
      */
     public Integer call() throws IOException {
+        this.dumpDatabase();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::dumpDatabase));
+
+        this.overlayHelper.setSynchronizing();
 
         if (!checkAndCreateSyncDir()) {
             return 1;
@@ -322,6 +337,9 @@ public final class App implements Callable<Integer> {
         if (!checkAndCreateDataDir()) {
             return 1;
         }
+
+        this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
+        this.synchronizeDeletedFiles();
 
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         int retry = 0;
@@ -376,9 +394,6 @@ public final class App implements Callable<Integer> {
 
         }
 
-        this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
-        this.synchronizeDeletedFiles();
-
         this.resumeTasks(ctx, executor);
 
         final RecoveryTask startSiaDaemonTask = new StartSiaDaemonTask();
@@ -391,9 +406,11 @@ public final class App implements Callable<Integer> {
         executor.scheduleWithFixedDelay(
                 new RetryableTask(new CheckUploadStateTask(ctx), startSiaDaemonTask),
                 45, 60, TimeUnit.SECONDS);
+
         if (this.outputEvents) {
-            executor.scheduleWithFixedDelay(new NotifySyncStateTask(), 0, 60, TimeUnit.SECONDS);
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }
+
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
         return 0;
@@ -431,7 +448,7 @@ public final class App implements Callable<Integer> {
             return true;
         } else {
             try {
-                Files.createDirectory(path);
+                Files.createDirectories(path);
                 logger.info("Folder {} has been created", path);
                 return true;
             } catch (IOException e) {
@@ -498,7 +515,7 @@ public final class App implements Callable<Integer> {
                     try {
                         logger.debug("File {} has been modified", localPath);
                         DB.setModified(name, localPath);
-                        this.getOverlayHelper().refresh(localPath);
+                        this.refreshOverlayIcon(localPath);
                     } catch (IOException e) {
                         logger.error("Failed to update state of {}: {}", localPath, e.getMessage());
                     }
@@ -515,12 +532,12 @@ public final class App implements Callable<Integer> {
     void synchronizeDeletedFiles() {
         logger.debug("Checking deleted files");
 
-        DB.getFiles(SyncState.SYNCED).forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
+        DB.getFiles().forEach(syncFile -> syncFile.getLocalPath().ifPresent(localPath -> {
 
             if (!localPath.toFile().exists()) {
                 logger.debug("File {} has been deleted", localPath);
                 DB.setDeleted(ctx.getName(localPath));
-                this.getOverlayHelper().refresh(localPath);
+                this.refreshOverlayIcon(localPath);
             }
 
         }));
@@ -555,6 +572,11 @@ public final class App implements Callable<Integer> {
         final HelpFormatter help = new HelpFormatter();
         help.printHelp(Name, Description, opts, buffer.toString(), true);
 
+    }
+
+    private void dumpDatabase() {
+        DB.getFiles().forEach(
+                syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
     }
 
 }

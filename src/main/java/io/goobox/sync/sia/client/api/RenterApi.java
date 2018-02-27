@@ -68,11 +68,12 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterContractsGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/contracts";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -103,20 +104,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterContractsGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterContractsGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -185,12 +182,13 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterDeleteSiapathPostCall(String siapath, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/delete/{siapath}"
             .replaceAll("\\{" + "siapath" + "\\}", apiClient.escapeString(siapath.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -221,9 +219,9 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterDeleteSiapathPostValidateBeforeCall(String siapath, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -232,14 +230,10 @@ public class RenterApi {
             throw new ApiException("Missing the required parameter 'siapath' when calling renterDeleteSiapathPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = renterDeleteSiapathPostCall(siapath, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -308,14 +302,15 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterDownloadSiapathGetCall(String siapath, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/download/{siapath}"
             .replaceAll("\\{" + "siapath" + "\\}", apiClient.escapeString(siapath.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (destination != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "destination", destination));
+        localVarQueryParams.addAll(apiClient.parameterToPair("destination", destination));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -346,9 +341,9 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterDownloadSiapathGetValidateBeforeCall(String siapath, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -362,14 +357,10 @@ public class RenterApi {
             throw new ApiException("Missing the required parameter 'destination' when calling renterDownloadSiapathGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = renterDownloadSiapathGetCall(siapath, destination, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -441,14 +432,15 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterDownloadasyncSiapathGetCall(String siapath, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/downloadasync/{siapath}"
             .replaceAll("\\{" + "siapath" + "\\}", apiClient.escapeString(siapath.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (destination != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "destination", destination));
+        localVarQueryParams.addAll(apiClient.parameterToPair("destination", destination));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -479,9 +471,9 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterDownloadasyncSiapathGetValidateBeforeCall(String siapath, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -495,14 +487,10 @@ public class RenterApi {
             throw new ApiException("Missing the required parameter 'destination' when calling renterDownloadasyncSiapathGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = renterDownloadasyncSiapathGetCall(siapath, destination, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -572,11 +560,12 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterDownloadsGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/downloads";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -607,20 +596,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterDownloadsGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterDownloadsGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -688,11 +673,12 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterFilesGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/files";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -723,20 +709,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterFilesGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterFilesGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -804,11 +786,12 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -839,20 +822,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -924,19 +903,20 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterPostCall(String funds, Integer hosts, Integer period, Integer renewwindow, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (funds != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "funds", funds));
+        localVarQueryParams.addAll(apiClient.parameterToPair("funds", funds));
         if (hosts != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "hosts", hosts));
+        localVarQueryParams.addAll(apiClient.parameterToPair("hosts", hosts));
         if (period != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "period", period));
+        localVarQueryParams.addAll(apiClient.parameterToPair("period", period));
         if (renewwindow != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "renewwindow", renewwindow));
+        localVarQueryParams.addAll(apiClient.parameterToPair("renewwindow", renewwindow));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -967,20 +947,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterPostValidateBeforeCall(String funds, Integer hosts, Integer period, Integer renewwindow, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterPostCall(funds, hosts, period, renewwindow, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1056,11 +1032,12 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterPricesGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/prices";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1091,20 +1068,16 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterPricesGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = renterPricesGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1174,14 +1147,15 @@ public class RenterApi {
      */
     public com.squareup.okhttp.Call renterRenameSiapathPostCall(String siapath, String newsiapath, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/rename/{siapath}"
             .replaceAll("\\{" + "siapath" + "\\}", apiClient.escapeString(siapath.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (newsiapath != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "newsiapath", newsiapath));
+        localVarQueryParams.addAll(apiClient.parameterToPair("newsiapath", newsiapath));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1212,9 +1186,9 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call renterRenameSiapathPostValidateBeforeCall(String siapath, String newsiapath, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -1228,14 +1202,10 @@ public class RenterApi {
             throw new ApiException("Missing the required parameter 'newsiapath' when calling renterRenameSiapathPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = renterRenameSiapathPostCall(siapath, newsiapath, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1299,28 +1269,29 @@ public class RenterApi {
     /**
      * Build call for renterUploadSiapathPost
      * @param siapath Location of the file in the renter on the network. (required)
-     * @param datapieces The number of data pieces to use when erasure coding the file. (required)
-     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (required)
      * @param source Location on disk of the file being uploaded. (required)
+     * @param datapieces The number of data pieces to use when erasure coding the file. (optional)
+     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (optional)
      * @param progressListener Progress listener
      * @param progressRequestListener Progress request listener
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
      */
-    public com.squareup.okhttp.Call renterUploadSiapathPostCall(String siapath, Integer datapieces, Integer paritypieces, String source, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
+    public com.squareup.okhttp.Call renterUploadSiapathPostCall(String siapath, String source, Integer datapieces, Integer paritypieces, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/renter/upload/{siapath}"
             .replaceAll("\\{" + "siapath" + "\\}", apiClient.escapeString(siapath.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (datapieces != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "datapieces", datapieces));
+        localVarQueryParams.addAll(apiClient.parameterToPair("datapieces", datapieces));
         if (paritypieces != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "paritypieces", paritypieces));
+        localVarQueryParams.addAll(apiClient.parameterToPair("paritypieces", paritypieces));
         if (source != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "source", source));
+        localVarQueryParams.addAll(apiClient.parameterToPair("source", source));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1351,25 +1322,15 @@ public class RenterApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
-    private com.squareup.okhttp.Call renterUploadSiapathPostValidateBeforeCall(String siapath, Integer datapieces, Integer paritypieces, String source, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
+    private com.squareup.okhttp.Call renterUploadSiapathPostValidateBeforeCall(String siapath, String source, Integer datapieces, Integer paritypieces, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
         // verify the required parameter 'siapath' is set
         if (siapath == null) {
             throw new ApiException("Missing the required parameter 'siapath' when calling renterUploadSiapathPost(Async)");
-        }
-        
-        // verify the required parameter 'datapieces' is set
-        if (datapieces == null) {
-            throw new ApiException("Missing the required parameter 'datapieces' when calling renterUploadSiapathPost(Async)");
-        }
-        
-        // verify the required parameter 'paritypieces' is set
-        if (paritypieces == null) {
-            throw new ApiException("Missing the required parameter 'paritypieces' when calling renterUploadSiapathPost(Async)");
         }
         
         // verify the required parameter 'source' is set
@@ -1377,41 +1338,37 @@ public class RenterApi {
             throw new ApiException("Missing the required parameter 'source' when calling renterUploadSiapathPost(Async)");
         }
         
-        
-        com.squareup.okhttp.Call call = renterUploadSiapathPostCall(siapath, datapieces, paritypieces, source, progressListener, progressRequestListener);
+
+        com.squareup.okhttp.Call call = renterUploadSiapathPostCall(siapath, source, datapieces, paritypieces, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
      * 
      * uploads a file to the network from the local filesystem.
      * @param siapath Location of the file in the renter on the network. (required)
-     * @param datapieces The number of data pieces to use when erasure coding the file. (required)
-     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (required)
      * @param source Location on disk of the file being uploaded. (required)
+     * @param datapieces The number of data pieces to use when erasure coding the file. (optional)
+     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (optional)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      */
-    public void renterUploadSiapathPost(String siapath, Integer datapieces, Integer paritypieces, String source) throws ApiException {
-        renterUploadSiapathPostWithHttpInfo(siapath, datapieces, paritypieces, source);
+    public void renterUploadSiapathPost(String siapath, String source, Integer datapieces, Integer paritypieces) throws ApiException {
+        renterUploadSiapathPostWithHttpInfo(siapath, source, datapieces, paritypieces);
     }
 
     /**
      * 
      * uploads a file to the network from the local filesystem.
      * @param siapath Location of the file in the renter on the network. (required)
-     * @param datapieces The number of data pieces to use when erasure coding the file. (required)
-     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (required)
      * @param source Location on disk of the file being uploaded. (required)
+     * @param datapieces The number of data pieces to use when erasure coding the file. (optional)
+     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (optional)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      */
-    public ApiResponse<Void> renterUploadSiapathPostWithHttpInfo(String siapath, Integer datapieces, Integer paritypieces, String source) throws ApiException {
-        com.squareup.okhttp.Call call = renterUploadSiapathPostValidateBeforeCall(siapath, datapieces, paritypieces, source, null, null);
+    public ApiResponse<Void> renterUploadSiapathPostWithHttpInfo(String siapath, String source, Integer datapieces, Integer paritypieces) throws ApiException {
+        com.squareup.okhttp.Call call = renterUploadSiapathPostValidateBeforeCall(siapath, source, datapieces, paritypieces, null, null);
         return apiClient.execute(call);
     }
 
@@ -1419,14 +1376,14 @@ public class RenterApi {
      *  (asynchronously)
      * uploads a file to the network from the local filesystem.
      * @param siapath Location of the file in the renter on the network. (required)
-     * @param datapieces The number of data pieces to use when erasure coding the file. (required)
-     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (required)
      * @param source Location on disk of the file being uploaded. (required)
+     * @param datapieces The number of data pieces to use when erasure coding the file. (optional)
+     * @param paritypieces The number of parity pieces to use when erasure coding the file. Total redundancy of the file is (datapieces+paritypieces)/datapieces. (optional)
      * @param callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
      */
-    public com.squareup.okhttp.Call renterUploadSiapathPostAsync(String siapath, Integer datapieces, Integer paritypieces, String source, final ApiCallback<Void> callback) throws ApiException {
+    public com.squareup.okhttp.Call renterUploadSiapathPostAsync(String siapath, String source, Integer datapieces, Integer paritypieces, final ApiCallback<Void> callback) throws ApiException {
 
         ProgressResponseBody.ProgressListener progressListener = null;
         ProgressRequestBody.ProgressRequestListener progressRequestListener = null;
@@ -1447,7 +1404,7 @@ public class RenterApi {
             };
         }
 
-        com.squareup.okhttp.Call call = renterUploadSiapathPostValidateBeforeCall(siapath, datapieces, paritypieces, source, progressListener, progressRequestListener);
+        com.squareup.okhttp.Call call = renterUploadSiapathPostValidateBeforeCall(siapath, source, datapieces, paritypieces, progressListener, progressRequestListener);
         apiClient.executeAsync(call, callback);
         return call;
     }

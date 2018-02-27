@@ -28,7 +28,7 @@ import java.io.IOException;
  * Settings that control the behavior of the renter.
  */
 @ApiModel(description = "Settings that control the behavior of the renter.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2008Settings {
   @SerializedName("allowance")
   private InlineResponse2008SettingsAllowance allowance = null;
@@ -90,6 +90,6 @@ public class InlineResponse2008Settings {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

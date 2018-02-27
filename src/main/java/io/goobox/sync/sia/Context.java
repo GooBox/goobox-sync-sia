@@ -19,10 +19,10 @@ package io.goobox.sync.sia;
 import io.goobox.sync.sia.client.ApiClient;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * Context manages config, api client, and a task queue.
@@ -34,7 +34,7 @@ public class Context {
     @NotNull
     private final Config config;
 
-    @Nullable
+    @NotNull
     private final ApiClient apiClient;
 
     @NotNull
@@ -43,12 +43,11 @@ public class Context {
     /**
      * Create a new context with a config object, an API client, and a task queue.
      *
-     * @param cfg       Config object
-     * @param apiClient API client
+     * @param cfg Config object
      */
-    public Context(@NotNull final Config cfg, @Nullable final ApiClient apiClient) {
+    public Context(@NotNull final Config cfg) {
         this.config = cfg;
-        this.apiClient = apiClient;
+        this.apiClient = APIUtils.getApiClient(cfg);
         this.pathPrefix = Paths.get(this.config.getUserName(), "Goobox");
     }
 
@@ -89,7 +88,7 @@ public class Context {
      *
      * @return the client object.
      */
-    @Nullable
+    @NotNull
     public ApiClient getApiClient() {
         return apiClient;
     }
@@ -108,19 +107,15 @@ public class Context {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Context context = (Context) o;
-
-        return config.equals(context.config) &&
-                (apiClient != null ? apiClient.equals(context.apiClient) : context.apiClient == null) && pathPrefix.equals(context.pathPrefix);
+        return Objects.equals(config, context.config) &&
+                Objects.equals(apiClient, context.apiClient) &&
+                Objects.equals(pathPrefix, context.pathPrefix);
     }
 
     @Override
     public int hashCode() {
-        int result = config.hashCode();
-        result = 31 * result + (apiClient != null ? apiClient.hashCode() : 0);
-        result = 31 * result + pathPrefix.hashCode();
-        return result;
+        return Objects.hash(config, apiClient, pathPrefix);
     }
 
     @Override

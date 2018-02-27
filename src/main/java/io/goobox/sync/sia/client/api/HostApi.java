@@ -66,13 +66,14 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostAnnouncePostCall(String netaddress, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/announce";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (netaddress != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "netaddress", netaddress));
+        localVarQueryParams.addAll(apiClient.parameterToPair("netaddress", netaddress));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -103,20 +104,16 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostAnnouncePostValidateBeforeCall(String netaddress, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostAnnouncePostCall(netaddress, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -183,11 +180,12 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -218,20 +216,16 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -312,37 +306,38 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostPostCall(Boolean acceptingcontracts, String maxdownloadbatchsize, String maxduration, String maxrevisebatchsize, String netaddress, String windowsize, String collateral, String collateralbudget, String maxcollateral, String mincontractprice, String mindownloadbandwidthprice, String minstorageprice, String minuploadbandwidthprice, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (acceptingcontracts != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "acceptingcontracts", acceptingcontracts));
+        localVarQueryParams.addAll(apiClient.parameterToPair("acceptingcontracts", acceptingcontracts));
         if (maxdownloadbatchsize != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "maxdownloadbatchsize", maxdownloadbatchsize));
+        localVarQueryParams.addAll(apiClient.parameterToPair("maxdownloadbatchsize", maxdownloadbatchsize));
         if (maxduration != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "maxduration", maxduration));
+        localVarQueryParams.addAll(apiClient.parameterToPair("maxduration", maxduration));
         if (maxrevisebatchsize != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "maxrevisebatchsize", maxrevisebatchsize));
+        localVarQueryParams.addAll(apiClient.parameterToPair("maxrevisebatchsize", maxrevisebatchsize));
         if (netaddress != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "netaddress", netaddress));
+        localVarQueryParams.addAll(apiClient.parameterToPair("netaddress", netaddress));
         if (windowsize != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "windowsize", windowsize));
+        localVarQueryParams.addAll(apiClient.parameterToPair("windowsize", windowsize));
         if (collateral != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "collateral", collateral));
+        localVarQueryParams.addAll(apiClient.parameterToPair("collateral", collateral));
         if (collateralbudget != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "collateralbudget", collateralbudget));
+        localVarQueryParams.addAll(apiClient.parameterToPair("collateralbudget", collateralbudget));
         if (maxcollateral != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "maxcollateral", maxcollateral));
+        localVarQueryParams.addAll(apiClient.parameterToPair("maxcollateral", maxcollateral));
         if (mincontractprice != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "mincontractprice", mincontractprice));
+        localVarQueryParams.addAll(apiClient.parameterToPair("mincontractprice", mincontractprice));
         if (mindownloadbandwidthprice != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "mindownloadbandwidthprice", mindownloadbandwidthprice));
+        localVarQueryParams.addAll(apiClient.parameterToPair("mindownloadbandwidthprice", mindownloadbandwidthprice));
         if (minstorageprice != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "minstorageprice", minstorageprice));
+        localVarQueryParams.addAll(apiClient.parameterToPair("minstorageprice", minstorageprice));
         if (minuploadbandwidthprice != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "minuploadbandwidthprice", minuploadbandwidthprice));
+        localVarQueryParams.addAll(apiClient.parameterToPair("minuploadbandwidthprice", minuploadbandwidthprice));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -373,20 +368,16 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostPostValidateBeforeCall(Boolean acceptingcontracts, String maxdownloadbatchsize, String maxduration, String maxrevisebatchsize, String netaddress, String windowsize, String collateral, String collateralbudget, String maxcollateral, String mincontractprice, String mindownloadbandwidthprice, String minstorageprice, String minuploadbandwidthprice, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostPostCall(acceptingcontracts, maxdownloadbatchsize, maxduration, maxrevisebatchsize, netaddress, windowsize, collateral, collateralbudget, maxcollateral, mincontractprice, mindownloadbandwidthprice, minstorageprice, minuploadbandwidthprice, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -491,15 +482,16 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostStorageFoldersAddPostCall(String path, Integer size, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/storage/folders/add";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (path != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "path", path));
+        localVarQueryParams.addAll(apiClient.parameterToPair("path", path));
         if (size != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "size", size));
+        localVarQueryParams.addAll(apiClient.parameterToPair("size", size));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -530,9 +522,9 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostStorageFoldersAddPostValidateBeforeCall(String path, Integer size, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -546,14 +538,10 @@ public class HostApi {
             throw new ApiException("Missing the required parameter 'size' when calling hostStorageFoldersAddPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = hostStorageFoldersAddPostCall(path, size, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -625,15 +613,16 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostStorageFoldersRemovePostCall(String path, Boolean force, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/storage/folders/remove";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (path != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "path", path));
+        localVarQueryParams.addAll(apiClient.parameterToPair("path", path));
         if (force != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "force", force));
+        localVarQueryParams.addAll(apiClient.parameterToPair("force", force));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -664,9 +653,9 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostStorageFoldersRemovePostValidateBeforeCall(String path, Boolean force, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -675,14 +664,10 @@ public class HostApi {
             throw new ApiException("Missing the required parameter 'path' when calling hostStorageFoldersRemovePost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = hostStorageFoldersRemovePostCall(path, force, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -754,15 +739,16 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostStorageFoldersResizePostCall(String path, Integer newsize, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/storage/folders/resize";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (path != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "path", path));
+        localVarQueryParams.addAll(apiClient.parameterToPair("path", path));
         if (newsize != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "newsize", newsize));
+        localVarQueryParams.addAll(apiClient.parameterToPair("newsize", newsize));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -793,9 +779,9 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostStorageFoldersResizePostValidateBeforeCall(String path, Integer newsize, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -809,14 +795,10 @@ public class HostApi {
             throw new ApiException("Missing the required parameter 'newsize' when calling hostStorageFoldersResizePost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = hostStorageFoldersResizePostCall(path, newsize, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -886,11 +868,12 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostStorageGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/storage";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -921,20 +904,16 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostStorageGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = hostStorageGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1003,12 +982,13 @@ public class HostApi {
      */
     public com.squareup.okhttp.Call hostStorageSectorsDeleteMerklerootPostCall(String merkleroot, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/host/storage/sectors/delete/{merkleroot}"
             .replaceAll("\\{" + "merkleroot" + "\\}", apiClient.escapeString(merkleroot.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1039,9 +1019,9 @@ public class HostApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call hostStorageSectorsDeleteMerklerootPostValidateBeforeCall(String merkleroot, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -1050,14 +1030,10 @@ public class HostApi {
             throw new ApiException("Missing the required parameter 'merkleroot' when calling hostStorageSectorsDeleteMerklerootPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = hostStorageSectorsDeleteMerklerootPostCall(merkleroot, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**

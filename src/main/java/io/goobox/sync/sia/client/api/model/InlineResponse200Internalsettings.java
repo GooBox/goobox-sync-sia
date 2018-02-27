@@ -27,7 +27,7 @@ import java.io.IOException;
  * The settings of the host. Most interactions between the user and the host occur by changing the internal settings.
  */
 @ApiModel(description = "The settings of the host. Most interactions between the user and the host occur by changing the internal settings.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse200Internalsettings {
   @SerializedName("acceptingcontracts")
   private Boolean acceptingcontracts = null;
@@ -78,7 +78,7 @@ public class InlineResponse200Internalsettings {
    * @return acceptingcontracts
   **/
   @ApiModelProperty(example = "true", value = "When set to true, the host will accept new file contracts if the terms are reasonable. When set to false, the host will not accept new file contracts at all. ")
-  public Boolean getAcceptingcontracts() {
+  public Boolean isAcceptingcontracts() {
     return acceptingcontracts;
   }
 
@@ -365,6 +365,6 @@ public class InlineResponse200Internalsettings {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

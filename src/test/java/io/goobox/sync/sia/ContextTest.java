@@ -16,7 +16,6 @@
  */
 package io.goobox.sync.sia;
 
-import io.goobox.sync.sia.client.ApiClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,11 +47,9 @@ public class ContextTest {
 
         final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
-        final ApiClient cli = new ApiClient();
-
-        final Context ctx = new Context(cfg, cli);
+        final Context ctx = new Context(cfg);
         assertEquals(ctx.getConfig(), cfg);
-        assertEquals(ctx.getApiClient(), cli);
+        assertEquals(ctx.getApiClient().getBasePath(), APIUtils.getApiClient(cfg).getBasePath());
         assertEquals(ctx.getPathPrefix(), Paths.get(cfg.getUserName(), "Goobox"));
 
     }
@@ -64,7 +61,7 @@ public class ContextTest {
         final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setSyncDir(wd);
 
-        final Context ctx = new Context(cfg, null);
+        final Context ctx = new Context(cfg);
 
         final Path name = Paths.get("sub-dir", "some-file");
         assertEquals(name.toString(), ctx.getName(wd.resolve(name)));
@@ -78,7 +75,7 @@ public class ContextTest {
         final Config cfg = new Config(this.configPath.resolve(App.ConfigFileName));
         cfg.setSyncDir(wd);
 
-        final Context ctx = new Context(cfg, null);
+        final Context ctx = new Context(cfg);
 
         final Path name = Paths.get("sub-dir", "some-file");
         assertEquals(wd.resolve(name), ctx.getLocalPath(name.toString()));

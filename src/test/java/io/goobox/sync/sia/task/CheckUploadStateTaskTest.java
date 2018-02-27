@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -77,7 +76,7 @@ public class CheckUploadStateTaskTest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.cloudPath = this.ctx.getPathPrefix().resolve(this.name).resolve(String.valueOf(System.currentTimeMillis()));
@@ -93,7 +92,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void uploadFile(@Mocked App app, @Mocked OverlayHelper overlayHelper) throws ApiException, IOException {
+    public void uploadFile(@Mocked App app) throws ApiException, IOException {
 
         DB.addNewFile(name, localPath);
         DB.setUploading(name);
@@ -108,11 +107,7 @@ public class CheckUploadStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         new CheckUploadStateTask(this.ctx).call();
@@ -219,7 +214,7 @@ public class CheckUploadStateTaskTest {
     }
 
     @Test
-    public void notManagedFile() throws ApiException {
+    public void deletedFileWhileBeingUploaded() throws ApiException {
 
         new Expectations() {{
             final InlineResponse20011 res = new InlineResponse20011();
@@ -228,6 +223,8 @@ public class CheckUploadStateTaskTest {
             ));
             renterApi.renterFilesGet();
             result = res;
+
+            renterApi.renterDeleteSiapathPost(APIUtils.toSlash(cloudPath));
         }};
 
         new CheckUploadStateTask(this.ctx).call();

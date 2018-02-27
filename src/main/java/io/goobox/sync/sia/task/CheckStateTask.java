@@ -79,64 +79,7 @@ public class CheckStateTask implements Callable<Void> {
                     .stream()
                     .map(this::processCloudFile)
                     .collect(Collectors.toSet());
-
-            logger.debug("Processing files stored only in the local directory and modified");
-            DB.getFiles(SyncState.MODIFIED)
-                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
-                    .map(syncFile -> {
-                        // This file is not stored in the cloud network and modified from the local directory.
-                        // It should be uploaded.
-                        try {
-                            logger.info("Local file {} is going to be uploaded", syncFile.getName());
-                            this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
-                        } catch (final IOException e) {
-                            logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
-                            DB.setUploadFailed(syncFile.getName());
-                        }
-                        return syncFile.getName();
-                    })
-                    .forEach(processedFiles::add);
-
-            logger.debug("Processing files stored only in the local directory but deleted");
-            DB.getFiles(SyncState.DELETED)
-                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
-                    .map(syncFile -> {
-                        // This file exist in neither the cloud network nor the local directory, but in the sync DB.
-                        // It should be deleted from the DB.
-                        logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
-                        DB.remove(syncFile.getName());
-                        return syncFile.getName();
-                    })
-                    .forEach(processedFiles::add);
-
-            logger.debug("Processing files stored only in the local directory but marked as synced");
-            DB.getFiles(SyncState.SYNCED)
-                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
-                    .map(syncFile -> {
-                        // This file has been synced but now exists only in the local directory.
-                        // It means this file was deleted from the cloud network by another client.
-                        // This file should be deleted from the local directory, too.
-                        logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
-                        this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
-                        return syncFile.getName();
-                    })
-                    .forEach(processedFiles::add);
-
-            logger.debug("Processing files filed to be uploaded");
-            DB.getFiles(SyncState.UPLOAD_FAILED)
-                    .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
-                    .map(syncFile -> {
-                        // This file is marked as filed to upload and don't exist in the available file list.
-                        // This file should be uploaded again.
-                        try {
-                            logger.info("Retry to upload file {}", syncFile.getName());
-                            this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
-                        } catch (final IOException e) {
-                            logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
-                        }
-                        return syncFile.getName();
-                    })
-                    .forEach(processedFiles::add);
+            this.processLocalFile(processedFiles);
 
         } catch (final ApiException e) {
             if (e.getCause() instanceof ConnectException) {
@@ -157,17 +100,17 @@ public class CheckStateTask implements Callable<Void> {
      * @return a collection of SiaFile instances.
      */
     @NotNull
-    private Collection<SiaFile> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
+    private Collection<SiaFileFromFilesAPI> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
 
         if (files == null) {
             return Collections.emptyList();
         }
 
         // Key: file name, Value: file object.
-        final Map<String, SiaFile> fileMap = new HashMap<>();
-        files.stream().filter(InlineResponse20011Files::getAvailable).forEach(file -> {
+        final Map<String, SiaFileFromFilesAPI> fileMap = new HashMap<>();
+        files.stream().filter(InlineResponse20011Files::isAvailable).forEach(file -> {
 
-            final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
+            final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, file);
             if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {
                 // This file isn't managed by Goobox.
                 logger.trace(
@@ -207,7 +150,7 @@ public class CheckStateTask implements Callable<Void> {
      * @return the name of the processed file
      */
     @NotNull
-    private String processCloudFile(@NotNull SiaFile file) {
+    private String processCloudFile(@NotNull SiaFileFromFilesAPI file) {
 
         try {
 
@@ -235,7 +178,7 @@ public class CheckStateTask implements Callable<Void> {
 
                             logger.info("File {} was marked as modified but cloud/local files are same", file.getName());
                             DB.setSynced(file, file.getLocalPath());
-                            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
 
                         } else if (remoteCreationTime < localModificationTime) {
 
@@ -278,7 +221,7 @@ public class CheckStateTask implements Callable<Void> {
                             if (localTimeStamp >= cloudTimeStamp) {
                                 logger.info("File {} is marked as {} but then the local file is modified", syncFile.getName(), syncFile.getState());
                                 DB.setModified(syncFile.getName(), file.getLocalPath());
-                                App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+                                App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
                                 break;
                             }
                         }
@@ -294,7 +237,7 @@ public class CheckStateTask implements Callable<Void> {
                     case FOR_DOWNLOAD:
                     case DOWNLOADING:
                     case FOR_UPLOAD:
-                    case UPLOADING: // In this case, the file's availability is false, and not reach here.
+                    case UPLOADING:
                     case FOR_LOCAL_DELETE:
                     case FOR_CLOUD_DELETE:
                     default:
@@ -351,7 +294,7 @@ public class CheckStateTask implements Callable<Void> {
         final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(Long.toString(lastModifiedTime));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
-            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
             if (Files.exists(localPath)) {
@@ -373,7 +316,7 @@ public class CheckStateTask implements Callable<Void> {
 
         DB.addForDownload(file, file.getLocalPath());
         if (Files.exists(file.getLocalPath())) {
-            App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(file.getLocalPath()));
+            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
         }
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
@@ -399,8 +342,70 @@ public class CheckStateTask implements Callable<Void> {
     private void enqueueForLocalDelete(@NotNull final Path localPath) {
 
         DB.setForLocalDelete(this.ctx.getName(localPath));
-        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
         this.executor.execute(new DeleteLocalFileTask(this.ctx, localPath));
+
+    }
+
+    private void processLocalFile(Set<String> processedFiles) {
+
+        logger.debug("Processing files stored only in the local directory and modified");
+        DB.getFiles(SyncState.MODIFIED)
+                .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                .map(syncFile -> {
+                    // This file is not stored in the cloud network and modified from the local directory.
+                    // It should be uploaded.
+                    try {
+                        logger.info("Local file {} is going to be uploaded", syncFile.getName());
+                        this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                    } catch (final IOException e) {
+                        logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                        DB.setUploadFailed(syncFile.getName());
+                    }
+                    return syncFile.getName();
+                })
+                .forEach(processedFiles::add);
+
+        logger.debug("Processing files stored only in the local directory but deleted");
+        DB.getFiles(SyncState.DELETED)
+                .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                .map(syncFile -> {
+                    // This file exist in neither the cloud network nor the local directory, but in the sync DB.
+                    // It should be deleted from the DB.
+                    logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
+                    DB.remove(syncFile.getName());
+                    return syncFile.getName();
+                })
+                .forEach(processedFiles::add);
+
+        logger.debug("Processing files stored only in the local directory but marked as synced");
+        DB.getFiles(SyncState.SYNCED)
+                .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                .map(syncFile -> {
+                    // This file has been synced but now exists only in the local directory.
+                    // It means this file was deleted from the cloud network by another client.
+                    // This file should be deleted from the local directory, too.
+                    logger.info("Local file {} is going to be deleted since it was deleted from the cloud storage", syncFile.getName());
+                    this.enqueueForLocalDelete(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                    return syncFile.getName();
+                })
+                .forEach(processedFiles::add);
+
+        logger.debug("Processing files filed to be uploaded");
+        DB.getFiles(SyncState.UPLOAD_FAILED)
+                .filter(syncFile -> !processedFiles.contains(syncFile.getName()))
+                .map(syncFile -> {
+                    // This file is marked as filed to upload and don't exist in the available file list.
+                    // This file should be uploaded again.
+                    try {
+                        logger.info("Retry to upload file {}", syncFile.getName());
+                        this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                    } catch (final IOException e) {
+                        logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
+                    }
+                    return syncFile.getName();
+                })
+                .forEach(processedFiles::add);
 
     }
 

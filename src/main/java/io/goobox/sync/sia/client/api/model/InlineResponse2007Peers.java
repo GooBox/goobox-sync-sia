@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse2007Peers
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2007Peers {
   @SerializedName("netaddress")
   private String netaddress = null;
@@ -83,7 +83,7 @@ public class InlineResponse2007Peers {
    * @return inbound
   **/
   @ApiModelProperty(value = "inbound is true when the peer initiated the connection. This field is exposed as outbound peers are generally trusted more than inbound peers, as inbound peers are easily manipulated by an adversary. ")
-  public Boolean getInbound() {
+  public Boolean isInbound() {
     return inbound;
   }
 
@@ -134,6 +134,6 @@ public class InlineResponse2007Peers {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

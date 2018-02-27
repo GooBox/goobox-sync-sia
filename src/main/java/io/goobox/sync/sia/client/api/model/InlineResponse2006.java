@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * InlineResponse2006
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2006 {
   @SerializedName("synced")
   private Boolean synced = null;
@@ -47,7 +47,7 @@ public class InlineResponse2006 {
    * @return synced
   **/
   @ApiModelProperty(value = "True if the consensus set is synced with the network, i.e. it has downloaded the entire blockchain.")
-  public Boolean getSynced() {
+  public Boolean isSynced() {
     return synced;
   }
 
@@ -134,6 +134,6 @@ public class InlineResponse2006 {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

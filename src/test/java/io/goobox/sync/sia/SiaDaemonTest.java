@@ -17,6 +17,7 @@
 
 package io.goobox.sync.sia;
 
+import mockit.Deencapsulation;
 import mockit.Expectations;
 import mockit.Mock;
 import mockit.MockUp;
@@ -57,20 +58,27 @@ import static org.junit.Assert.fail;
 @RunWith(JMockit.class)
 public class SiaDaemonTest {
 
+    private Path cfgPath;
+    private Config cfg;
     private Path dataDir;
     private Path tempDir;
     private SiaDaemon daemon;
 
     @Before
     public void setUp() throws IOException {
-        dataDir = Files.createTempDirectory(null);
+        cfgPath = Files.createTempFile(null, null);
+        cfg = new Config(cfgPath);
+        Deencapsulation.setField(cfg, "dataDir", Files.createTempDirectory(null));
+
         tempDir = Files.createTempDirectory(null);
-        daemon = new SiaDaemon(dataDir);
+        daemon = new SiaDaemon(cfg);
+        dataDir = Deencapsulation.getField(daemon, "dataDir");
     }
 
     @After
     public void tearDown() throws IOException {
-        FileUtils.deleteDirectory(dataDir.toFile());
+        Files.deleteIfExists(cfgPath);
+        FileUtils.deleteDirectory(cfg.getDataDir().toFile());
         FileUtils.deleteDirectory(tempDir.toFile());
     }
 
@@ -264,7 +272,6 @@ public class SiaDaemonTest {
 
     }
 
-
     @SuppressWarnings("unused")
     @Test
     public void run(@Mocked ProcessBuilder builder, @Mocked Process proc) throws IOException {
@@ -294,9 +301,8 @@ public class SiaDaemonTest {
 
         new Expectations() {{
             final ProcessBuilder cmd = new ProcessBuilder(daemonPath.toString(),
-                    "--api-addr=127.0.0.1:9980",
-                    "--host-addr=:9982",
-                    "--rpc-addr=:9981",
+                    String.format("--api-addr=%s", cfg.getSiadApiAddress()),
+                    String.format("--rpc-addr=%s", cfg.getSiadGatewayAddress()),
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
             cmd.redirectErrorStream(true);
@@ -330,9 +336,8 @@ public class SiaDaemonTest {
 
         new Expectations(ProcessBuilder.class) {{
             new ProcessBuilder(daemonPath.toString(),
-                    "--api-addr=127.0.0.1:9980",
-                    "--host-addr=:9982",
-                    "--rpc-addr=:9981",
+                    String.format("--api-addr=%s", cfg.getSiadApiAddress()),
+                    String.format("--rpc-addr=%s", cfg.getSiadGatewayAddress()),
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
             result = dummyProc;

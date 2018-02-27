@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
@@ -54,9 +53,6 @@ public class UploadLocalFileTaskTest {
     private App app;
 
     @Mocked
-    private OverlayHelper overlayHelper;
-
-    @Mocked
     private RenterApi api;
 
     private Path tmpDir;
@@ -84,7 +80,7 @@ public class UploadLocalFileTaskTest {
         Deencapsulation.setField(this.cfg, "dataPieces", 120);
         Deencapsulation.setField(this.cfg, "parityPieces", 50);
         Deencapsulation.setField(this.cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.context = new Context(this.cfg, null);
+        this.context = new Context(this.cfg);
 
         this.name = String.format("test-file-%x", System.currentTimeMillis());
         this.localPath = this.tmpDir.resolve(this.name);
@@ -119,15 +115,11 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(cloudPath);
             result = slashedCloudPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
@@ -148,17 +140,13 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(localPath);
             result = slashedLocalPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             result = new ApiException();
             times = UploadLocalFileTask.MaxRetry;
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
@@ -175,7 +163,7 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             times = 0;
 
             App.getInstance();
@@ -205,7 +193,7 @@ public class UploadLocalFileTaskTest {
 
         // Expecting the api won't be called.
         new Expectations() {{
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             times = 0;
 
             App.getInstance();
@@ -241,7 +229,7 @@ public class UploadLocalFileTaskTest {
             APIUtils.toSlash(cloudPath);
             result = slashedCloudPath;
 
-            api.renterUploadSiapathPost(slashedCloudPath, cfg.getDataPieces(), cfg.getParityPieces(), slashedLocalPath);
+            api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
             // At first time, the API call throws an exception.
             result = new ApiException();
             result = null;
@@ -250,11 +238,7 @@ public class UploadLocalFileTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);

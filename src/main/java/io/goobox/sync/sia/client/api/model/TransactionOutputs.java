@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * TransactionOutputs
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class TransactionOutputs {
   @SerializedName("id")
   private String id = null;
@@ -110,7 +110,7 @@ public class TransactionOutputs {
    * @return walletaddress
   **/
   @ApiModelProperty(example = "false", value = "true if the address is owned by the wallet.")
-  public Boolean getWalletaddress() {
+  public Boolean isWalletaddress() {
     return walletaddress;
   }
 
@@ -203,6 +203,6 @@ public class TransactionOutputs {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

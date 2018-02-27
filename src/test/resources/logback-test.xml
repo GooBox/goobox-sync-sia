@@ -24,10 +24,8 @@
   </appender>
 
   <logger name="io.goobox.sync.sia" level="trace"/>
-  <logger name="org.dizitart" level="info"/>
-  <logger name="net.harawata" level="info"/>
-
-  <root>
+  <root level="info">
     <appender-ref ref="STDERR"/>
   </root>
+
 </configuration>

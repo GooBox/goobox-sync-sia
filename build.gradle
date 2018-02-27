@@ -37,9 +37,9 @@ apply plugin: "com.github.hierynomus.license"
 apply plugin: "com.github.kt3k.coveralls"
 
 
-version = '0.1.1'
+version = '0.1.2'
 mainClassName = 'io.goobox.sync.sia.App'
-applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.OnErrorConsoleStatusListener"]
+applicationDefaultJvmArgs = ["-Dlogback.statusListenerClass=ch.qos.logback.core.status.NopStatusListener"]
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -57,18 +57,18 @@ repositories {
 
 dependencies {
     compile 'io.swagger:swagger-annotations:1.5.15'
-    compile 'com.squareup.okhttp:okhttp:2.7.5'
     compile 'com.squareup.okhttp:logging-interceptor:2.7.5'
-    compile 'com.google.code.gson:gson:2.8.1'
+    compile 'io.gsonfire:gson-fire:1.7.1'
     compile 'joda-time:joda-time:2.9.9'
+    compile 'org.threeten:threetenbp:1.3.6'
     compile 'org.apache.commons:commons-lang3:3.7'
     compile 'commons-cli:commons-cli:1.4'
-    compile 'commons-codec:commons-codec:1.4'
+    compile 'commons-codec:commons-codec:1.11'
     compile 'commons-io:commons-io:2.6'
-    compile 'org.dizitart:nitrite:2.0.1'
-    compile 'net.harawata:appdirs:1.0.0'
-    compile 'net.java.dev.jna:jna-platform:4.5.0'
-    compile 'io.methvin:directory-watcher:0.3.1'
+    compile 'org.dizitart:nitrite:2.1.1'
+    compile 'net.harawata:appdirs:1.0.1'
+    compile 'net.java.dev.jna:jna-platform:4.5.1'
+    compile 'io.methvin:directory-watcher:0.5.0'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.intellij:annotations:12.0'
     compile 'io.goobox:goobox-sync-common:0.0.6'
@@ -190,11 +190,5 @@ jacocoTestReport {
     reports {
         xml.enabled = true
         html.enabled = true
-    }
-    afterEvaluate {
-        classDirectories = fileTree(
-                dir: "${buildDir}/classes/java/main",
-                excludes: ["**/sia/client/**"]
-        )
     }
 }

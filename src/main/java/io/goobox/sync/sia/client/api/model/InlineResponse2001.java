@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * InlineResponse2001
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2001 {
   @SerializedName("folders")
   private List<InlineResponse2001Folders> folders = null;
@@ -99,6 +99,6 @@ public class InlineResponse2001 {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

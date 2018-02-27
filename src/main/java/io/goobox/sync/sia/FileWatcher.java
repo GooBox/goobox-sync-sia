@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -73,43 +74,41 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     @Override
     public synchronized void onEvent(final DirectoryChangeEvent event) {
         logger.trace(new ReflectionToStringBuilder(event).toString());
-        final long now = System.currentTimeMillis();
 
         if (event.eventType() == DirectoryChangeEvent.EventType.OVERFLOW) {
             logger.warn("{} is overflowed", event.path());
             return;
         }
 
-        if (Files.isDirectory(event.path())) {
-            logger.trace("{} is a directory and will be ignored", event.path());
-            return;
-        }
         if (Utils.isExcluded(event.path())) {
             logger.debug("{} is excluded", event.path());
             return;
         }
 
-        final String name = this.getName(event.path());
         switch (event.eventType()) {
             case CREATE:
-                logger.trace("{} is created at {}", event.path(), now);
-                this.trackingFiles.put(event.path(), now);
+                try {
+                    Files.walk(event.path())
+                            .filter(path -> !Files.isDirectory(path))
+                            .forEach(this::onCreate);
+                } catch (IOException | UncheckedIOException e) {
+                    logger.error("Failed walking the file tree: {}", e.getMessage());
+                }
                 break;
 
             case MODIFY:
-                logger.trace("{} is modified at {}", event.path(), now);
-                this.trackingFiles.put(event.path(), now);
+                if (!Files.isDirectory(event.path())) {
+                    this.onModify(event.path());
+                }
                 break;
 
             case DELETE:
-                logger.trace("{} is deleted at {}", event.path(), now);
                 if (this.trackingFiles.containsKey(event.path())) {
                     this.trackingFiles.remove(event.path());
                 }
-                DB.get(name).ifPresent(syncFile -> {
-                    DB.setDeleted(name);
-                    DB.commit();
-                });
+                DB.getFiles()
+                        .filter(syncFile -> syncFile.getName().startsWith(this.getName(event.path())))
+                        .forEach(syncFile -> syncFile.getLocalPath().ifPresent(this::onDelete));
                 break;
         }
 
@@ -150,7 +149,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     try {
                         logger.info("Found modified file {}", name);
                         DB.addNewFile(name, localPath);
-                        App.getInstance().ifPresent(app -> app.getOverlayHelper().refresh(localPath));
+                        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
                         removePaths.add(localPath);
                     } catch (IOException e) {
                         logger.error("Failed to add a new file {} to the sync DB: {}", name, e.getMessage());
@@ -179,6 +178,30 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
     @NotNull
     private String getName(@NotNull final Path localPath) {
         return this.syncDir.relativize(localPath).toString();
+    }
+
+    private void onCreate(@NotNull final Path localPath) {
+        final long now = System.currentTimeMillis();
+        logger.debug("{} is created at {}", localPath, now);
+        this.trackingFiles.put(localPath, now);
+    }
+
+    private void onModify(@NotNull final Path localPath) {
+        final long now = System.currentTimeMillis();
+        logger.debug("{} is modified at {}", localPath, now);
+        this.trackingFiles.put(localPath, now);
+    }
+
+    private void onDelete(@NotNull final Path localPath) {
+        logger.info("{} is deleted", localPath);
+        if (this.trackingFiles.containsKey(localPath)) {
+            this.trackingFiles.remove(localPath);
+        }
+        final String name = this.getName(localPath);
+        DB.get(name).ifPresent(syncFile -> {
+            DB.setDeleted(name);
+            DB.commit();
+        });
     }
 
 }
