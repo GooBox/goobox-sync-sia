@@ -65,11 +65,12 @@ public class DaemonApi {
      */
     public com.squareup.okhttp.Call daemonConstantsGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/daemon/constants";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -100,20 +101,16 @@ public class DaemonApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call daemonConstantsGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = daemonConstantsGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -181,11 +178,12 @@ public class DaemonApi {
      */
     public com.squareup.okhttp.Call daemonStopGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/daemon/stop";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -216,20 +214,16 @@ public class DaemonApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call daemonStopGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = daemonStopGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -293,11 +287,12 @@ public class DaemonApi {
      */
     public com.squareup.okhttp.Call daemonVersionGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/daemon/version";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -328,20 +323,16 @@ public class DaemonApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call daemonVersionGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = daemonVersionGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**

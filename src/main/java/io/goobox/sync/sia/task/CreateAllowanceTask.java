@@ -30,13 +30,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
 
 public class CreateAllowanceTask implements Callable<AllowanceInfo> {
 
-    static final int DefaultPeriod = 4320;
-
     private final Logger logger = LoggerFactory.getLogger(CreateAllowanceTask.class);
+
+    static final int AllocationPeriod;
+    @Nullable
+    static final Integer NHosts;
+    @Nullable
+    static final Integer RenewWindow;
+
+    static {
+
+        final ResourceBundle bundle = ResourceBundle.getBundle("allowance");
+        final int blockMonth = Integer.valueOf(bundle.getString("block-month"));
+        final int allowanceMonths = Integer.valueOf(bundle.getString("allowance-months"));
+        AllocationPeriod = blockMonth * allowanceMonths;
+
+        if (bundle.containsKey("nhosts")) {
+            NHosts = Integer.valueOf(bundle.getString("nhosts"));
+        } else {
+            NHosts = null;
+        }
+
+        if (bundle.containsKey("renew-window")) {
+            RenewWindow = Integer.valueOf(bundle.getString("renew-window"));
+        } else {
+            RenewWindow = null;
+        }
+
+    }
 
     @NotNull
     private Context ctx;
@@ -59,7 +85,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
         final InlineResponse20013 walletInfo = wallet.walletGet();
 
         // If the wallet is locked, unlock it first.
-        if (!walletInfo.getUnlocked()) {
+        if (!walletInfo.isUnlocked()) {
             logger.info("Unlocking the wallet");
             wallet.walletUnlockPost(this.ctx.getConfig().getPrimarySeed());
         }
@@ -73,7 +99,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
 
         // Allocate new fund.
         logger.info("Allocating {} hastings", this.fund);
-        renter.renterPost(this.fund.toString(), null, DefaultPeriod, null);
+        renter.renterPost(this.fund.toString(), NHosts, AllocationPeriod, RenewWindow);
 
         final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
         return new AllowanceInfo(allowance);

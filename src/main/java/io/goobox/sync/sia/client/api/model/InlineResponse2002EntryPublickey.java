@@ -27,7 +27,7 @@ import java.io.IOException;
  * Public key used to identify and verify hosts.
  */
 @ApiModel(description = "Public key used to identify and verify hosts.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2002EntryPublickey {
   @SerializedName("algorithm")
   private String algorithm = null;
@@ -112,6 +112,6 @@ public class InlineResponse2002EntryPublickey {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

@@ -88,7 +88,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
 
         logger.info("Retrieving the wallet information");
         final InlineResponse20013 wallet = walletApi.walletGet();
-        if (!wallet.getUnlocked()) {
+        if (!wallet.isUnlocked()) {
 
             try {
 
@@ -132,7 +132,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
                     walletApi.walletInitSeedPost("", this.ctx.getConfig().getPrimarySeed(), true, null);
                 }
 
-                if (!walletApi.walletGet().getUnlocked()) {
+                if (!walletApi.walletGet().isUnlocked()) {
                     logger.info("Retrying to unlock the wallet");
                     walletApi.walletUnlockPost(this.ctx.getConfig().getPrimarySeed());
                 }

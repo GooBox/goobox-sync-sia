@@ -214,6 +214,10 @@ public class DB {
         return StreamSupport.stream(repo().find(eq("state", state)).spliterator(), false);
     }
 
+    public synchronized static Stream<SyncFile> getFiles() {
+        return StreamSupport.stream(repo().find().spliterator(), false);
+    }
+
     public synchronized static boolean isSynced() {
         return repo().find(not(eq("state", SyncState.SYNCED))).size() == 0;
     }

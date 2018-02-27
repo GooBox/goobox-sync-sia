@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 /**
  * InlineResponse20011Files
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse20011Files {
   @SerializedName("siapath")
   private String siapath = null;
@@ -117,7 +117,7 @@ public class InlineResponse20011Files {
    * @return available
   **/
   @ApiModelProperty(example = "true", value = "true if the file is available for download. Files may be available before they are completely uploaded.")
-  public Boolean getAvailable() {
+  public Boolean isAvailable() {
     return available;
   }
 
@@ -135,7 +135,7 @@ public class InlineResponse20011Files {
    * @return renewing
   **/
   @ApiModelProperty(example = "true", value = "true if the file's contracts will be automatically renewed by the renter.")
-  public Boolean getRenewing() {
+  public Boolean isRenewing() {
     return renewing;
   }
 
@@ -250,6 +250,6 @@ public class InlineResponse20011Files {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

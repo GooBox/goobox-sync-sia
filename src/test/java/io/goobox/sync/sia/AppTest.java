@@ -17,9 +17,8 @@
 
 package io.goobox.sync.sia;
 
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.common.Utils;
-import io.goobox.sync.sia.client.ApiClient;
+import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -41,7 +40,6 @@ import io.goobox.sync.sia.task.DownloadCloudFileTask;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
 import io.goobox.sync.sia.task.NotifyEmptyFundTask;
 import io.goobox.sync.sia.task.NotifyFundInfoTask;
-import io.goobox.sync.sia.task.NotifySyncStateTask;
 import io.goobox.sync.sia.task.UploadLocalFileTask;
 import io.goobox.sync.sia.task.WaitContractsTask;
 import io.goobox.sync.sia.task.WaitSynchronizationTask;
@@ -96,18 +94,11 @@ public class AppTest {
         new UtilsMock();
 
         this.tmpDir = UtilsMock.syncDir;
-        final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
+        final Config cfg = new Config(UtilsMock.dataDir.resolve(App.ConfigFileName));
         cfg.setUserName("test-user");
         cfg.setSyncDir(this.tmpDir);
-
-        final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
-
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
-
-        this.ctx = new Context(cfg, apiClient);
+        cfg.save();
+        this.ctx = new Context(cfg);
 
     }
 
@@ -184,7 +175,7 @@ public class AppTest {
         new Expectations(App.class) {{
             final App app = new App();
             result = app;
-            app.setOutputEvents();
+            app.enableOutputEvents();
             app.call();
             result = 0;
         }};
@@ -312,7 +303,7 @@ public class AppTest {
             APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
             result = ctx.getConfig();
 
-            APIUtils.getApiClient();
+            APIUtils.getApiClient(ctx.getConfig());
             result = ctx.getApiClient();
         }};
 
@@ -320,7 +311,9 @@ public class AppTest {
         final Context ctx = app.getContext();
         assertEquals(this.ctx.getConfig(), ctx.getConfig());
         assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
-        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        assertEquals(this.ctx.getConfig().getSyncDir(), Deencapsulation.getField(overlayHelper, "syncDir"));
     }
 
     @Test
@@ -329,7 +322,7 @@ public class AppTest {
             APIUtils.loadConfig(Utils.getDataDir().resolve(App.ConfigFileName));
             result = ctx.getConfig();
 
-            APIUtils.getApiClient();
+            APIUtils.getApiClient(ctx.getConfig());
             result = ctx.getApiClient();
         }};
 
@@ -338,7 +331,9 @@ public class AppTest {
         assertEquals(this.ctx.getConfig(), ctx.getConfig());
         assertEquals(this.ctx.getApiClient(), ctx.getApiClient());
         assertEquals(this.tmpDir, ctx.getConfig().getSyncDir());
-        assertEquals(this.tmpDir, Deencapsulation.getField(app.getOverlayHelper(), "syncDir"));
+
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        assertEquals(this.tmpDir, Deencapsulation.getField(overlayHelper, "syncDir"));
     }
 
     /**
@@ -388,7 +383,9 @@ public class AppTest {
             result = executor;
         }};
 
-        new Expectations(app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class, FileWatcher.class) {{
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(app, overlayHelper, executor, StartSiaDaemonTask.class,
+                CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -411,6 +408,12 @@ public class AppTest {
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
+        }};
+
+        new Expectations(System.class) {{
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
         app.call();
@@ -463,9 +466,10 @@ public class AppTest {
             result = executor;
         }};
 
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
         new Expectations(
-                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
-                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+                app, executor, overlayHelper, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class,
+                CheckUploadStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -487,13 +491,16 @@ public class AppTest {
             new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
-            new NotifySyncStateTask();
-            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
-
             new NotifyFundInfoTask(ctx, true);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
+        }};
+
+        new Expectations(System.class) {{
+            System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
         app.call();
@@ -547,9 +554,10 @@ public class AppTest {
             result = executor;
         }};
 
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
         new Expectations(
-                app, executor, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class, CheckUploadStateTask.class,
-                NotifySyncStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
+                app, executor, overlayHelper, StartSiaDaemonTask.class, CheckStateTask.class, CheckDownloadStateTask.class,
+                CheckUploadStateTask.class, NotifyFundInfoTask.class, FileWatcher.class) {{
 
             app.resumeTasks(ctx, executor);
 
@@ -571,13 +579,12 @@ public class AppTest {
             new RetryableTask(checkUploadStateTask, startSiaDaemonTask);
             executor.scheduleWithFixedDelay((RetryableTask) any, 45, 60, TimeUnit.SECONDS);
 
-            new NotifySyncStateTask();
-            executor.scheduleWithFixedDelay((Runnable) any, 0, 60, TimeUnit.SECONDS);
-
             new NotifyFundInfoTask(ctx, false);
             executor.scheduleWithFixedDelay((Runnable) any, 0, 1, TimeUnit.HOURS);
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
+
+            overlayHelper.setSynchronizing();
         }};
 
         app.call();
@@ -948,8 +955,9 @@ public class AppTest {
     @Test
     public void startSiaDaemon(@Mocked SiaDaemon daemon) throws IOException {
 
+        final Config cfg = ctx.getConfig();
         new Expectations() {{
-            new SiaDaemon(Utils.getDataDir().resolve("sia"));
+            new SiaDaemon(cfg);
             result = daemon;
             daemon.checkAndDownloadConsensusDB();
             daemon.start();
@@ -992,6 +1000,68 @@ public class AppTest {
         final App app = new App();
         Deencapsulation.setField(app, "daemon", daemon);
         app.startSiaDaemon();
+
+    }
+
+    @Test
+    public void refreshOverlayIconWithSyncedDB(@SuppressWarnings("unused") @Mocked DB db) {
+
+        final App app = new App();
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(app, overlayHelper) {{
+            overlayHelper.refresh(tmpDir);
+            DB.isSynced();
+            result = true;
+
+            overlayHelper.setOK();
+            app.notifyEvent(SyncStateEvent.idle);
+        }};
+        app.refreshOverlayIcon(tmpDir);
+
+    }
+
+    @Test
+    public void refreshOverlayIconWithSynchronizingDB(@SuppressWarnings("unused") @Mocked DB db) {
+
+        final App app = new App();
+        final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        new Expectations(app, overlayHelper) {{
+            overlayHelper.refresh(tmpDir);
+            DB.isSynced();
+            result = false;
+
+            overlayHelper.setSynchronizing();
+            app.notifyEvent(SyncStateEvent.synchronizing);
+        }};
+        app.refreshOverlayIcon(tmpDir);
+
+    }
+
+    @Test
+    public void notifyEvent() {
+
+        final Event e = SyncStateEvent.synchronizing;
+        new Expectations(System.class) {{
+            System.out.println(e.toJson());
+        }};
+
+        final App app = new App();
+        app.enableOutputEvents();
+        app.notifyEvent(e);
+
+    }
+
+    @Test
+    public void notifyEventWithDisableNotificationApp() {
+
+        final Event e = SyncStateEvent.synchronizing;
+        new Expectations(System.class) {{
+            System.out.println(e.toJson());
+            times = 0;
+        }};
+
+        final App app = new App();
+        app.notifyEvent(e);
 
     }
 

@@ -27,7 +27,7 @@ import java.io.IOException;
  * Information about the network, specifically various ways in which renters have contacted the host.
  */
 @ApiModel(description = "Information about the network, specifically various ways in which renters have contacted the host.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse200Networkmetrics {
   @SerializedName("downloadcalls")
   private Integer downloadcalls = null;
@@ -227,6 +227,6 @@ public class InlineResponse200Networkmetrics {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

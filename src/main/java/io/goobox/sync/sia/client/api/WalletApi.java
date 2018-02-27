@@ -76,15 +76,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call wallet033xPostCall(String source, String encryptionpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/033x";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (source != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "source", source));
+        localVarQueryParams.addAll(apiClient.parameterToPair("source", source));
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -115,20 +116,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call wallet033xPostValidateBeforeCall(String source, String encryptionpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = wallet033xPostCall(source, encryptionpassword, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -198,11 +195,12 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletAddressGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/address";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -233,20 +231,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletAddressGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletAddressGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -314,11 +308,12 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletAddressesGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/addresses";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -349,20 +344,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletAddressesGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletAddressesGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -431,13 +422,14 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletBackupGetCall(String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/backup";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (destination != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "destination", destination));
+        localVarQueryParams.addAll(apiClient.parameterToPair("destination", destination));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -468,20 +460,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletBackupGetValidateBeforeCall(String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletBackupGetCall(destination, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -550,15 +538,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletChangepasswordPostCall(String encryptionpassword, String newpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/changepassword";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
         if (newpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "newpassword", newpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("newpassword", newpassword));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -589,9 +578,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletChangepasswordPostValidateBeforeCall(String encryptionpassword, String newpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -605,14 +594,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'newpassword' when calling walletChangepasswordPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletChangepasswordPostCall(encryptionpassword, newpassword, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -682,11 +667,12 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -717,20 +703,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -801,17 +783,18 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletInitPostCall(String encryptionpassword, String dictionary, Boolean force, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/init";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
         if (dictionary != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "dictionary", dictionary));
+        localVarQueryParams.addAll(apiClient.parameterToPair("dictionary", dictionary));
         if (force != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "force", force));
+        localVarQueryParams.addAll(apiClient.parameterToPair("force", force));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -842,20 +825,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletInitPostValidateBeforeCall(String encryptionpassword, String dictionary, Boolean force, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletInitPostCall(encryptionpassword, dictionary, force, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -936,19 +915,20 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletInitSeedPostCall(String encryptionpassword, String seed, Boolean force, String dictionary, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/init/seed";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
         if (dictionary != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "dictionary", dictionary));
+        localVarQueryParams.addAll(apiClient.parameterToPair("dictionary", dictionary));
         if (seed != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "seed", seed));
+        localVarQueryParams.addAll(apiClient.parameterToPair("seed", seed));
         if (force != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "force", force));
+        localVarQueryParams.addAll(apiClient.parameterToPair("force", force));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -979,9 +959,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletInitSeedPostValidateBeforeCall(String encryptionpassword, String seed, Boolean force, String dictionary, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -1000,14 +980,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'force' when calling walletInitSeedPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletInitSeedPostCall(encryptionpassword, seed, force, dictionary, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1083,11 +1059,12 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletLockPostCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/lock";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1118,20 +1095,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletLockPostValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletLockPostCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1198,17 +1171,18 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSeedPostCall(String encryptionpassword, String dictionary, String seed, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/seed";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
         if (dictionary != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "dictionary", dictionary));
+        localVarQueryParams.addAll(apiClient.parameterToPair("dictionary", dictionary));
         if (seed != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "seed", seed));
+        localVarQueryParams.addAll(apiClient.parameterToPair("seed", seed));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1239,9 +1213,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSeedPostValidateBeforeCall(String encryptionpassword, String dictionary, String seed, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -1250,14 +1224,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'encryptionpassword' when calling walletSeedPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletSeedPostCall(encryptionpassword, dictionary, seed, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1331,13 +1301,14 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSeedsGetCall(String dictionary, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/seeds";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (dictionary != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "dictionary", dictionary));
+        localVarQueryParams.addAll(apiClient.parameterToPair("dictionary", dictionary));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1368,20 +1339,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSeedsGetValidateBeforeCall(String dictionary, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletSeedsGetCall(dictionary, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1455,17 +1422,18 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSiacoinsPostCall(Integer amount, String destination, String outputs, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/siacoins";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (amount != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "amount", amount));
+        localVarQueryParams.addAll(apiClient.parameterToPair("amount", amount));
         if (destination != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "destination", destination));
+        localVarQueryParams.addAll(apiClient.parameterToPair("destination", destination));
         if (outputs != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "outputs", outputs));
+        localVarQueryParams.addAll(apiClient.parameterToPair("outputs", outputs));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1496,20 +1464,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSiacoinsPostValidateBeforeCall(Integer amount, String destination, String outputs, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletSiacoinsPostCall(amount, destination, outputs, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1588,15 +1552,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSiafundsPostCall(Integer amount, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/siafunds";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (amount != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "amount", amount));
+        localVarQueryParams.addAll(apiClient.parameterToPair("amount", amount));
         if (destination != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "destination", destination));
+        localVarQueryParams.addAll(apiClient.parameterToPair("destination", destination));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1627,20 +1592,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSiafundsPostValidateBeforeCall(Integer amount, String destination, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletSiafundsPostCall(amount, destination, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1716,15 +1677,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSiagkeyPostCall(String encryptionpassword, String keyfiles, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/siagkey";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
         if (keyfiles != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "keyfiles", keyfiles));
+        localVarQueryParams.addAll(apiClient.parameterToPair("keyfiles", keyfiles));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1755,9 +1717,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSiagkeyPostValidateBeforeCall(String encryptionpassword, String keyfiles, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -1771,14 +1733,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'keyfiles' when calling walletSiagkeyPost(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletSiagkeyPostCall(encryptionpassword, keyfiles, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1850,15 +1808,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletSweepSeedPostCall(String dictionary, String seed, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/sweep/seed";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (dictionary != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "dictionary", dictionary));
+        localVarQueryParams.addAll(apiClient.parameterToPair("dictionary", dictionary));
         if (seed != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "seed", seed));
+        localVarQueryParams.addAll(apiClient.parameterToPair("seed", seed));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -1889,20 +1848,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletSweepSeedPostValidateBeforeCall(String dictionary, String seed, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletSweepSeedPostCall(dictionary, seed, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -1977,12 +1932,13 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletTransactionIdGetCall(String id, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/transaction/{id}"
             .replaceAll("\\{" + "id" + "\\}", apiClient.escapeString(id.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -2013,9 +1969,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletTransactionIdGetValidateBeforeCall(String id, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -2024,14 +1980,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'id' when calling walletTransactionIdGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletTransactionIdGetCall(id, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -2103,12 +2055,13 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletTransactionsAddrGetCall(String addr, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/transactions/{addr}"
             .replaceAll("\\{" + "addr" + "\\}", apiClient.escapeString(addr.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -2139,9 +2092,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletTransactionsAddrGetValidateBeforeCall(String addr, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -2150,14 +2103,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'addr' when calling walletTransactionsAddrGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletTransactionsAddrGetCall(addr, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -2230,15 +2179,16 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletTransactionsGetCall(String startheight, String endheight, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/transactions";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (startheight != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "startheight", startheight));
+        localVarQueryParams.addAll(apiClient.parameterToPair("startheight", startheight));
         if (endheight != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "endheight", endheight));
+        localVarQueryParams.addAll(apiClient.parameterToPair("endheight", endheight));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -2269,20 +2219,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletTransactionsGetValidateBeforeCall(String startheight, String endheight, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletTransactionsGetCall(startheight, endheight, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -2357,13 +2303,14 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletUnlockPostCall(String encryptionpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/unlock";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         if (encryptionpassword != null)
-        localVarQueryParams.addAll(apiClient.parameterToPairs("", "encryptionpassword", encryptionpassword));
+        localVarQueryParams.addAll(apiClient.parameterToPair("encryptionpassword", encryptionpassword));
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -2394,20 +2341,16 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletUnlockPostValidateBeforeCall(String encryptionpassword, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = walletUnlockPostCall(encryptionpassword, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -2475,12 +2418,13 @@ public class WalletApi {
      */
     public com.squareup.okhttp.Call walletVerifyAddressAddrGetCall(String addr, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/wallet/verify/address/{addr}"
             .replaceAll("\\{" + "addr" + "\\}", apiClient.escapeString(addr.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -2511,9 +2455,9 @@ public class WalletApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call walletVerifyAddressAddrGetValidateBeforeCall(String addr, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
@@ -2522,14 +2466,10 @@ public class WalletApi {
             throw new ApiException("Missing the required parameter 'addr' when calling walletVerifyAddressAddrGet(Async)");
         }
         
-        
+
         com.squareup.okhttp.Call call = walletVerifyAddressAddrGetCall(addr, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**

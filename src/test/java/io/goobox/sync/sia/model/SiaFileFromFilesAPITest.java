@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Junpei Kawamoto
+ * Copyright (C) 2017-2018 Junpei Kawamoto
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ public class SiaFileFromFilesAPITest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", this.user);
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
     }
 
@@ -81,7 +81,7 @@ public class SiaFileFromFilesAPITest {
         assertEquals(created, siaFile.getCreationTime().get());
         assertEquals(fileSize, siaFile.getFileSize());
 
-        assertEquals(false, siaFile.getAvailable());
+        assertEquals(false, siaFile.isAvailable());
         assertEquals(new BigDecimal(24.5), siaFile.getUploadProgress());
     }
 

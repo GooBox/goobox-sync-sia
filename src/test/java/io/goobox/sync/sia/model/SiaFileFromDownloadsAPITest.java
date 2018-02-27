@@ -49,7 +49,7 @@ public class SiaFileFromDownloadsAPITest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", this.user);
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
     }
 

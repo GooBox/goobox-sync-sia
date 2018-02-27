@@ -20,7 +20,6 @@ package io.goobox.sync.sia.task;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.InlineResponse2009;
@@ -54,7 +53,7 @@ public class WaitContractsTaskTest {
     public void setUp() throws IOException {
 
         this.configPath = Files.createTempFile(null, null);
-        this.task = new WaitContractsTask(new Context(new Config(this.configPath), new ApiClient()));
+        this.task = new WaitContractsTask(new Context(new Config(this.configPath)));
         this.contracts = IntStream.range(0, App.MinContracts + 1).mapToObj(i -> {
             final InlineResponse2009Contracts c = new InlineResponse2009Contracts();
             c.setId(String.valueOf(i));

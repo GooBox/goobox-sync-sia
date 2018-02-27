@@ -17,7 +17,6 @@
 
 package io.goobox.sync.sia.task;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
@@ -67,9 +66,6 @@ public class CheckStateTaskTest {
     private App app;
 
     @Mocked
-    private OverlayHelper overlayHelper;
-
-    @Mocked
     private RenterApi api;
 
     private Path tmpDir;
@@ -86,7 +82,7 @@ public class CheckStateTaskTest {
         final Config cfg = new Config(this.tmpDir.resolve(App.ConfigFileName));
         Deencapsulation.setField(cfg, "userName", "test-user");
         Deencapsulation.setField(cfg, "syncDir", this.tmpDir.toAbsolutePath());
-        this.ctx = new Context(cfg, null);
+        this.ctx = new Context(cfg);
 
         this.name = String.format("file-%x", System.currentTimeMillis());
         this.oldTimeStamp = new Date(100000);
@@ -127,11 +123,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -176,11 +168,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -260,11 +248,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -362,11 +346,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -474,11 +454,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -521,11 +497,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -567,11 +539,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -609,11 +577,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -719,11 +683,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -759,11 +719,7 @@ public class CheckStateTaskTest {
 
             App.getInstance();
             result = Optional.of(app);
-
-            app.getOverlayHelper();
-            result = overlayHelper;
-
-            overlayHelper.refresh(localPath);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();

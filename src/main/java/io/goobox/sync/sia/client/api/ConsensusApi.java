@@ -65,11 +65,12 @@ public class ConsensusApi {
      */
     public com.squareup.okhttp.Call consensusGetCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = null;
-        
+
         // create path and map variables
         String localVarPath = "/consensus";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -100,20 +101,16 @@ public class ConsensusApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call consensusGetValidateBeforeCall(final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = consensusGetCall(progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**
@@ -182,11 +179,12 @@ public class ConsensusApi {
      */
     public com.squareup.okhttp.Call consensusValidateTransactionsetPostCall(TransactionSet body, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         Object localVarPostBody = body;
-        
+
         // create path and map variables
         String localVarPath = "/consensus/validate/transactionset";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
 
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
 
@@ -217,20 +215,16 @@ public class ConsensusApi {
         }
 
         String[] localVarAuthNames = new String[] {  };
-        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
+        return apiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarAuthNames, progressRequestListener);
     }
-    
+
     @SuppressWarnings("rawtypes")
     private com.squareup.okhttp.Call consensusValidateTransactionsetPostValidateBeforeCall(TransactionSet body, final ProgressResponseBody.ProgressListener progressListener, final ProgressRequestBody.ProgressRequestListener progressRequestListener) throws ApiException {
         
-        
+
         com.squareup.okhttp.Call call = consensusValidateTransactionsetPostCall(body, progressListener, progressRequestListener);
         return call;
 
-        
-        
-        
-        
     }
 
     /**

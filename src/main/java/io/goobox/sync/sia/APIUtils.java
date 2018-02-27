@@ -72,10 +72,10 @@ public class APIUtils {
      * @return an ApiClient object.
      */
     @NotNull
-    public static ApiClient getApiClient() {
+    public static ApiClient getApiClient(@NotNull Config cfg) {
 
         final ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath("http://localhost:9980");
+        apiClient.setBasePath(String.format("http://%s", cfg.getSiadApiAddress()));
         final OkHttpClient httpClient = apiClient.getHttpClient();
         httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
         httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);

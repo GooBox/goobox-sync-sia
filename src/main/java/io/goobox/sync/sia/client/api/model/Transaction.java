@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Transaction
  */
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class Transaction {
   @SerializedName("transaction")
   private Object transaction = null;
@@ -223,6 +223,6 @@ public class Transaction {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 

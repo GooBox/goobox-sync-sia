@@ -40,11 +40,7 @@
   </appender>
 
   <logger name="io.goobox.sync" level="debug"/>
-  <logger name="org.dizitart" level="info"/>
-  <logger name="net.harawata" level="info"/>
-  <logger name="com.liferay" level="info"/>
-
-  <root>
+  <root level="info">
     <appender-ref ref="FILE"/>
     <appender-ref ref="STDERR"/>
   </root>

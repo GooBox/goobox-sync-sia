@@ -27,7 +27,7 @@ import java.io.IOException;
  * Metrics about how much the Renter has spent on storage, uploads, and downloads.
  */
 @ApiModel(description = "Metrics about how much the Renter has spent on storage, uploads, and downloads.")
-@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2017-11-23T01:54:58.054-05:00")
+@javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-02-24T04:09:14.967-05:00")
 public class InlineResponse2008Financialmetrics {
   @SerializedName("contractspending")
   private String contractspending = null;
@@ -181,6 +181,6 @@ public class InlineResponse2008Financialmetrics {
     }
     return o.toString().replace("\n", "\n    ");
   }
-  
+
 }
 
