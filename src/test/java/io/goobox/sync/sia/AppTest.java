@@ -410,6 +410,7 @@ public class AppTest {
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
             overlayHelper.setSynchronizing();
+            app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
         }};
 
         new Expectations(System.class) {{
@@ -497,6 +498,7 @@ public class AppTest {
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
             overlayHelper.setSynchronizing();
+            app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
         }};
 
         new Expectations(System.class) {{
@@ -585,6 +587,7 @@ public class AppTest {
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
             overlayHelper.setSynchronizing();
+            app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
         }};
 
         app.call();

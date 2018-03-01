@@ -315,9 +315,7 @@ public class CheckStateTask implements Callable<Void> {
     private void enqueueForDownload(@NotNull final SiaFile file) throws IOException {
 
         DB.addForDownload(file, file.getLocalPath());
-        if (Files.exists(file.getLocalPath())) {
-            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
-        }
+        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
         this.executor.execute(new RetryableTask(new DownloadCloudFileTask(this.ctx, file.getName()), new StartSiaDaemonTask()));
 
     }
@@ -374,6 +372,7 @@ public class CheckStateTask implements Callable<Void> {
                     // It should be deleted from the DB.
                     logger.debug("Remove deleted file {} from the sync DB", syncFile.getName());
                     DB.remove(syncFile.getName());
+                    App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(app::refreshOverlayIcon));
                     return syncFile.getName();
                 })
                 .forEach(processedFiles::add);
