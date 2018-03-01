@@ -99,6 +99,7 @@ public class DownloadCloudFileTaskTest {
                 return System.currentTimeMillis();
             }
         }, this.localPath);
+        DBMock.committed = false;
 
     }
 
