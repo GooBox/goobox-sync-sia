@@ -88,7 +88,7 @@ public final class App implements Callable<Integer> {
     /**
      * Version information.
      */
-    public static final String Version = "0.1.2";
+    public static final String Version = "0.1.3";
 
     /**
      * The number of the minimum required contracts.
@@ -285,6 +285,7 @@ public final class App implements Callable<Integer> {
     }
 
     public void refreshOverlayIcon(@NotNull Path localPath) {
+        logger.trace("Refresh the overlay icon of {}", localPath);
         this.overlayHelper.refresh(localPath);
         if (DB.isSynced()) {
             this.overlayHelper.setOK();
@@ -395,6 +396,7 @@ public final class App implements Callable<Integer> {
         }
 
         this.resumeTasks(ctx, executor);
+        this.refreshOverlayIcon(ctx.getConfig().getSyncDir());
 
         final RecoveryTask startSiaDaemonTask = new StartSiaDaemonTask();
         executor.scheduleWithFixedDelay(

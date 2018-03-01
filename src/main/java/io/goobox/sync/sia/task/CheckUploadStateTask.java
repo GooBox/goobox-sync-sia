@@ -73,7 +73,10 @@ public class CheckUploadStateTask implements Callable<Void> {
                         if (syncFileOpt.isPresent()) {
 
                             final SyncFile syncFile = syncFileOpt.get();
-                            if (syncFile.getState() != SyncState.UPLOADING) {
+                            if (syncFile.getState() == SyncState.SYNCED) {
+                                logger.trace("Skip processing {} because it has been already synced", syncFile.getName());
+                                return;
+                            } else if (syncFile.getState() != SyncState.UPLOADING) {
                                 logger.debug("Cancel uploading {} because it's not marked as UPLOADING: {}", syncFile.getName(), syncFile.getState());
                                 try {
                                     api.renterDeleteSiapathPost(APIUtils.toSlash(siaFile.getCloudPath()));
