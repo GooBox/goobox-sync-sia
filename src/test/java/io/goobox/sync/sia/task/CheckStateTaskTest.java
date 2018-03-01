@@ -208,9 +208,9 @@ public class CheckStateTaskTest {
             api.renterFilesGet();
             result = res;
 
-            // Since the local files doesn't exist yet, refresh should be skipped.
             App.getInstance();
-            times = 0;
+            result = Optional.of(app);
+            app.refreshOverlayIcon(siaFile.getLocalPath());
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -752,7 +752,8 @@ public class CheckStateTaskTest {
             result = res;
 
             App.getInstance();
-            times = 0;
+            result = Optional.of(app);
+            app.refreshOverlayIcon(localPath);
         }};
 
         final ExecutorMock executor = new ExecutorMock();
