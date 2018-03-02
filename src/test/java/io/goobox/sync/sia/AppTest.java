@@ -413,8 +413,10 @@ public class AppTest {
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
         }};
 
-        new Expectations(System.class) {{
-            System.out.println(SyncStateEvent.startSynchronization.toJson());
+        // Since OutputEvents is false, it won't have any outputs.
+        new Expectations(System.out) {{
+            System.out.println(anyString);
+            times = 0;
         }};
 
         app.call();
@@ -501,7 +503,7 @@ public class AppTest {
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
         }};
 
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
@@ -1056,7 +1058,7 @@ public class AppTest {
     public void notifyEvent() {
 
         final Event e = SyncStateEvent.synchronizing;
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(e.toJson());
         }};
 
@@ -1070,7 +1072,7 @@ public class AppTest {
     public void notifyEventWithDisableNotificationApp() {
 
         final Event e = SyncStateEvent.synchronizing;
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(e.toJson());
             times = 0;
         }};
