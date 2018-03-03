@@ -67,6 +67,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -128,6 +129,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
      * @param args command line arguments.
      */
     public static void main(String[] args) {
+        Thread.currentThread().setName("Main");
 
         if (args.length != 0) {
             // Checking sub commands.
@@ -357,8 +359,20 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
         this.synchronizeDeletedFiles();
 
-        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         int retry = 0;
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize, new ThreadFactory() {
+
+            final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+            int nThread = 0;
+
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                final Thread thread = threadFactory.newThread(r);
+                thread.setName(String.format("Worker Thread %d", ++nThread));
+                return thread;
+            }
+
+        });
         while (true) {
 
             try {

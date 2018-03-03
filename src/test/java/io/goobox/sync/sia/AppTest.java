@@ -379,7 +379,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 
@@ -463,7 +463,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 
@@ -552,7 +552,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 

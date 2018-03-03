@@ -47,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -112,6 +113,7 @@ public class SiaDaemon extends Thread implements Closeable {
     public SiaDaemon(@NotNull final Config cfg) {
         this.cfg = cfg;
         this.dataDir = cfg.getDataDir().resolve(SiaDaemonDirectory);
+        this.setName(SiaDaemon.class.getSimpleName());
     }
 
     /**
@@ -186,6 +188,7 @@ public class SiaDaemon extends Thread implements Closeable {
             Files.createDirectories(dbPath.getParent());
         }
 
+        final ThreadFactory threadFactory = Executors.defaultThreadFactory();
         int attempt = 0;
         while (attempt < MaxRetry) {
             attempt++;
@@ -197,7 +200,11 @@ public class SiaDaemon extends Thread implements Closeable {
             }
 
             final Path tempFile = Files.createTempFile(null, null);
-            final ExecutorService executor = Executors.newFixedThreadPool(2);
+            final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
+                final Thread thread = threadFactory.newThread(r);
+                thread.setName(r.toString());
+                return thread;
+            });
             try {
 
                 final URL url = new URL(ConsensusDBURL);
@@ -207,24 +214,46 @@ public class SiaDaemon extends Thread implements Closeable {
                 conn.connect();
 
                 // Calculating the download progress.
-                executor.submit(() -> {
-                    try {
-                        while (Files.exists(tempFile)) {
-                            try {
-                                logger.info("Downloading consensus database... ({} MB)", Files.size(tempFile) / 1000000);
-                            } catch (final IOException e) {
-                                logger.error("Failed to get the file size fo consensus database: {}", e.getMessage());
+                executor.submit(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            while (Files.exists(tempFile)) {
+                                try {
+                                    logger.info("Downloading consensus database... ({} MB)", Files.size(tempFile) / 1000000);
+                                } catch (final IOException e) {
+                                    logger.error("Failed to get the file size fo consensus database: {}", e.getMessage());
+                                }
+                                Thread.sleep(5000);
                             }
-                            Thread.sleep(5000);
+                        } catch (final InterruptedException e) {
+                            logger.error("Interrupted while downloading consensus database: {}", e.getMessage());
                         }
-                    } catch (final InterruptedException e) {
-                        logger.error("Interrupted while downloading consensus database: {}", e.getMessage());
                     }
+
+                    @Override
+                    public String toString() {
+                        return "Consensus DB Download Monitor";
+                    }
+
                 });
 
                 final PipedInputStream pipedIn = new PipedInputStream();
                 final PipedOutputStream pipedOut = new PipedOutputStream(pipedIn);
-                @SuppressWarnings("unchecked") final Future checkSumFuture = executor.submit((Callable) () -> DigestUtils.sha256Hex(pipedIn));
+                final Future checkSumFuture = executor.submit(new Callable<String>() {
+
+                    @Override
+                    public String call() throws IOException {
+                        return DigestUtils.sha256Hex(pipedIn);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Compute SHA-256 Hash";
+                    }
+
+                });
 
                 try (final InputStream in = new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true)) {
                     Files.copy(new GZIPInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
