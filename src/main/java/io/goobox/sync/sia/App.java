@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.common.overlay.OverlayIcon;
+import io.goobox.sync.common.overlay.OverlayIconProvider;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -71,7 +72,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The goobox-sync-sia App.
  */
-public final class App implements Callable<Integer> {
+public final class App implements Callable<Integer>, OverlayIconProvider {
 
     // Constants.
     public static final String Name;
@@ -250,25 +251,7 @@ public final class App implements Callable<Integer> {
         }
 
         logger.debug("Loading icon overlay libraries");
-        this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
-            if (Files.isDirectory(path)) {
-                return OverlayIcon.OK;
-            }
-            final String name = cfg.getSyncDir().relativize(path).toString();
-            final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
-                if (state.isSynced()) {
-                    return OverlayIcon.OK;
-                } else if (state.isSynchronizing()) {
-                    return OverlayIcon.SYNCING;
-                } else if (state.isFailed()) {
-                    return OverlayIcon.ERROR;
-                } else {
-                    return OverlayIcon.WARNING;
-                }
-            }).orElse(OverlayIcon.NONE);
-            logger.trace("Updating the icon of {} to {}", name, icon);
-            return icon;
-        });
+        this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), this);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Shutting down the overlay helper");
             overlayHelper.shutdown();
@@ -416,6 +399,29 @@ public final class App implements Callable<Integer> {
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
         return 0;
+
+    }
+
+    @Override
+    public OverlayIcon getIcon(Path path) {
+
+        if (Files.isDirectory(path)) {
+            return OverlayIcon.OK;
+        }
+        final String name = cfg.getSyncDir().relativize(path).toString();
+        final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
+            if (state.isSynced()) {
+                return OverlayIcon.OK;
+            } else if (state.isSynchronizing()) {
+                return OverlayIcon.SYNCING;
+            } else if (state.isFailed()) {
+                return OverlayIcon.ERROR;
+            } else {
+                return OverlayIcon.WARNING;
+            }
+        }).orElse(OverlayIcon.NONE);
+        logger.trace("Updating the icon of {} to {}", name, icon);
+        return icon;
 
     }
 
@@ -577,8 +583,12 @@ public final class App implements Callable<Integer> {
     }
 
     private void dumpDatabase() {
-        DB.getFiles().forEach(
-                syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        try {
+            DB.getFiles().forEach(
+                    syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        } catch (IllegalStateException e) {
+            logger.warn("Failed to dump database: {}", e.getMessage());
+        }
     }
 
 }
