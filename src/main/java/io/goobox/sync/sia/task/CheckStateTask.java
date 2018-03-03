@@ -212,6 +212,7 @@ public class CheckStateTask implements Callable<Void> {
 
                         logger.info("Retry to upload file {}", file.getName());
                         this.enqueueForUpload(file.getLocalPath());
+                        App.getInstance().ifPresent(app -> app.refreshOverlayIcon(file.getLocalPath()));
                         break;
 
                     case DOWNLOAD_FAILED:
@@ -294,7 +295,6 @@ public class CheckStateTask implements Callable<Void> {
         final Path cloudPath = this.ctx.getPathPrefix().resolve(name).resolve(Long.toString(lastModifiedTime));
         try {
             DB.setForUpload(this.ctx.getName(localPath), localPath, cloudPath);
-            App.getInstance().ifPresent(app -> app.refreshOverlayIcon(localPath));
             executor.execute(new RetryableTask(new UploadLocalFileTask(ctx, localPath), new StartSiaDaemonTask()));
         } catch (final IOException e) {
             if (Files.exists(localPath)) {
@@ -399,6 +399,7 @@ public class CheckStateTask implements Callable<Void> {
                     try {
                         logger.info("Retry to upload file {}", syncFile.getName());
                         this.enqueueForUpload(this.ctx.getConfig().getSyncDir().resolve(syncFile.getName()));
+                        App.getInstance().ifPresent(app -> syncFile.getLocalPath().ifPresent(app::refreshOverlayIcon));
                     } catch (final IOException e) {
                         logger.error("Failed to upload {}: {}", syncFile.getName(), e.getMessage());
                     }
