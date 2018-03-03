@@ -577,8 +577,12 @@ public final class App implements Callable<Integer> {
     }
 
     private void dumpDatabase() {
-        DB.getFiles().forEach(
-                syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        try {
+            DB.getFiles().forEach(
+                    syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        } catch (IllegalStateException e) {
+            logger.warn("Failed to dump database: {}", e.getMessage());
+        }
     }
 
 }
