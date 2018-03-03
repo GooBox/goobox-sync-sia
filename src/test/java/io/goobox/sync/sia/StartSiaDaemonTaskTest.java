@@ -17,8 +17,6 @@
 
 package io.goobox.sync.sia;
 
-import io.goobox.sync.common.overlay.OverlayHelper;
-import io.goobox.sync.common.overlay.OverlayIconProvider;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.mocks.UtilsMock;
 import io.goobox.sync.sia.task.GetWalletInfoTask;
@@ -49,7 +47,7 @@ public class StartSiaDaemonTaskTest {
     private Thread thread;
 
     @Mocked
-    private OverlayHelper overlayHelper;
+    private App app;
 
     @Mocked
     private GetWalletInfoTask getWalletInfoTask;
@@ -80,13 +78,8 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recover() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
-        new Expectations() {{
-            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
-        }};
-
-        final App app = new App();
         final Context ctx = app.getContext();
-        new Expectations(App.class) {{
+        new Expectations() {{
 
             App.getInstance();
             result = Optional.of(app);
@@ -123,13 +116,8 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedAfterMaxRetry() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
-        new Expectations() {{
-            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
-        }};
-
-        final App app = new App();
         final Context ctx = app.getContext();
-        new Expectations(App.class) {{
+        new Expectations() {{
             App.getInstance();
             result = Optional.of(app);
 
@@ -160,13 +148,8 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedWithApiException() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
-        new Expectations() {{
-            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
-        }};
-
-        final App app = new App();
         final Context ctx = app.getContext();
-        new Expectations(App.class) {{
+        new Expectations() {{
             App.getInstance();
             result = Optional.of(app);
 
@@ -191,13 +174,8 @@ public class StartSiaDaemonTaskTest {
     @Test
     public void recoverFailedWithWalletException() throws InterruptedException, GetWalletInfoTask.WalletException, ApiException {
 
-        new Expectations() {{
-            new OverlayHelper(UtilsMock.syncDir, (OverlayIconProvider) any);
-        }};
-
-        final App app = new App();
         final Context ctx = app.getContext();
-        new Expectations(App.class) {{
+        new Expectations() {{
 
             Thread.sleep(DefaultSleepTime);
 
