@@ -236,6 +236,8 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
     @NotNull
     private final OverlayHelper overlayHelper;
 
+    private boolean synchronizing;
+
     public App() {
         this(null);
     }
@@ -267,15 +269,44 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         return ctx;
     }
 
+    @Override
+    public OverlayIcon getIcon(Path path) {
+
+        if (Files.isDirectory(path)) {
+            return OverlayIcon.OK;
+        }
+        final String name = cfg.getSyncDir().relativize(path).toString();
+        final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
+            if (state.isSynced()) {
+                return OverlayIcon.OK;
+            } else if (state.isSynchronizing()) {
+                return OverlayIcon.SYNCING;
+            } else if (state.isFailed()) {
+                return OverlayIcon.ERROR;
+            } else {
+                return OverlayIcon.WARNING;
+            }
+        }).orElse(OverlayIcon.NONE);
+        logger.trace("Updating the icon of {} to {}", name, icon);
+        return icon;
+
+    }
+
     public void refreshOverlayIcon(@NotNull Path localPath) {
         logger.trace("Refresh the overlay icon of {}", localPath);
         this.overlayHelper.refresh(localPath);
         if (DB.isSynced()) {
-            this.overlayHelper.setOK();
-            this.notifyEvent(SyncStateEvent.idle);
+            if (this.synchronizing) {
+                this.overlayHelper.setOK();
+                this.notifyEvent(SyncStateEvent.idle);
+                this.synchronizing = false;
+            }
         } else {
-            this.overlayHelper.setSynchronizing();
-            this.notifyEvent(SyncStateEvent.synchronizing);
+            if (!this.synchronizing) {
+                this.overlayHelper.setSynchronizing();
+                this.notifyEvent(SyncStateEvent.synchronizing);
+                this.synchronizing = true;
+            }
         }
     }
 
@@ -314,6 +345,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         Runtime.getRuntime().addShutdownHook(new Thread(this::dumpDatabase));
 
         this.overlayHelper.setSynchronizing();
+        this.synchronizing = true;
 
         if (!checkAndCreateSyncDir()) {
             return 1;
@@ -399,29 +431,6 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         final FileWatcher fileWatcher = new FileWatcher(this.ctx.getConfig().getSyncDir(), executor);
         Runtime.getRuntime().addShutdownHook(new Thread(fileWatcher::close));
         return 0;
-
-    }
-
-    @Override
-    public OverlayIcon getIcon(Path path) {
-
-        if (Files.isDirectory(path)) {
-            return OverlayIcon.OK;
-        }
-        final String name = cfg.getSyncDir().relativize(path).toString();
-        final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
-            if (state.isSynced()) {
-                return OverlayIcon.OK;
-            } else if (state.isSynchronizing()) {
-                return OverlayIcon.SYNCING;
-            } else if (state.isFailed()) {
-                return OverlayIcon.ERROR;
-            } else {
-                return OverlayIcon.WARNING;
-            }
-        }).orElse(OverlayIcon.NONE);
-        logger.trace("Updating the icon of {} to {}", name, icon);
-        return icon;
 
     }
 

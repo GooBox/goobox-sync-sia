@@ -1011,14 +1011,20 @@ public class AppTest {
 
         final App app = new App();
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        Deencapsulation.setField(app, "synchronizing", true);
         new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = true;
+            times = 2;
 
             overlayHelper.setOK();
+            times = 1;
             app.notifyEvent(SyncStateEvent.idle);
+            times = 1;
         }};
+        app.refreshOverlayIcon(tmpDir);
+        assertFalse(Deencapsulation.getField(app, "synchronizing"));
         app.refreshOverlayIcon(tmpDir);
 
     }
@@ -1028,14 +1034,20 @@ public class AppTest {
 
         final App app = new App();
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        Deencapsulation.setField(app, "synchronizing", false);
         new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = false;
+            times = 2;
 
             overlayHelper.setSynchronizing();
+            times = 1;
             app.notifyEvent(SyncStateEvent.synchronizing);
+            times = 1;
         }};
+        app.refreshOverlayIcon(tmpDir);
+        assertTrue(Deencapsulation.getField(app, "synchronizing"));
         app.refreshOverlayIcon(tmpDir);
 
     }
