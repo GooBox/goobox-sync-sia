@@ -167,8 +167,7 @@ public class CheckStateTaskTest {
             result = res;
 
             App.getInstance();
-            result = Optional.of(app);
-            app.refreshOverlayIcon(localPath);
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();
@@ -247,8 +246,7 @@ public class CheckStateTaskTest {
             result = res;
 
             App.getInstance();
-            result = Optional.of(app);
-            app.refreshOverlayIcon(localPath);
+            times = 0;
         }};
 
         final ExecutorMock executor = new ExecutorMock();

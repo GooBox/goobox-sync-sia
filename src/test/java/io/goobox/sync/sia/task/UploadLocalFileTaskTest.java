@@ -118,8 +118,7 @@ public class UploadLocalFileTaskTest {
             api.renterUploadSiapathPost(slashedCloudPath, slashedLocalPath, cfg.getDataPieces(), cfg.getParityPieces());
 
             App.getInstance();
-            result = Optional.of(app);
-            app.refreshOverlayIcon(localPath);
+            times = 0;
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
@@ -220,7 +219,7 @@ public class UploadLocalFileTaskTest {
      * file will be stored. In this case, delete the old file and retry to upload.
      */
     @Test
-    public void retryUpload() throws ApiException {
+    public void retryAndUploadSucceed() throws ApiException {
 
         new Expectations(APIUtils.class) {{
             APIUtils.toSlash(localPath);
@@ -237,8 +236,7 @@ public class UploadLocalFileTaskTest {
             api.renterDeleteSiapathPost(slashedCloudPath);
 
             App.getInstance();
-            result = Optional.of(app);
-            app.refreshOverlayIcon(localPath);
+            times = 0;
         }};
         new UploadLocalFileTask(this.context, this.localPath).call();
         assertTrue(DBMock.committed);
