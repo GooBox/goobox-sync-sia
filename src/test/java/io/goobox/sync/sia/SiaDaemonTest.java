@@ -80,6 +80,8 @@ public class SiaDaemonTest {
         Files.deleteIfExists(cfgPath);
         FileUtils.deleteDirectory(cfg.getDataDir().toFile());
         FileUtils.deleteDirectory(tempDir.toFile());
+
+        System.clearProperty("goobox.siad");
     }
 
     @Test
@@ -112,6 +114,19 @@ public class SiaDaemonTest {
             }
             assertEquals(cmd, daemon.getDaemonPath().toString());
         }
+
+    }
+
+    @Test
+    public void getDaemonPathSpecifiedInSystemProperty() {
+
+        final Path abs = this.tempDir.resolve("test.exe");
+        System.setProperty("goobox.siad", abs.toString());
+        assertEquals(abs, this.daemon.getDaemonPath());
+
+        final Path rel = this.tempDir.relativize(abs);
+        System.setProperty("goobox.siad", rel.toString());
+        assertEquals(rel, this.daemon.getDaemonPath());
 
     }
 

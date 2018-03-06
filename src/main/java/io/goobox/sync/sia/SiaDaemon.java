@@ -169,6 +169,11 @@ public class SiaDaemon extends Thread implements Closeable {
     @NotNull
     Path getDaemonPath() {
 
+        final String givenPath = System.getProperty("goobox.siad");
+        if (givenPath != null) {
+            return Paths.get(givenPath);
+        }
+
         final Path wd = SystemUtils.getUserDir().toPath();
         if (wd.getFileName().toString().equals("bin")) {
             return wd.getParent().resolve(SiaDaemonDirectory).resolve(SiaDaemonName);
