@@ -260,8 +260,8 @@ public class SiaDaemon extends Thread implements Closeable {
 
                 });
 
-                try (final InputStream in = new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true)) {
-                    Files.copy(new GZIPInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
+                try (final InputStream in = new GZIPInputStream(new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true))) {
+                    Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
                 if (!checkSumOpt.get().equals(checkSumFuture.get())) {
