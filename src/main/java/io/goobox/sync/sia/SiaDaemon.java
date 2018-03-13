@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -139,6 +140,8 @@ public class SiaDaemon extends Thread implements Closeable {
             }
         } catch (final IOException e) {
             logger.error("Failed to start sia daemon: {}", e.getMessage());
+        } catch (final UncheckedIOException e) {
+            logger.warn("Failed to forward logs from the Sia daemon: {}", e.getMessage());
         }
         synchronized (this) {
             this.process = null;
