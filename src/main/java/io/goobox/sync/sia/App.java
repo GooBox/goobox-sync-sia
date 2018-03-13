@@ -47,6 +47,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.dizitart.no2.exceptions.NitriteIOException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -609,8 +610,9 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         try {
             DB.getFiles().forEach(
                     syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
-        } catch (IllegalStateException e) {
-            logger.warn("Failed to dump database: {}", e.getMessage());
+        } catch (IllegalStateException | NitriteIOException e) {
+            logger.warn("Failed to dump database: {}", e.getClass());
+            DB.clear();
         }
     }
 
