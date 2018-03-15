@@ -1,16 +1,19 @@
 language: java
+env:
+  global:
+  - SIA_VERSION=1.3.2
 script:
 - gradle test --info
 after_success:
 - gradle jacocoTestReport coveralls
 before_deploy:
 - mkdir -p build/sia
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v1.3.1/Sia-v1.3.1-darwin-amd64.zip -o build/sia/Sia-v1.3.1-darwin-amd64.zip
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v1.3.1/Sia-v1.3.1-linux-amd64.zip -o build/sia/Sia-v1.3.1-linux-amd64.zip
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v1.3.1/Sia-v1.3.1-windows-amd64.zip -o build/sia/Sia-v1.3.1-windows-amd64.zip
-- (cd build/sia && unzip Sia-v1.3.1-darwin-amd64.zip)
-- (cd build/sia && unzip Sia-v1.3.1-linux-amd64.zip)
-- (cd build/sia && unzip Sia-v1.3.1-windows-amd64.zip)
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-darwin-amd64.zip -o build/sia/Sia-v$SIA_VERSION-darwin-amd64.zip
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-linux-amd64.zip -o build/sia/Sia-v$SIA_VERSION-linux-amd64.zip
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-windows-amd64.zip -o build/sia/Sia-v$SIA_VERSION-windows-amd64.zip
+- (cd build/sia && unzip Sia-v$SIA_VERSION-darwin-amd64.zip)
+- (cd build/sia && unzip Sia-v$SIA_VERSION-linux-amd64.zip)
+- (cd build/sia && unzip Sia-v$SIA_VERSION-windows-amd64.zip)
 - gradle distTar -x sia-linux -x sia-mac -x sia-win64
 deploy:
   provider: releases

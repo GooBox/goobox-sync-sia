@@ -99,7 +99,7 @@ test {
     }
 }
 
-def siaVersion = 'v1.3.1'
+def siaVersion = 'v1.3.2'
 def siaArchives = [
         ['key': 'win64', 'value': 'windows-amd64'],
         ['key': 'linux', 'value': 'linux-amd64'],
