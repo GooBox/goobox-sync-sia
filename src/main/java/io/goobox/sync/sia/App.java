@@ -347,9 +347,6 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
         this.dumpDatabase();
         Runtime.getRuntime().addShutdownHook(new Thread(this::dumpDatabase));
 
-        this.overlayHelper.setSynchronizing();
-        this.synchronizing = true;
-
         if (!checkAndCreateSyncDir()) {
             return 1;
         }
@@ -359,6 +356,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
 
         this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
         this.synchronizeDeletedFiles();
+        this.refreshOverlayIcon(ctx.getConfig().getSyncDir());
 
         int retry = 0;
         final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize, new ThreadFactory() {

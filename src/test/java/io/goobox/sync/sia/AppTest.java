@@ -409,8 +409,8 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
         // Since OutputEvents is false, it won't have any outputs.
@@ -499,8 +499,8 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
         new Expectations(System.out) {{
@@ -588,8 +588,8 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
         app.call();
