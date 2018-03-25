@@ -94,5 +94,31 @@ Commands:
 
 `goobox-sync-sia.bat create-allowance` and `goobox-sync-sia create-allowance` creates allowance. By default, this command adds your confirmed balance to the fund. You can choose hastings to be added to the fund with `--fund` flag, e.g. `goobox-sync-sia.bat create-allowance --fund 100000` adds 100000 hastings to your current fund.
 
+#### goobox.properties parameters
+
+`data-pieces`
+`data-folder`
+`primary-seed`
+`sync-folder`
+`disable-auto-allocation`
+`parity-pieces`
+`username`
+`siad-api-address`
+`siad-gateway-address`
+
+Example:
+
+```
+data-pieces=10
+data-folder=C\:\\Users\\USER\\AppData\\Local\\Goobox
+primary-seed=fuzzy coal tell coal coal toenail coal coal acumen unknown software coal germs germs germs eclipse coal germs tobacco economics germs germs knowledge unusual urgent loincloth noted agony afoot
+sync-folder=C\:\\Users\\USER\\Goobox
+disable-auto-allocation=false
+parity-pieces=20
+username=
+siad-api-address=localhost:9980
+siad-gateway-address=:9981
+```
+
 ## License
 This software is released under The GNU General Public License Version 3, see [LICENSE](LICENSE) for more detail.
