@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.sia.db.DB;
+import io.goobox.sync.sia.db.SyncFile;
 import io.methvin.watcher.DirectoryChangeEvent;
 import io.methvin.watcher.DirectoryChangeListener;
 import io.methvin.watcher.DirectoryWatcher;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -107,8 +109,11 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
                     this.trackingFiles.remove(event.path());
                 }
                 DB.getFiles()
-                        .filter(syncFile -> syncFile.getName().startsWith(this.getName(event.path())))
-                        .forEach(syncFile -> syncFile.getLocalPath().ifPresent(this::onDelete));
+                        .map(SyncFile::getLocalPath)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .filter(localPath -> localPath.startsWith(event.path()))
+                        .forEach(this::onDelete);
                 break;
         }
 
