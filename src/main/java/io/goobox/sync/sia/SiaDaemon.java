@@ -43,7 +43,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -208,11 +207,7 @@ public class SiaDaemon extends Thread implements Closeable {
             }
 
             final Path tempFile = Files.createTempFile(null, null);
-            final ExecutorService executor = Executors.newFixedThreadPool(2, r -> {
-                final Thread thread = threadFactory.newThread(r);
-                thread.setName(r.toString());
-                return thread;
-            });
+            final ExecutorService executor = Executors.newFixedThreadPool(2);
             try {
 
                 final URL url = new URL(ConsensusDBURL);
@@ -222,45 +217,27 @@ public class SiaDaemon extends Thread implements Closeable {
                 conn.connect();
 
                 // Calculating the download progress.
-                executor.submit(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        try {
-                            while (Files.exists(tempFile)) {
-                                try {
-                                    logger.info("Downloading consensus database... ({} MB)", Files.size(tempFile) / 1000000);
-                                } catch (final IOException e) {
-                                    logger.error("Failed to get the file size fo consensus database: {}", e.getMessage());
-                                }
-                                Thread.sleep(5000);
+                executor.submit(() -> {
+                    Thread.currentThread().setName("Consensus DB Download Monitor");
+                    try {
+                        while (Files.exists(tempFile)) {
+                            try {
+                                logger.info("Downloading consensus database... ({} MB)", Files.size(tempFile) / 1000000);
+                            } catch (final IOException e) {
+                                logger.error("Failed to get the file size fo consensus database: {}", e.getMessage());
                             }
-                        } catch (final InterruptedException e) {
-                            logger.error("Interrupted while downloading consensus database: {}", e.getMessage());
+                            Thread.sleep(5000);
                         }
+                    } catch (final InterruptedException e) {
+                        logger.error("Interrupted while downloading consensus database: {}", e.getMessage());
                     }
-
-                    @Override
-                    public String toString() {
-                        return "Consensus DB Download Monitor";
-                    }
-
                 });
 
                 final PipedInputStream pipedIn = new PipedInputStream();
                 final PipedOutputStream pipedOut = new PipedOutputStream(pipedIn);
-                final Future checkSumFuture = executor.submit(new Callable<String>() {
-
-                    @Override
-                    public String call() throws IOException {
-                        return DigestUtils.sha256Hex(pipedIn);
-                    }
-
-                    @Override
-                    public String toString() {
-                        return "Compute SHA-256 Hash";
-                    }
-
+                final Future checkSumFuture = executor.submit(() -> {
+                    Thread.currentThread().setName("Compute SHA-256 Hash");
+                    return DigestUtils.sha256Hex(pipedIn);
                 });
 
                 try (final InputStream in = new GZIPInputStream(new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true))) {
