@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("ConstantConditions")
@@ -611,6 +612,14 @@ public class FileWatcherTest {
         final String name = this.tmpDir.relativize(this.localPath).toString();
         DB.setModified(name, this.localPath);
 
+        // This is a dummy file which has a similar name to the directory to be deleted.
+        final String simName = "sub-directory-dummy";
+        final Path file = this.tmpDir.resolve(simName);
+        Files.createFile(file);
+        DB.setModified(simName, file);
+
+        DB.commit();
+
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         new Expectations(executor) {{
             executor.scheduleAtFixedRate(withNotNull(), 0, FileWatcher.MinElapsedTime, TimeUnit.MILLISECONDS);
@@ -627,6 +636,7 @@ public class FileWatcherTest {
         assertFalse(trackingFiles.containsKey(this.localPath));
 
         assertEquals(SyncState.DELETED, DB.get(name).get().getState());
+        assertNotEquals(SyncState.DELETED, DB.get(simName).get().getState());
 
     }
 

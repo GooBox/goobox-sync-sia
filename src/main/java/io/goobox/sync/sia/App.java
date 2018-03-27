@@ -19,6 +19,7 @@ package io.goobox.sync.sia;
 import io.goobox.sync.common.Utils;
 import io.goobox.sync.common.overlay.OverlayHelper;
 import io.goobox.sync.common.overlay.OverlayIcon;
+import io.goobox.sync.common.overlay.OverlayIconProvider;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.command.CreateAllowance;
 import io.goobox.sync.sia.command.DumpDB;
@@ -46,6 +47,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.dizitart.no2.exceptions.NitriteIOException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -66,12 +68,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
  * The goobox-sync-sia App.
  */
-public final class App implements Callable<Integer> {
+public final class App implements Callable<Integer>, OverlayIconProvider {
 
     // Constants.
     public static final String Name;
@@ -88,7 +91,7 @@ public final class App implements Callable<Integer> {
     /**
      * Version information.
      */
-    public static final String Version = "0.1.3";
+    public static final String Version = "0.2.0";
 
     /**
      * The number of the minimum required contracts.
@@ -127,6 +130,7 @@ public final class App implements Callable<Integer> {
      * @param args command line arguments.
      */
     public static void main(String[] args) {
+        Thread.currentThread().setName("Main");
 
         if (args.length != 0) {
             // Checking sub commands.
@@ -235,6 +239,8 @@ public final class App implements Callable<Integer> {
     @NotNull
     private final OverlayHelper overlayHelper;
 
+    private boolean synchronizing;
+
     public App() {
         this(null);
     }
@@ -250,25 +256,7 @@ public final class App implements Callable<Integer> {
         }
 
         logger.debug("Loading icon overlay libraries");
-        this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), path -> {
-            if (Files.isDirectory(path)) {
-                return OverlayIcon.OK;
-            }
-            final String name = cfg.getSyncDir().relativize(path).toString();
-            final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
-                if (state.isSynced()) {
-                    return OverlayIcon.OK;
-                } else if (state.isSynchronizing()) {
-                    return OverlayIcon.SYNCING;
-                } else if (state.isFailed()) {
-                    return OverlayIcon.ERROR;
-                } else {
-                    return OverlayIcon.WARNING;
-                }
-            }).orElse(OverlayIcon.NONE);
-            logger.trace("Updating the icon of {} to {}", name, icon);
-            return icon;
-        });
+        this.overlayHelper = new OverlayHelper(this.cfg.getSyncDir(), this);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Shutting down the overlay helper");
             overlayHelper.shutdown();
@@ -284,15 +272,44 @@ public final class App implements Callable<Integer> {
         return ctx;
     }
 
+    @Override
+    public OverlayIcon getIcon(Path path) {
+
+        if (Files.isDirectory(path)) {
+            return OverlayIcon.OK;
+        }
+        final String name = cfg.getSyncDir().relativize(path).toString();
+        final OverlayIcon icon = DB.get(name).map(SyncFile::getState).map(state -> {
+            if (state.isSynced()) {
+                return OverlayIcon.OK;
+            } else if (state.isSynchronizing()) {
+                return OverlayIcon.SYNCING;
+            } else if (state.isFailed()) {
+                return OverlayIcon.ERROR;
+            } else {
+                return OverlayIcon.WARNING;
+            }
+        }).orElse(OverlayIcon.NONE);
+        logger.trace("Updating the icon of {} to {}", name, icon);
+        return icon;
+
+    }
+
     public void refreshOverlayIcon(@NotNull Path localPath) {
         logger.trace("Refresh the overlay icon of {}", localPath);
         this.overlayHelper.refresh(localPath);
         if (DB.isSynced()) {
-            this.overlayHelper.setOK();
-            this.notifyEvent(SyncStateEvent.idle);
+            if (this.synchronizing) {
+                this.overlayHelper.setOK();
+                this.notifyEvent(SyncStateEvent.idle);
+                this.synchronizing = false;
+            }
         } else {
-            this.overlayHelper.setSynchronizing();
-            this.notifyEvent(SyncStateEvent.synchronizing);
+            if (!this.synchronizing) {
+                this.overlayHelper.setSynchronizing();
+                this.notifyEvent(SyncStateEvent.synchronizing);
+                this.synchronizing = true;
+            }
         }
     }
 
@@ -330,8 +347,6 @@ public final class App implements Callable<Integer> {
         this.dumpDatabase();
         Runtime.getRuntime().addShutdownHook(new Thread(this::dumpDatabase));
 
-        this.overlayHelper.setSynchronizing();
-
         if (!checkAndCreateSyncDir()) {
             return 1;
         }
@@ -341,9 +356,22 @@ public final class App implements Callable<Integer> {
 
         this.synchronizeModifiedFiles(this.ctx.getConfig().getSyncDir());
         this.synchronizeDeletedFiles();
+        this.refreshOverlayIcon(ctx.getConfig().getSyncDir());
 
-        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize);
         int retry = 0;
+        final ScheduledExecutorService executor = Executors.newScheduledThreadPool(WorkerThreadSize, new ThreadFactory() {
+
+            final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+            int nThread = 0;
+
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                final Thread thread = threadFactory.newThread(r);
+                thread.setName(String.format("Worker Thread %d", ++nThread));
+                return thread;
+            }
+
+        });
         while (true) {
 
             try {
@@ -577,8 +605,13 @@ public final class App implements Callable<Integer> {
     }
 
     private void dumpDatabase() {
-        DB.getFiles().forEach(
-                syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        try {
+            DB.getFiles().forEach(
+                    syncFile -> logger.debug("Current state of {}: {}", syncFile.getName(), syncFile.getState()));
+        } catch (IllegalStateException | NitriteIOException e) {
+            logger.warn("Failed to dump database: {}", e.getClass());
+            DB.clear();
+        }
     }
 
 }

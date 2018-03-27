@@ -379,7 +379,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 
@@ -409,12 +409,14 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
-        new Expectations(System.class) {{
-            System.out.println(SyncStateEvent.startSynchronization.toJson());
+        // Since OutputEvents is false, it won't have any outputs.
+        new Expectations(System.out) {{
+            System.out.println(anyString);
+            times = 0;
         }};
 
         app.call();
@@ -463,7 +465,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 
@@ -497,11 +499,11 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(SyncStateEvent.startSynchronization.toJson());
         }};
 
@@ -552,7 +554,7 @@ public class AppTest {
         final CheckDownloadStateTask checkDownloadStateTask = new CheckDownloadStateTask(ctx);
         final CheckUploadStateTask checkUploadStateTask = new CheckUploadStateTask(ctx);
         new Expectations(Executors.class) {{
-            Executors.newScheduledThreadPool(App.WorkerThreadSize);
+            Executors.newScheduledThreadPool(App.WorkerThreadSize, withAny(Executors.defaultThreadFactory()));
             result = executor;
         }};
 
@@ -586,8 +588,8 @@ public class AppTest {
 
             new FileWatcher(ctx.getConfig().getSyncDir(), executor);
 
-            overlayHelper.setSynchronizing();
             app.refreshOverlayIcon(ctx.getConfig().getSyncDir());
+            times = 2;
         }};
 
         app.call();
@@ -1011,14 +1013,20 @@ public class AppTest {
 
         final App app = new App();
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        Deencapsulation.setField(app, "synchronizing", true);
         new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = true;
+            times = 2;
 
             overlayHelper.setOK();
+            times = 1;
             app.notifyEvent(SyncStateEvent.idle);
+            times = 1;
         }};
+        app.refreshOverlayIcon(tmpDir);
+        assertFalse(Deencapsulation.getField(app, "synchronizing"));
         app.refreshOverlayIcon(tmpDir);
 
     }
@@ -1028,14 +1036,20 @@ public class AppTest {
 
         final App app = new App();
         final OverlayHelper overlayHelper = Deencapsulation.getField(app, "overlayHelper");
+        Deencapsulation.setField(app, "synchronizing", false);
         new Expectations(app, overlayHelper) {{
             overlayHelper.refresh(tmpDir);
             DB.isSynced();
             result = false;
+            times = 2;
 
             overlayHelper.setSynchronizing();
+            times = 1;
             app.notifyEvent(SyncStateEvent.synchronizing);
+            times = 1;
         }};
+        app.refreshOverlayIcon(tmpDir);
+        assertTrue(Deencapsulation.getField(app, "synchronizing"));
         app.refreshOverlayIcon(tmpDir);
 
     }
@@ -1044,7 +1058,7 @@ public class AppTest {
     public void notifyEvent() {
 
         final Event e = SyncStateEvent.synchronizing;
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(e.toJson());
         }};
 
@@ -1058,7 +1072,7 @@ public class AppTest {
     public void notifyEventWithDisableNotificationApp() {
 
         final Event e = SyncStateEvent.synchronizing;
-        new Expectations(System.class) {{
+        new Expectations(System.out) {{
             System.out.println(e.toJson());
             times = 0;
         }};

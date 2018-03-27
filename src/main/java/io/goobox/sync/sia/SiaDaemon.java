@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -42,11 +43,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
@@ -112,6 +113,7 @@ public class SiaDaemon extends Thread implements Closeable {
     public SiaDaemon(@NotNull final Config cfg) {
         this.cfg = cfg;
         this.dataDir = cfg.getDataDir().resolve(SiaDaemonDirectory);
+        this.setName(SiaDaemon.class.getSimpleName());
     }
 
     /**
@@ -137,6 +139,8 @@ public class SiaDaemon extends Thread implements Closeable {
             }
         } catch (final IOException e) {
             logger.error("Failed to start sia daemon: {}", e.getMessage());
+        } catch (final UncheckedIOException e) {
+            logger.warn("Failed to forward logs from the Sia daemon: {}", e.getMessage());
         }
         synchronized (this) {
             this.process = null;
@@ -167,6 +171,11 @@ public class SiaDaemon extends Thread implements Closeable {
     @NotNull
     Path getDaemonPath() {
 
+        final String givenPath = System.getProperty("goobox.siad");
+        if (givenPath != null) {
+            return Paths.get(givenPath);
+        }
+
         final Path wd = SystemUtils.getUserDir().toPath();
         if (wd.getFileName().toString().equals("bin")) {
             return wd.getParent().resolve(SiaDaemonDirectory).resolve(SiaDaemonName);
@@ -186,6 +195,7 @@ public class SiaDaemon extends Thread implements Closeable {
             Files.createDirectories(dbPath.getParent());
         }
 
+        final ThreadFactory threadFactory = Executors.defaultThreadFactory();
         int attempt = 0;
         while (attempt < MaxRetry) {
             attempt++;
@@ -208,6 +218,7 @@ public class SiaDaemon extends Thread implements Closeable {
 
                 // Calculating the download progress.
                 executor.submit(() -> {
+                    Thread.currentThread().setName("Consensus DB Download Monitor");
                     try {
                         while (Files.exists(tempFile)) {
                             try {
@@ -224,10 +235,13 @@ public class SiaDaemon extends Thread implements Closeable {
 
                 final PipedInputStream pipedIn = new PipedInputStream();
                 final PipedOutputStream pipedOut = new PipedOutputStream(pipedIn);
-                @SuppressWarnings("unchecked") final Future checkSumFuture = executor.submit((Callable) () -> DigestUtils.sha256Hex(pipedIn));
+                final Future checkSumFuture = executor.submit(() -> {
+                    Thread.currentThread().setName("Compute SHA-256 Hash");
+                    return DigestUtils.sha256Hex(pipedIn);
+                });
 
-                try (final InputStream in = new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true)) {
-                    Files.copy(new GZIPInputStream(in), tempFile, StandardCopyOption.REPLACE_EXISTING);
+                try (final InputStream in = new GZIPInputStream(new TeeInputStream(new BufferedInputStream(conn.getInputStream()), pipedOut, true))) {
+                    Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                 }
 
                 if (!checkSumOpt.get().equals(checkSumFuture.get())) {

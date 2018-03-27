@@ -39,12 +39,24 @@ public class DB {
         return eq("name", name);
     }
 
+    @NotNull
+    private static Path getDBPath() {
+        return Utils.getDataDir().resolve(DatabaseFileName);
+    }
+
     private static Nitrite open() {
-        Path dbPath = Utils.getDataDir().resolve(DatabaseFileName);
         return Nitrite.builder()
                 .compressed()
-                .filePath(dbPath.toFile())
+                .filePath(getDBPath().toFile())
                 .openOrCreate();
+    }
+
+    public synchronized static void clear() {
+        try {
+            Files.deleteIfExists(getDBPath());
+        } catch (IOException e) {
+            logger.error("Failed to clear old database: {}", e.getMessage());
+        }
     }
 
     public synchronized static void close() {
