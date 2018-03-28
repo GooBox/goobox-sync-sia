@@ -261,6 +261,11 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
             logger.info("Shutting down the overlay helper");
             overlayHelper.shutdown();
         }));
+
+        // Set the synchronizing icon to the sync folder because the GUI starts with synchronizing state.
+        this.overlayHelper.setSynchronizing();
+        this.synchronizing = true;
+
     }
 
     void enableOutputEvents() {
