@@ -91,7 +91,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
     /**
      * Version information.
      */
-    public static final String Version = "0.2.0";
+    public static final String Version = "0.2.1";
 
     /**
      * The number of the minimum required contracts.

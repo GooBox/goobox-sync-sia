@@ -1,7 +1,7 @@
 # goobox-sync-sia
 [![Build Status](https://travis-ci.org/GooBox/goobox-sync-sia.svg?branch=master)](https://travis-ci.org/GooBox/goobox-sync-sia)
 [![Build status](https://ci.appveyor.com/api/projects/status/j4lv9lnd07o1qe5n/branch/master?svg=true)](https://ci.appveyor.com/project/jkawamoto/goobox-sync-sia/branch/master)
-[![Release](https://img.shields.io/badge/release-0.2.0-brightgreen.svg)](https://github.com/GooBox/goobox-sync-sia/releases/tag/v0.2.0)
+[![Release](https://img.shields.io/badge/release-0.2.1-brightgreen.svg)](https://github.com/GooBox/goobox-sync-sia/releases/tag/v0.2.1)
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
 
 sync app for [sia](https://sia.tech/).
