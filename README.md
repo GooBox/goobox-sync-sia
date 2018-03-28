@@ -1,7 +1,7 @@
 # goobox-sync-sia
 [![Build Status](https://travis-ci.org/GooBox/goobox-sync-sia.svg?branch=master)](https://travis-ci.org/GooBox/goobox-sync-sia)
 [![Build status](https://ci.appveyor.com/api/projects/status/j4lv9lnd07o1qe5n/branch/master?svg=true)](https://ci.appveyor.com/project/jkawamoto/goobox-sync-sia/branch/master)
-[![Release](https://img.shields.io/badge/release-0.1.3-brightgreen.svg)](https://github.com/GooBox/goobox-sync-sia/releases/tag/v0.1.3)
+[![Release](https://img.shields.io/badge/release-0.2.1-brightgreen.svg)](https://github.com/GooBox/goobox-sync-sia/releases/tag/v0.2.1)
 [![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
 
 sync app for [sia](https://sia.tech/).
@@ -93,6 +93,32 @@ Commands:
 #### create-allowance command
 
 `goobox-sync-sia.bat create-allowance` and `goobox-sync-sia create-allowance` creates allowance. By default, this command adds your confirmed balance to the fund. You can choose hastings to be added to the fund with `--fund` flag, e.g. `goobox-sync-sia.bat create-allowance --fund 100000` adds 100000 hastings to your current fund.
+
+#### goobox.properties parameters
+
+`data-pieces`
+`data-folder`
+`primary-seed`
+`sync-folder`
+`disable-auto-allocation`
+`parity-pieces`
+`username`
+`siad-api-address`
+`siad-gateway-address`
+
+Example:
+
+```
+data-pieces=10
+data-folder=C\:\\Users\\USER\\AppData\\Local\\Goobox
+primary-seed=fuzzy coal tell coal coal toenail coal coal acumen unknown software coal germs germs germs eclipse coal germs tobacco economics germs germs knowledge unusual urgent loincloth noted agony afoot
+sync-folder=C\:\\Users\\USER\\Goobox
+disable-auto-allocation=false
+parity-pieces=20
+username=
+siad-api-address=localhost:9980
+siad-gateway-address=:9981
+```
 
 ## License
 This software is released under The GNU General Public License Version 3, see [LICENSE](LICENSE) for more detail.

@@ -91,7 +91,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
     /**
      * Version information.
      */
-    public static final String Version = "0.1.3";
+    public static final String Version = "0.2.1";
 
     /**
      * The number of the minimum required contracts.
@@ -261,6 +261,11 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
             logger.info("Shutting down the overlay helper");
             overlayHelper.shutdown();
         }));
+
+        // Set the synchronizing icon to the sync folder because the GUI starts with synchronizing state.
+        this.overlayHelper.setSynchronizing();
+        this.synchronizing = true;
+
     }
 
     void enableOutputEvents() {
