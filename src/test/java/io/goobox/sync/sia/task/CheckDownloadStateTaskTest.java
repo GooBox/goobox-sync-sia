@@ -156,15 +156,13 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         this.tmpDir.resolve("some temporary path"),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         oldDate),
                 // new entry.
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate)
         );
 
@@ -199,16 +197,14 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         this.tmpDir.resolve("some temporary path"),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         oldDate
                 ),
                 // new entry.
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get() / 2,
+                        false,
                         currentDate
                 )
         );
@@ -239,8 +235,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get() / 2,
+                        false,
                         currentDate
                 )
         );
@@ -273,8 +268,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get() / 2,
+                        false,
                         currentDate
                 )
         );
@@ -332,8 +326,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         cloudPath,
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -363,8 +356,7 @@ public class CheckDownloadStateTaskTest {
         final InlineResponse20010Downloads file1 = createCloudFile(
                 syncFile.getCloudPath().get(),
                 syncFile.getTemporaryPath().get(),
-                syncFile.getCloudSize().get(),
-                syncFile.getCloudSize().get() / 2,
+                false,
                 currentDate
         );
         file1.setError("expected error");
@@ -399,8 +391,7 @@ public class CheckDownloadStateTaskTest {
         final InlineResponse20010Downloads file = createCloudFile(
                 syncFile.getCloudPath().get(),
                 syncFile.getTemporaryPath().get(),
-                syncFile.getCloudSize().get(),
-                syncFile.getCloudSize().get() / 2,
+                false,
                 currentDate
         );
         file.setError("expected error");
@@ -457,8 +448,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         cloudPath,
                         syncFile.getTemporaryPath().get(),
-                        100L,
-                        100L,
+                        true,
                         RFC3339.format(targetDate)
                 )
         );
@@ -494,8 +484,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get() / 2,
+                        false,
                         currentDate
                 )
         );
@@ -536,8 +525,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get().resolve(Long.toString(currentMillis + 10000)),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -616,8 +604,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get(),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -696,8 +683,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -759,8 +745,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000 + 10000)),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -828,8 +813,7 @@ public class CheckDownloadStateTaskTest {
                 createCloudFile(
                         syncFile.getCloudPath().get().resolve(Long.toString(currentMillis / 1000 * 1000)),
                         syncFile.getTemporaryPath().get(),
-                        syncFile.getCloudSize().get(),
-                        syncFile.getCloudSize().get(),
+                        true,
                         currentDate
                 )
         );
@@ -882,12 +866,14 @@ public class CheckDownloadStateTaskTest {
 
     @NotNull
     private InlineResponse20010Downloads createCloudFile(
-            @NotNull final Path siaPath, @NotNull final Path destination, long fileSize, long receivedSize, @NotNull final String startTime) {
+            @NotNull final Path siaPath, @NotNull final Path destination, boolean completed, @NotNull final String startTime) {
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(siaPath.toString());
         file.setDestination(destination.toString());
-        file.setLength(fileSize);
-        file.setReceived(receivedSize);
+        // To force using completed flag, set length and received to different values.
+        file.setLength(1234L);
+        file.setReceived(1235L);
+        file.setCompleted(completed);
         file.setStarttime(startTime);
         return file;
 

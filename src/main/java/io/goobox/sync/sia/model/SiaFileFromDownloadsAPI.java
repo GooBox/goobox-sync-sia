@@ -47,6 +47,10 @@ public class SiaFileFromDownloadsAPI extends AbstractSiaFile {
         return this.rawFile.getReceived();
     }
 
+    public boolean isCompleted() {
+        return this.rawFile.isCompleted();
+    }
+
     @Nullable
     public String getError() {
         return this.rawFile.getError();
