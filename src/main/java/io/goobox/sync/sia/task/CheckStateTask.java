@@ -23,7 +23,7 @@ import io.goobox.sync.sia.RetryableTask;
 import io.goobox.sync.sia.StartSiaDaemonTask;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -100,7 +100,7 @@ public class CheckStateTask implements Callable<Void> {
      * @return a collection of SiaFile instances.
      */
     @NotNull
-    private Collection<SiaFileFromFilesAPI> takeNewestFiles(@Nullable final Collection<InlineResponse20011Files> files) {
+    private Collection<SiaFileFromFilesAPI> takeNewestFiles(@Nullable final Collection<FileInfo> files) {
 
         if (files == null) {
             return Collections.emptyList();
@@ -108,7 +108,7 @@ public class CheckStateTask implements Callable<Void> {
 
         // Key: file name, Value: file object.
         final Map<String, SiaFileFromFilesAPI> fileMap = new HashMap<>();
-        files.stream().filter(InlineResponse20011Files::isAvailable).forEach(file -> {
+        files.stream().filter(FileInfo::isAvailable).forEach(file -> {
 
             final SiaFileFromFilesAPI siaFile = new SiaFileFromFilesAPI(this.ctx, file);
             if (!siaFile.getCloudPath().startsWith(this.ctx.getPathPrefix())) {

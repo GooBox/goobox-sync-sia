@@ -17,7 +17,7 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,12 +32,12 @@ public class SiaFileFromFilesAPI extends AbstractSiaFile {
      * File object returned by /renter/files.
      */
     @NotNull
-    private final InlineResponse20011Files rawFile;
+    private final FileInfo rawFile;
 
     /**
      * Create a new SiaFile object with a path prefix.
      */
-    public SiaFileFromFilesAPI(@NotNull final Context ctx, @NotNull final InlineResponse20011Files file) {
+    public SiaFileFromFilesAPI(@NotNull final Context ctx, @NotNull final FileInfo file) {
         super(ctx, file.getSiapath());
         this.rawFile = file;
     }

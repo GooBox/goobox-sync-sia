@@ -23,10 +23,10 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import io.goobox.sync.sia.client.api.model.InlineResponse20014;
-import io.goobox.sync.sia.client.api.model.InlineResponse20016;
+import io.goobox.sync.sia.client.api.model.InlineResponse20015;
+import io.goobox.sync.sia.client.api.model.InlineResponse20017;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
@@ -61,9 +61,9 @@ public class GetWalletInfoTaskTest {
     private Path configPath;
     private Context ctx;
     private GetWalletInfoTask task;
-    private InlineResponse20013 walletGetResponse;
+    private InlineResponse20014 walletGetResponse;
     private InlineResponse2008 renterGetResponse;
-    private InlineResponse20012 renterPriceGetResponse;
+    private InlineResponse20013 renterPriceGetResponse;
 
     @Before
     public void setUp() throws IOException {
@@ -72,7 +72,7 @@ public class GetWalletInfoTaskTest {
         final double income = 10;
         final double outcome = 15;
         final double funds = 1234;
-        final int hosts = 30;
+        final long hosts = 30;
         final long period = 6000;
         final long renewWindow = 1000;
         final long currentPeriod = 3000;
@@ -95,7 +95,7 @@ public class GetWalletInfoTaskTest {
         ctx = new Context(cfg);
         task = new GetWalletInfoTask(ctx);
 
-        walletGetResponse = new InlineResponse20013();
+        walletGetResponse = new InlineResponse20014();
         walletGetResponse.setUnlocked(false);
         walletGetResponse.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         walletGetResponse.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
@@ -119,7 +119,7 @@ public class GetWalletInfoTaskTest {
         renterGetResponse.setFinancialmetrics(spending);
         renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
 
-        renterPriceGetResponse = new InlineResponse20012();
+        renterPriceGetResponse = new InlineResponse20013();
         renterPriceGetResponse.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
         renterPriceGetResponse.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
         renterPriceGetResponse.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
@@ -144,7 +144,7 @@ public class GetWalletInfoTaskTest {
             wallet.walletGet();
             result = walletGetResponse;
 
-            final InlineResponse20014 res2 = new InlineResponse20014();
+            final InlineResponse20015 res2 = new InlineResponse20015();
             res2.setAddress(address);
             wallet.walletAddressGet();
             result = res2;
@@ -174,7 +174,7 @@ public class GetWalletInfoTaskTest {
 
             wallet.walletUnlockPost(primarySeed);
 
-            final InlineResponse20014 res2 = new InlineResponse20014();
+            final InlineResponse20015 res2 = new InlineResponse20015();
             res2.setAddress(address);
             wallet.walletAddressGet();
             result = res2;
@@ -213,7 +213,7 @@ public class GetWalletInfoTaskTest {
             wallet.walletInitPost("", null, true);
             wallet.walletInitSeedPost("", primarySeed, true, null);
 
-            final InlineResponse20014 res2 = new InlineResponse20014();
+            final InlineResponse20015 res2 = new InlineResponse20015();
             res2.setAddress(address);
             wallet.walletAddressGet();
             result = res2;
@@ -247,14 +247,14 @@ public class GetWalletInfoTaskTest {
             wallet.walletUnlockPost("");
             result = new ApiException();
 
-            final InlineResponse20016 seed = new InlineResponse20016();
+            final InlineResponse20017 seed = new InlineResponse20017();
             seed.setPrimaryseed(primarySeed);
             wallet.walletInitPost("", null, false);
             result = seed;
 
             wallet.walletUnlockPost(primarySeed);
 
-            final InlineResponse20014 res2 = new InlineResponse20014();
+            final InlineResponse20015 res2 = new InlineResponse20015();
             res2.setAddress(address);
             wallet.walletAddressGet();
             result = res2;
@@ -315,14 +315,14 @@ public class GetWalletInfoTaskTest {
             wallet.walletUnlockPost("");
             result = new ApiException();
 
-            final InlineResponse20016 seed = new InlineResponse20016();
+            final InlineResponse20017 seed = new InlineResponse20017();
             seed.setPrimaryseed(primarySeed);
             wallet.walletInitPost("", null, true);
             result = seed;
 
             wallet.walletUnlockPost(primarySeed);
 
-            final InlineResponse20014 res2 = new InlineResponse20014();
+            final InlineResponse20015 res2 = new InlineResponse20015();
             res2.setAddress(address);
             wallet.walletAddressGet();
             result = res2;

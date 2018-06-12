@@ -18,7 +18,7 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.APIUtils;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
@@ -37,7 +37,7 @@ public class WalletInfoTest {
     private final double income = 10;
     private final double outcome = 15;
     private final double funds = 1234;
-    private final int hosts = 30;
+    private final long hosts = 30;
     private final long period = 6000;
     private final long renewWindow = 1000;
     private final long currentPeriod = 3000;
@@ -51,7 +51,7 @@ public class WalletInfoTest {
     @Before
     public void setUp() {
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
+        final InlineResponse20014 wallet = new InlineResponse20014();
         wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
         wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());

@@ -22,8 +22,8 @@ import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
@@ -51,7 +51,7 @@ import java.util.Optional;
 @RunWith(JMockit.class)
 public class NotifyFundInfoTaskTest {
 
-    private final int hosts = 30;
+    private final long hosts = 30;
     private final long period = 6000;
     private final long renewWindow = 1000;
 
@@ -83,7 +83,7 @@ public class NotifyFundInfoTaskTest {
         final double storagePrice = 12345.6;
         final double contractPrice = 1.123;
 
-        final InlineResponse20012 prices = new InlineResponse20012();
+        final InlineResponse20013 prices = new InlineResponse20013();
         prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
         prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
         prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());
@@ -270,7 +270,7 @@ public class NotifyFundInfoTaskTest {
         final double storageSpending = 2.3;
         final double contractSpending = 0.001;
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
+        final InlineResponse20014 wallet = new InlineResponse20014();
         wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
         wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());

@@ -22,8 +22,8 @@ import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
@@ -67,7 +67,7 @@ public class NotifyEmptyFundTaskTest {
 
         final String address = "01234567890123456789";
         final String primarySeed = "sample primary seed";
-        final int hosts = 30;
+        final long hosts = 30;
         final long period = 6000;
         final long renewWindow = 1000;
         final double balance = 12345.02;
@@ -79,7 +79,7 @@ public class NotifyEmptyFundTaskTest {
         final double storageSpending = 2.3;
         final double contractSpending = 0.001;
 
-        final InlineResponse20013 wallet = new InlineResponse20013();
+        final InlineResponse20014 wallet = new InlineResponse20014();
         wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         wallet.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
         wallet.setUnconfirmedoutgoingsiacoins(APIUtils.toHasting(outcome).toString());
@@ -109,7 +109,7 @@ public class NotifyEmptyFundTaskTest {
         final double storagePrice = 12345.6;
         final double contractPrice = 1.123;
 
-        final InlineResponse20012 prices = new InlineResponse20012();
+        final InlineResponse20013 prices = new InlineResponse20013();
         prices.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
         prices.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
         prices.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());

@@ -23,8 +23,8 @@ import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.SiaDaemon;
 import io.goobox.sync.sia.client.ApiException;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
@@ -72,7 +72,7 @@ public class WalletTest {
         final double income = 10;
         final double outcome = 15;
         final double funds = 1234;
-        final int hosts = 30;
+        final long hosts = 30;
         final long period = 6000;
         final long renewWindow = 1000;
         final long currentPeriod = 3000;
@@ -86,7 +86,7 @@ public class WalletTest {
         final double contractPrice = 1.123;
         final String primarySeed = "sample primary seed";
 
-        final InlineResponse20013 walletGetResponse = new InlineResponse20013();
+        final InlineResponse20014 walletGetResponse = new InlineResponse20014();
         walletGetResponse.setUnlocked(false);
         walletGetResponse.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         walletGetResponse.setUnconfirmedincomingsiacoins(APIUtils.toHasting(income).toString());
@@ -109,7 +109,7 @@ public class WalletTest {
         renterGetResponse.setFinancialmetrics(spending);
         renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
 
-        final InlineResponse20012 renterPriceGetResponse = new InlineResponse20012();
+        final InlineResponse20013 renterPriceGetResponse = new InlineResponse20013();
         renterPriceGetResponse.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
         renterPriceGetResponse.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
         renterPriceGetResponse.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());

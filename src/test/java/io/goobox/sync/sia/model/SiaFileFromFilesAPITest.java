@@ -19,7 +19,7 @@ package io.goobox.sync.sia.model;
 import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import mockit.Deencapsulation;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class SiaFileFromFilesAPITest {
 
@@ -68,7 +69,7 @@ public class SiaFileFromFilesAPITest {
         final Path remotePath = Paths.get(this.user, "Goobox", name, String.valueOf(created));
 
         final long fileSize = 12345;
-        final InlineResponse20011Files file = new InlineResponse20011Files();
+        final FileInfo file = new FileInfo();
         file.setSiapath(remotePath.toString());
         file.setFilesize(fileSize);
         file.setAvailable(false);
@@ -81,7 +82,7 @@ public class SiaFileFromFilesAPITest {
         assertEquals(created, siaFile.getCreationTime().get());
         assertEquals(fileSize, siaFile.getFileSize());
 
-        assertEquals(false, siaFile.isAvailable());
+        assertFalse(siaFile.isAvailable());
         assertEquals(new BigDecimal(24.5), siaFile.getUploadProgress());
     }
 

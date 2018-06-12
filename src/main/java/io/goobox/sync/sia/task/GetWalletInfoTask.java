@@ -22,9 +22,9 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.client.api.model.InlineResponse20013;
-import io.goobox.sync.sia.client.api.model.InlineResponse20016;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
+import io.goobox.sync.sia.client.api.model.InlineResponse20017;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.model.PriceInfo;
 import io.goobox.sync.sia.model.WalletInfo;
@@ -87,7 +87,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
         final WalletApi walletApi = new WalletApi(this.ctx.getApiClient());
 
         logger.info("Retrieving the wallet information");
-        final InlineResponse20013 wallet = walletApi.walletGet();
+        final InlineResponse20014 wallet = walletApi.walletGet();
         if (!wallet.isUnlocked()) {
 
             try {
@@ -108,7 +108,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
                     logger.info("Initializing the wallet");
                     try {
 
-                        final InlineResponse20016 seed = walletApi.walletInitPost("", null, this.force);
+                        final InlineResponse20017 seed = walletApi.walletInitPost("", null, this.force);
                         this.ctx.getConfig().setPrimarySeed(seed.getPrimaryseed());
                         this.ctx.getConfig().save();
 
@@ -146,7 +146,7 @@ public class GetWalletInfoTask implements Callable<GetWalletInfoTask.InfoPair> {
         final WalletInfo walletInfo = new WalletInfo(
                 walletApi.walletAddressGet().getAddress(), this.ctx.getConfig().getPrimarySeed(), wallet, info);
 
-        final InlineResponse20012 prices = renter.renterPricesGet();
+        final InlineResponse20013 prices = renter.renterPricesGet();
         final PriceInfo priceInfo = new PriceInfo(prices);
 
         return new InfoPair(walletInfo, priceInfo);

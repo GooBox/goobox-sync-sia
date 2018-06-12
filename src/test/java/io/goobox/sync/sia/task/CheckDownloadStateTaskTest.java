@@ -886,7 +886,7 @@ public class CheckDownloadStateTaskTest {
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(siaPath.toString());
         file.setDestination(destination.toString());
-        file.setFilesize(fileSize);
+        file.setLength(fileSize);
         file.setReceived(receivedSize);
         file.setStarttime(startTime);
         return file;

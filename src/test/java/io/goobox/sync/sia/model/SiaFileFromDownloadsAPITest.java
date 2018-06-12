@@ -69,7 +69,7 @@ public class SiaFileFromDownloadsAPITest {
         final long fileSize = 12345;
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(remotePath.toString());
-        file.setFilesize(fileSize);
+        file.setLength(fileSize);
         final SiaFile siaFile = new SiaFileFromDownloadsAPI(ctx, file);
 
         assertEquals(name, siaFile.getName());

@@ -18,7 +18,7 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.APIUtils;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Financialmetrics;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
@@ -41,7 +41,7 @@ public class WalletInfo {
     private final BigInteger unconfirmedDelta;
     @NotNull
     private final BigInteger funds;
-    private final int hosts;
+    private final long hosts;
     private final long period;
     private final long renewWindow;
     private final long startHeight;
@@ -55,7 +55,7 @@ public class WalletInfo {
     private final BigInteger contractSpending;
 
     @SuppressWarnings("SpellCheckingInspection")
-    public WalletInfo(@NotNull String address, @NotNull String primarySeed, @NotNull InlineResponse20013 wallet, @NotNull InlineResponse2008 info) {
+    public WalletInfo(@NotNull String address, @NotNull String primarySeed, @NotNull InlineResponse20014 wallet, @NotNull InlineResponse2008 info) {
         this.address = address;
         this.primarySeed = primarySeed;
         this.balance = new BigInteger(wallet.getConfirmedsiacoinbalance());
@@ -101,7 +101,7 @@ public class WalletInfo {
         return funds;
     }
 
-    public int getHosts() {
+    public long getHosts() {
         return hosts;
     }
 
