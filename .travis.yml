@@ -8,12 +8,15 @@ after_success:
 - gradle jacocoTestReport coveralls
 before_deploy:
 - mkdir -p build/sia
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-darwin-amd64.zip -o build/sia/Sia-v$SIA_VERSION-darwin-amd64.zip
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-linux-amd64.zip -o build/sia/Sia-v$SIA_VERSION-linux-amd64.zip
-- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-windows-amd64.zip -o build/sia/Sia-v$SIA_VERSION-windows-amd64.zip
-- (cd build/sia && unzip Sia-v$SIA_VERSION-darwin-amd64.zip)
-- (cd build/sia && unzip Sia-v$SIA_VERSION-linux-amd64.zip)
-- (cd build/sia && unzip Sia-v$SIA_VERSION-windows-amd64.zip)
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-darwin-amd64.zip
+  -o build/sia/Sia-v$SIA_VERSION-darwin-amd64.zip
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-linux-amd64.zip
+  -o build/sia/Sia-v$SIA_VERSION-linux-amd64.zip
+- curl -Ls https://github.com/NebulousLabs/Sia/releases/download/v$SIA_VERSION/Sia-v$SIA_VERSION-windows-amd64.zip
+  -o build/sia/Sia-v$SIA_VERSION-windows-amd64.zip
+- "(cd build/sia && unzip Sia-v$SIA_VERSION-darwin-amd64.zip)"
+- "(cd build/sia && unzip Sia-v$SIA_VERSION-linux-amd64.zip)"
+- "(cd build/sia && unzip Sia-v$SIA_VERSION-windows-amd64.zip)"
 - gradle distTar -x sia-linux -x sia-mac -x sia-win64
 deploy:
   provider: releases
@@ -27,3 +30,6 @@ deploy:
   on:
     tags: true
     repo: GooBox/goobox-sync-sia
+notifications:
+  slack:
+    secure: V8R+rm4EQaD8ph6efPLxFe6AscdvVLoo/fo9P2qrT32UGxCUPjKOXB2E5D73PEA1iuXShNqZmnqSG2N/t7Gf/JhKGfknwhxMCAWUV+ODb7VuEoKkp0OJCRYLH42k4rU3Vf6npNsd6BFz6HDUjmxaONKt4KMDpC5nArRWXaK1xFE2gllUzTnu8GSEzYmSzf4RRPWK7ajgI9DRerbu20+hnZKuH9/AFxT4GwqkyodpO8gYG3zRDiwaf3eoDbWPUus0qMqd983NaLk3iil8CaacrT7FNM7WNKzGmx5My4B5620k5EPzwso9L/kXbKnTAuSrNGw3H7UaT1ofzYbg8nqXqVuvbTho37630yna3R+8oO8WcwJ79WzNB/bguL8d91xTd3yUnSUjMYCgcpwa5ld16aN6uuufypeGjaLRq+5t35o/G0sRF1N+ZTdRDS5Pew3/uspChrQu6MVV51YSx82b0/4oQiZEWDJHE7JWprMlUj0Lj1ghca2X3p9KTFfPLxJ++IoBFa2Bx7/4jK/1TViFmNiMlgyOBnZ8aoAABeKcnh4TKPeT/hTqcqKmenUPBc0cY8ZjhTzODXgfr505Th12kod2LiVSlr732Y65ihUd0WPpoHzl/YY2kAndKeLLINwvakxGAQgIWNq/VhlUAHGB7yompo7dj1wbCFOKyNK0W0M=
