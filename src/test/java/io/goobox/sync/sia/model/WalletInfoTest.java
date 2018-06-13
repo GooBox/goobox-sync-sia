@@ -41,10 +41,11 @@ public class WalletInfoTest {
     private final long period = 6000;
     private final long renewWindow = 1000;
     private final long currentPeriod = 3000;
+    private final double contractFees = 1.55;
     private final double downloadSpending = 1.2345;
     private final double uploadSpending = 0.223;
     private final double storageSpending = 2.3;
-    private final double contractSpending = 0.001;
+    private final double totalAllocated = 0.001;
     private WalletInfo walletInfo;
 
     @SuppressWarnings("SpellCheckingInspection")
@@ -66,10 +67,11 @@ public class WalletInfoTest {
         settings.setAllowance(allowance);
         info.setSettings(settings);
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setContractfees(APIUtils.toHasting(contractFees).toString());
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
+        spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         info.setFinancialmetrics(spending);
         info.setCurrentperiod(String.valueOf(currentPeriod));
 
@@ -123,6 +125,11 @@ public class WalletInfoTest {
     }
 
     @Test
+    public void getContractFees() {
+        assertEquals(APIUtils.toHasting(contractFees), walletInfo.getContractFees());
+    }
+
+    @Test
     public void getDownloadSpending() {
         assertEquals(APIUtils.toHasting(downloadSpending), walletInfo.getDownloadSpending());
     }
@@ -138,8 +145,8 @@ public class WalletInfoTest {
     }
 
     @Test
-    public void getContractSpending() {
-        assertEquals(APIUtils.toHasting(contractSpending), walletInfo.getContractSpending());
+    public void getTotalAllocated() {
+        assertEquals(APIUtils.toHasting(totalAllocated), walletInfo.getTotalAllocated());
     }
 
     @Test
@@ -148,7 +155,7 @@ public class WalletInfoTest {
                 APIUtils.toHasting(downloadSpending)
                         .add(APIUtils.toHasting(uploadSpending))
                         .add(APIUtils.toHasting(storageSpending))
-                        .add(APIUtils.toHasting(contractSpending)),
+                        .add(APIUtils.toHasting(contractFees)),
                 walletInfo.getTotalSpending());
     }
 
@@ -193,7 +200,7 @@ public class WalletInfoTest {
                 String.format("storage: %.4f SC", storageSpending),
                 outputs.contains(String.format("storage: %.4f SC", storageSpending)));
         assertTrue(
-                String.format("contract: %.4f SC", contractSpending),
-                outputs.contains(String.format("contract: %.4f SC", contractSpending)));
+                String.format("contract fees: %.4f SC", contractFees),
+                outputs.contains(String.format("contract fees: %.4f SC", contractFees)));
     }
 }

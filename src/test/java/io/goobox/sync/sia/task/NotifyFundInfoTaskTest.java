@@ -265,10 +265,11 @@ public class NotifyFundInfoTaskTest {
         final double income = 10;
         final double outcome = 15;
         final long currentPeriod = 3000;
+        final double contractFees = 444.2;
         final double downloadSpending = 1.2345;
         final double uploadSpending = 0.223;
         final double storageSpending = 2.3;
-        final double contractSpending = 0.001;
+        final double totalAllocated = 0.001;
 
         final InlineResponse20014 wallet = new InlineResponse20014();
         wallet.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
@@ -286,10 +287,11 @@ public class NotifyFundInfoTaskTest {
         info.setSettings(settings);
         //noinspection SpellCheckingInspection
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setContractfees(APIUtils.toHasting(contractFees).toString());
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
+        spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         info.setFinancialmetrics(spending);
         info.setCurrentperiod(String.valueOf(currentPeriod));
 

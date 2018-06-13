@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.Objects;
 
+@SuppressWarnings("WeakerAccess")
 public class WalletInfo {
 
     @NotNull
@@ -46,13 +47,15 @@ public class WalletInfo {
     private final long renewWindow;
     private final long startHeight;
     @NotNull
+    private final BigInteger contractFees;
+    @NotNull
     private final BigInteger downloadSpending;
     @NotNull
     private final BigInteger uploadSpending;
     @NotNull
     private final BigInteger storageSpending;
     @NotNull
-    private final BigInteger contractSpending;
+    private final BigInteger totalAllocated;
 
     @SuppressWarnings("SpellCheckingInspection")
     public WalletInfo(@NotNull String address, @NotNull String primarySeed, @NotNull InlineResponse20014 wallet, @NotNull InlineResponse2008 info) {
@@ -70,10 +73,11 @@ public class WalletInfo {
         this.startHeight = Long.valueOf(info.getCurrentperiod());
 
         final InlineResponse2008Financialmetrics spendings = info.getFinancialmetrics();
+        this.contractFees = new BigInteger(spendings.getContractfees());
         this.downloadSpending = new BigInteger(spendings.getDownloadspending());
         this.uploadSpending = new BigInteger(spendings.getUploadspending());
         this.storageSpending = new BigInteger(spendings.getStoragespending());
-        this.contractSpending = new BigInteger(spendings.getContractspending());
+        this.totalAllocated = new BigInteger(spendings.getTotalallocated());
     }
 
     @NotNull
@@ -118,6 +122,11 @@ public class WalletInfo {
     }
 
     @NotNull
+    public BigInteger getContractFees() {
+        return contractFees;
+    }
+
+    @NotNull
     public BigInteger getDownloadSpending() {
         return downloadSpending;
     }
@@ -133,8 +142,8 @@ public class WalletInfo {
     }
 
     @NotNull
-    public BigInteger getContractSpending() {
-        return contractSpending;
+    public BigInteger getTotalAllocated() {
+        return totalAllocated;
     }
 
     @NotNull
@@ -142,7 +151,7 @@ public class WalletInfo {
         return this.getDownloadSpending()
                 .add(this.getUploadSpending())
                 .add(this.getStorageSpending())
-                .add(this.getContractSpending());
+                .add(this.getContractFees());
     }
 
     @Override
@@ -164,10 +173,10 @@ public class WalletInfo {
             writer.println(String.format("  start height: %s", this.getStartHeight()));
 
             writer.println("current spending:");
-            writer.println(String.format("  download: %s SC", APIUtils.toSiacoin(this.getDownloadSpending())));
-            writer.println(String.format("  upload: %s SC", APIUtils.toSiacoin(this.getUploadSpending())));
-            writer.println(String.format("  storage: %s SC", APIUtils.toSiacoin(this.getStorageSpending())));
-            writer.print(String.format("  contract: %s SC", APIUtils.toSiacoin(this.getContractSpending())));
+            writer.println(String.format("  download: %.4f SC", APIUtils.toSiacoin(this.getDownloadSpending())));
+            writer.println(String.format("  upload: %.4f SC", APIUtils.toSiacoin(this.getUploadSpending())));
+            writer.println(String.format("  storage: %.4f SC", APIUtils.toSiacoin(this.getStorageSpending())));
+            writer.print(String.format("  contract fees: %.4f SC", APIUtils.toSiacoin(this.getContractFees())));
         }
         return buffer.toString();
 
@@ -187,17 +196,30 @@ public class WalletInfo {
                 Objects.equals(balance, that.balance) &&
                 Objects.equals(unconfirmedDelta, that.unconfirmedDelta) &&
                 Objects.equals(funds, that.funds) &&
+                Objects.equals(contractFees, that.contractFees) &&
                 Objects.equals(downloadSpending, that.downloadSpending) &&
                 Objects.equals(uploadSpending, that.uploadSpending) &&
                 Objects.equals(storageSpending, that.storageSpending) &&
-                Objects.equals(contractSpending, that.contractSpending);
+                Objects.equals(totalAllocated, that.totalAllocated);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                address, primarySeed, balance, unconfirmedDelta, funds, hosts, period, renewWindow,
-                startHeight, downloadSpending, uploadSpending, storageSpending, contractSpending);
+                address,
+                primarySeed,
+                balance,
+                unconfirmedDelta,
+                funds,
+                hosts,
+                period,
+                renewWindow,
+                startHeight,
+                contractFees,
+                downloadSpending,
+                uploadSpending,
+                storageSpending,
+                totalAllocated);
     }
 }
 

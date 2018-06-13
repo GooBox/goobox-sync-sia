@@ -76,14 +76,15 @@ public class WalletTest {
         final long period = 6000;
         final long renewWindow = 1000;
         final long currentPeriod = 3000;
+        final double contractFees = 0.001;
         final double downloadSpending = 1.2345;
         final double uploadSpending = 0.223;
         final double storageSpending = 2.3;
-        final double contractSpending = 0.001;
         final double downloadPrice = 1234.5;
         final double uploadPrice = 1234.5;
         final double storagePrice = 12345.6;
         final double contractPrice = 1.123;
+        final double totalAllocated = 1.4;
         final String primarySeed = "sample primary seed";
 
         final InlineResponse20014 walletGetResponse = new InlineResponse20014();
@@ -105,7 +106,8 @@ public class WalletTest {
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
+        spending.setContractfees(APIUtils.toHasting(contractFees).toString());
+        spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         renterGetResponse.setFinancialmetrics(spending);
         renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
 

@@ -76,10 +76,11 @@ public class GetWalletInfoTaskTest {
         final long period = 6000;
         final long renewWindow = 1000;
         final long currentPeriod = 3000;
+        final double contractFees = 24.5;
         final double downloadSpending = 1.2345;
         final double uploadSpending = 0.223;
         final double storageSpending = 2.3;
-        final double contractSpending = 0.001;
+        final double totalAllocated = 0.001;
         final double downloadPrice = 1234.5;
         final double uploadPrice = 1234.5;
         final double storagePrice = 12345.6;
@@ -112,10 +113,11 @@ public class GetWalletInfoTaskTest {
         renterGetResponse.setSettings(settings);
         //noinspection SpellCheckingInspection
         final InlineResponse2008Financialmetrics spending = new InlineResponse2008Financialmetrics();
+        spending.setContractfees(APIUtils.toHasting(contractFees).toString());
         spending.setDownloadspending(APIUtils.toHasting(downloadSpending).toString());
         spending.setUploadspending(APIUtils.toHasting(uploadSpending).toString());
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
-        spending.setContractspending(APIUtils.toHasting(contractSpending).toString());
+        spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         renterGetResponse.setFinancialmetrics(spending);
         renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
 
