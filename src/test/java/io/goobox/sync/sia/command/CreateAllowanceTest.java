@@ -61,7 +61,7 @@ public class CreateAllowanceTest {
     @Before
     public void setUp() throws IOException {
         final double fund = 2234.85;
-        final int host = 10;
+        final long host = 10;
         final long period = 1234;
         final long renewWindow = 5;
 

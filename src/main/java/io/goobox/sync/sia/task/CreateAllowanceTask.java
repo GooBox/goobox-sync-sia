@@ -21,7 +21,7 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
 import io.goobox.sync.sia.model.AllowanceInfo;
 import org.jetbrains.annotations.NotNull;
@@ -39,9 +39,9 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
 
     static final int AllocationPeriod;
     @Nullable
-    static final Integer NHosts;
+    static final Long NHosts;
     @Nullable
-    static final Integer RenewWindow;
+    static final Long RenewWindow;
 
     static {
 
@@ -51,13 +51,13 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
         AllocationPeriod = blockMonth * allowanceMonths;
 
         if (bundle.containsKey("nhosts")) {
-            NHosts = Integer.valueOf(bundle.getString("nhosts"));
+            NHosts = Long.valueOf(bundle.getString("nhosts"));
         } else {
             NHosts = null;
         }
 
         if (bundle.containsKey("renew-window")) {
-            RenewWindow = Integer.valueOf(bundle.getString("renew-window"));
+            RenewWindow = Long.valueOf(bundle.getString("renew-window"));
         } else {
             RenewWindow = null;
         }
@@ -82,7 +82,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
     public AllowanceInfo call() throws ApiException {
 
         final WalletApi wallet = new WalletApi(this.ctx.getApiClient());
-        final InlineResponse20013 walletInfo = wallet.walletGet();
+        final InlineResponse20014 walletInfo = wallet.walletGet();
 
         // If the wallet is locked, unlock it first.
         if (!walletInfo.isUnlocked()) {
@@ -99,7 +99,7 @@ public class CreateAllowanceTask implements Callable<AllowanceInfo> {
 
         // Allocate new fund.
         logger.info("Allocating {} hastings", this.fund);
-        renter.renterPost(this.fund.toString(), NHosts, AllocationPeriod, RenewWindow);
+        renter.renterPost(this.fund.toString(), NHosts, AllocationPeriod, RenewWindow, null, null, null);
 
         final InlineResponse2008SettingsAllowance allowance = renter.renterGet().getSettings().getAllowance();
         return new AllowanceInfo(allowance);

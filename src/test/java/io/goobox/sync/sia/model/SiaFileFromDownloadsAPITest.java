@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SiaFileFromDownloadsAPITest {
 
@@ -69,8 +70,9 @@ public class SiaFileFromDownloadsAPITest {
         final long fileSize = 12345;
         final InlineResponse20010Downloads file = new InlineResponse20010Downloads();
         file.setSiapath(remotePath.toString());
-        file.setFilesize(fileSize);
-        final SiaFile siaFile = new SiaFileFromDownloadsAPI(ctx, file);
+        file.setLength(fileSize);
+        file.setCompleted(true);
+        final SiaFileFromDownloadsAPI siaFile = new SiaFileFromDownloadsAPI(ctx, file);
 
         assertEquals(name, siaFile.getName());
         assertEquals(remotePath, siaFile.getCloudPath());
@@ -78,6 +80,7 @@ public class SiaFileFromDownloadsAPITest {
 
         assertEquals(created, siaFile.getCreationTime().get());
         assertEquals(fileSize, siaFile.getFileSize());
+        assertTrue(siaFile.isCompleted());
 
     }
 }

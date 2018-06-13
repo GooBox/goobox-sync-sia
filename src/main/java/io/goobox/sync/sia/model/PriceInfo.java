@@ -18,7 +18,7 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.APIUtils;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
+import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -37,7 +37,7 @@ public class PriceInfo {
     @NotNull
     private final BigInteger contract;
 
-    public PriceInfo(@NotNull final InlineResponse20012 prices) {
+    public PriceInfo(@NotNull final InlineResponse20013 prices) {
         this.download = new BigInteger(prices.getDownloadterabyte());
         this.upload = new BigInteger(prices.getUploadterabyte());
         this.storage = new BigInteger(prices.getStorageterabytemonth());

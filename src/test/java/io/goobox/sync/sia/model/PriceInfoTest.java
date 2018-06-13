@@ -18,7 +18,7 @@
 package io.goobox.sync.sia.model;
 
 import io.goobox.sync.sia.APIUtils;
-import io.goobox.sync.sia.client.api.model.InlineResponse20012;
+import io.goobox.sync.sia.client.api.model.InlineResponse20013;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +35,7 @@ public class PriceInfoTest {
 
     @Before
     public void setUp() {
-        final InlineResponse20012 info = new InlineResponse20012();
+        final InlineResponse20013 info = new InlineResponse20013();
         info.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
         info.setUploadterabyte(APIUtils.toHasting(uploadPrice).toString());
         info.setStorageterabytemonth(APIUtils.toHasting(storagePrice).toString());

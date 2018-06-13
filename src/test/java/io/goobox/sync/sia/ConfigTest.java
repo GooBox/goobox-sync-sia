@@ -47,8 +47,8 @@ public class ConfigTest {
     private String primarySeed;
     private Path syncDir;
     private Path dataDir;
-    private Integer dataPieces;
-    private Integer parityPieces;
+    private Long dataPieces;
+    private Long parityPieces;
     private boolean disableAutoAllocation;
     private String siadApiAddress;
     private String siadGatewayAddress;
@@ -74,8 +74,8 @@ public class ConfigTest {
         this.primarySeed = "a b c d e f g";
         this.syncDir = Paths.get("sync-dir");
         this.dataDir = Paths.get("data-dir");
-        this.dataPieces = 5;
-        this.parityPieces = 12;
+        this.dataPieces = 5L;
+        this.parityPieces = 12L;
         this.disableAutoAllocation = false;
         this.siadApiAddress = "127.0.0.1:9980";
         this.siadGatewayAddress = ":9999";
@@ -105,8 +105,8 @@ public class ConfigTest {
 
         this.userName = "testuser@sample.com";
         this.primarySeed = "a b c d e f g";
-        this.dataPieces = 5;
-        this.parityPieces = 1;
+        this.dataPieces = 5L;
+        this.parityPieces = 1L;
         this.disableAutoAllocation = true;
         this.siadApiAddress = "127.0.0.1:9980";
         this.siadGatewayAddress = ":9999";
@@ -136,8 +136,8 @@ public class ConfigTest {
         this.primarySeed = "a b c d e f g";
         this.syncDir = null;
         this.dataDir = null;
-        this.dataPieces = 5;
-        this.parityPieces = 12;
+        this.dataPieces = 5L;
+        this.parityPieces = 12L;
         this.disableAutoAllocation = true;
 
         final File tmpFile = tmpPath.toFile();
@@ -165,8 +165,8 @@ public class ConfigTest {
         this.primarySeed = "a b c d e f g";
         this.syncDir = Paths.get("sync-dir");
         this.dataDir = Paths.get("data-dir");
-        this.dataPieces = 5;
-        this.parityPieces = 12;
+        this.dataPieces = 5L;
+        this.parityPieces = 12L;
         this.disableAutoAllocation = false;
 
         final File tmpFile = tmpPath.toFile();
@@ -197,8 +197,8 @@ public class ConfigTest {
         final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
-        cfg.setDataPieces(5);
-        cfg.setParityPieces(12);
+        cfg.setDataPieces(5L);
+        cfg.setParityPieces(12L);
         cfg.setSyncDir(syncDir);
         cfg.setSiadApiAddress("192.168.0.1:9982");
         cfg.setSiadGatewayAddress(":9999");
@@ -223,8 +223,8 @@ public class ConfigTest {
         final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
-        cfg.setDataPieces(5);
-        cfg.setParityPieces(12);
+        cfg.setDataPieces(5L);
+        cfg.setParityPieces(12L);
         cfg.setSyncDir(Paths.get("sync-dir"));
         Deencapsulation.setField(cfg, "dataDir", Paths.get("data-dir").toAbsolutePath());
 
@@ -282,8 +282,8 @@ public class ConfigTest {
         final Config cfg = new Config(tmpPath);
         cfg.setUserName("testuser@sample.com");
         cfg.setPrimarySeed("a b c d e f g");
-        cfg.setDataPieces(5);
-        cfg.setParityPieces(12);
+        cfg.setDataPieces(5L);
+        cfg.setParityPieces(12L);
         cfg.setSyncDir(syncDir);
 
         cfg.save();

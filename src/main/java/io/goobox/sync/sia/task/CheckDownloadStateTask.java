@@ -134,7 +134,7 @@ public class CheckDownloadStateTask implements Callable<Void> {
                 }
                 return;
             }
-            if (file.getFileSize() != file.getReceived()) {
+            if (!file.isCompleted()) {
                 logger.debug("Still downloading {} ({}B / {}B)", file.getName(), file.getReceived(), file.getFileSize());
                 return;
             }

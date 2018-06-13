@@ -19,45 +19,56 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * InlineResponse2009
+ * Public key of the host the contract was formed with.
  */
+@ApiModel(description = "Public key of the host the contract was formed with.")
 @javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-06-12T09:40:06.745-04:00")
-public class InlineResponse2009 {
-  @SerializedName("contracts")
-  private List<InlineResponse2009Contracts> contracts = null;
+public class InlineResponse2009Hostpublickey {
+  @SerializedName("algorithm")
+  private String algorithm = null;
 
-  public InlineResponse2009 contracts(List<InlineResponse2009Contracts> contracts) {
-    this.contracts = contracts;
-    return this;
-  }
+  @SerializedName("key")
+  private String key = null;
 
-  public InlineResponse2009 addContractsItem(InlineResponse2009Contracts contractsItem) {
-    if (this.contracts == null) {
-      this.contracts = new ArrayList<InlineResponse2009Contracts>();
-    }
-    this.contracts.add(contractsItem);
+  public InlineResponse2009Hostpublickey algorithm(String algorithm) {
+    this.algorithm = algorithm;
     return this;
   }
 
    /**
-   * Get contracts
-   * @return contracts
+   * Get algorithm
+   * @return algorithm
   **/
-  @ApiModelProperty(value = "")
-  public List<InlineResponse2009Contracts> getContracts() {
-    return contracts;
+  @ApiModelProperty(example = "ed25519", value = "")
+  public String getAlgorithm() {
+    return algorithm;
   }
 
-  public void setContracts(List<InlineResponse2009Contracts> contracts) {
-    this.contracts = contracts;
+  public void setAlgorithm(String algorithm) {
+    this.algorithm = algorithm;
+  }
+
+  public InlineResponse2009Hostpublickey key(String key) {
+    this.key = key;
+    return this;
+  }
+
+   /**
+   * Get key
+   * @return key
+  **/
+  @ApiModelProperty(example = "RW50cm9weSBpc24ndCB3aGF0IGl0IHVzZWQgdG8gYmU", value = "")
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(String key) {
+    this.key = key;
   }
 
 
@@ -69,22 +80,24 @@ public class InlineResponse2009 {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InlineResponse2009 inlineResponse2009 = (InlineResponse2009) o;
-    return Objects.equals(this.contracts, inlineResponse2009.contracts);
+    InlineResponse2009Hostpublickey inlineResponse2009Hostpublickey = (InlineResponse2009Hostpublickey) o;
+    return Objects.equals(this.algorithm, inlineResponse2009Hostpublickey.algorithm) &&
+        Objects.equals(this.key, inlineResponse2009Hostpublickey.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(contracts);
+    return Objects.hash(algorithm, key);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InlineResponse2009 {\n");
+    sb.append("class InlineResponse2009Hostpublickey {\n");
     
-    sb.append("    contracts: ").append(toIndentedString(contracts)).append("\n");
+    sb.append("    algorithm: ").append(toIndentedString(algorithm)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

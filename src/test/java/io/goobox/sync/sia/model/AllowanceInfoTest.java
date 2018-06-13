@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class AllowanceInfoTest {
 
     private final double funds = 2234.85;
-    private final int hosts = 10;
+    private final long hosts = 10;
     private final long period = 1234;
     private final long renewWindow = 5;
     private AllowanceInfo allowanceInfo;

@@ -19,45 +19,34 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.goobox.sync.sia.client.api.model.InlineResponse2009Contracts;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * InlineResponse2009
+ * InlineResponse20024
  */
 @javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2018-06-12T09:40:06.745-04:00")
-public class InlineResponse2009 {
-  @SerializedName("contracts")
-  private List<InlineResponse2009Contracts> contracts = null;
+public class InlineResponse20024 {
+  @SerializedName("valid")
+  private Boolean valid = null;
 
-  public InlineResponse2009 contracts(List<InlineResponse2009Contracts> contracts) {
-    this.contracts = contracts;
-    return this;
-  }
-
-  public InlineResponse2009 addContractsItem(InlineResponse2009Contracts contractsItem) {
-    if (this.contracts == null) {
-      this.contracts = new ArrayList<InlineResponse2009Contracts>();
-    }
-    this.contracts.add(contractsItem);
+  public InlineResponse20024 valid(Boolean valid) {
+    this.valid = valid;
     return this;
   }
 
    /**
-   * Get contracts
-   * @return contracts
+   * valid indicates if the address supplied to addr is a valid UnlockHash.
+   * @return valid
   **/
-  @ApiModelProperty(value = "")
-  public List<InlineResponse2009Contracts> getContracts() {
-    return contracts;
+  @ApiModelProperty(example = "true", value = "valid indicates if the address supplied to addr is a valid UnlockHash.")
+  public Boolean isValid() {
+    return valid;
   }
 
-  public void setContracts(List<InlineResponse2009Contracts> contracts) {
-    this.contracts = contracts;
+  public void setValid(Boolean valid) {
+    this.valid = valid;
   }
 
 
@@ -69,22 +58,22 @@ public class InlineResponse2009 {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InlineResponse2009 inlineResponse2009 = (InlineResponse2009) o;
-    return Objects.equals(this.contracts, inlineResponse2009.contracts);
+    InlineResponse20024 inlineResponse20024 = (InlineResponse20024) o;
+    return Objects.equals(this.valid, inlineResponse20024.valid);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(contracts);
+    return Objects.hash(valid);
   }
 
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InlineResponse2009 {\n");
+    sb.append("class InlineResponse20024 {\n");
     
-    sb.append("    contracts: ").append(toIndentedString(contracts)).append("\n");
+    sb.append("    valid: ").append(toIndentedString(valid)).append("\n");
     sb.append("}");
     return sb.toString();
   }

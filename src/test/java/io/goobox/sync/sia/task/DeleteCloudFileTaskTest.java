@@ -23,8 +23,8 @@ import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
@@ -101,12 +101,12 @@ public class DeleteCloudFileTaskTest {
     @Test
     public void deleteCloudFiles() throws IOException, ApiException {
 
-        final List<InlineResponse20011Files> files = new ArrayList<>();
+        final List<FileInfo> files = new ArrayList<>();
         final List<String> siaPaths = new ArrayList<>();
 
         IntStream.range(1, 3).forEach(i -> {
 
-            final InlineResponse20011Files file = new InlineResponse20011Files();
+            final FileInfo file = new FileInfo();
             final String siaPath = APIUtils.toSlash(cloudPath.resolve(String.valueOf(new Date(i * 10000).getTime())));
             file.setSiapath(siaPath);
             file.setLocalpath(localPath.toString());
@@ -169,7 +169,7 @@ public class DeleteCloudFileTaskTest {
     @Test
     public void deleteNotExistingFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(new Date(30000), 1234);
+        final FileInfo file = this.createCloudFile(new Date(30000), 1234);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
@@ -189,7 +189,7 @@ public class DeleteCloudFileTaskTest {
     @Test
     public void toBeCloudDeleteFileModified() throws Exception {
 
-        final InlineResponse20011Files file = this.createCloudFile(new Date(30000), 1234);
+        final FileInfo file = this.createCloudFile(new Date(30000), 1235);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         DB.setSynced(siaFile, this.localPath);
         DB.setForCloudDelete(siaFile);
@@ -217,9 +217,9 @@ public class DeleteCloudFileTaskTest {
 
     }
 
-    private InlineResponse20011Files createCloudFile(final Date lastModified, final long size) {
+    private FileInfo createCloudFile(final Date lastModified, final long size) {
 
-        final InlineResponse20011Files file = new InlineResponse20011Files();
+        final FileInfo file = new FileInfo();
         file.setSiapath(this.cloudPath.resolve(String.valueOf(lastModified.getTime())).toString());
         file.setLocalpath(this.localPath.toString());
         file.setAvailable(true);
