@@ -30,7 +30,7 @@ public class AllowanceInfo {
 
     @NotNull
     private final BigInteger funds;
-    private final int hosts;
+    private final long hosts;
     private final long period;
     private final long renewWindow;
 
@@ -46,7 +46,7 @@ public class AllowanceInfo {
         return funds;
     }
 
-    public int getHosts() {
+    public long getHosts() {
         return hosts;
     }
 

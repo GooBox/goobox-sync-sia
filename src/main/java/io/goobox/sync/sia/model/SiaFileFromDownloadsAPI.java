@@ -40,11 +40,15 @@ public class SiaFileFromDownloadsAPI extends AbstractSiaFile {
 
     @Override
     public long getFileSize() {
-        return this.rawFile.getFilesize();
+        return this.rawFile.getLength();
     }
 
     public long getReceived() {
         return this.rawFile.getReceived();
+    }
+
+    public boolean isCompleted() {
+        return this.rawFile.isCompleted();
     }
 
     @Nullable

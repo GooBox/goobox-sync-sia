@@ -93,7 +93,7 @@ public class Config {
      * it can be null.
      */
     @Nullable
-    private Integer dataPieces;
+    private Long dataPieces;
 
     /**
      * The number of parity pieces to use when erasure coding the file. Total
@@ -104,7 +104,7 @@ public class Config {
      * it can be null.
      */
     @Nullable
-    private Integer parityPieces;
+    private Long parityPieces;
 
     /**
      * If true, disable auto funds allocation;
@@ -181,20 +181,20 @@ public class Config {
     }
 
     @Nullable
-    public Integer getDataPieces() {
+    public Long getDataPieces() {
         return dataPieces;
     }
 
-    void setDataPieces(@Nullable Integer dataPieces) {
+    void setDataPieces(@Nullable Long dataPieces) {
         this.dataPieces = dataPieces;
     }
 
     @Nullable
-    public Integer getParityPieces() {
+    public Long getParityPieces() {
         return parityPieces;
     }
 
-    void setParityPieces(@Nullable Integer parityPieces) {
+    void setParityPieces(@Nullable Long parityPieces) {
         this.parityPieces = parityPieces;
     }
 
@@ -321,14 +321,14 @@ public class Config {
         final String dataPieces = props.getProperty(DataPieces);
         if (dataPieces != null) {
             try {
-                cfg.setDataPieces(Integer.valueOf(dataPieces));
+                cfg.setDataPieces(Long.valueOf(dataPieces));
             } catch (final NumberFormatException e) {
                 logger.warn("Invalid data pieces {}", dataPieces);
             }
         }
         final String parityPieces = props.getProperty(ParityPieces);
         try {
-            final int value = Integer.valueOf(parityPieces);
+            final long value = Long.valueOf(parityPieces);
             if (value >= MinimumParityPieces) {
                 cfg.setParityPieces(value);
             } else {

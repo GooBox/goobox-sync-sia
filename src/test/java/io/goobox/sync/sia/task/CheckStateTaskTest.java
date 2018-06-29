@@ -22,8 +22,8 @@ import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
@@ -103,14 +103,14 @@ public class CheckStateTaskTest {
     @Test
     public void cloudFileModified() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
         Files.setLastModifiedTime(localPath, FileTime.fromMillis(oldTimeStamp.getTime()));
         DB.setSynced(siaFile, siaFile.getLocalPath());
 
-        final List<InlineResponse20011Files> files = Arrays.asList(
+        final List<FileInfo> files = Arrays.asList(
                 file, this.createCloudFile(newTimeStamp, true, 10)
         );
 
@@ -148,7 +148,7 @@ public class CheckStateTaskTest {
     @Test
     public void syncedFileModified() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -197,7 +197,7 @@ public class CheckStateTaskTest {
     @Test
     public void newCloudFile() throws ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 10);
+        final FileInfo file = this.createCloudFile(newTimeStamp, true, 10);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
 
         DB.commit();
@@ -269,7 +269,7 @@ public class CheckStateTaskTest {
     @Test
     public void toBeDeletedFromCloudFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -368,7 +368,7 @@ public class CheckStateTaskTest {
     @Test
     public void uploadingFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, false, 0);
+        final FileInfo file = this.createCloudFile(newTimeStamp, false, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -433,7 +433,7 @@ public class CheckStateTaskTest {
     @Test
     public void uploadFailed() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -475,7 +475,7 @@ public class CheckStateTaskTest {
     @Test
     public void uploadFailedAndNoAvailableCloudFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         file.setAvailable(false);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
@@ -518,7 +518,7 @@ public class CheckStateTaskTest {
     @Test
     public void uploadFailedAndNoCloudFile() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -556,7 +556,7 @@ public class CheckStateTaskTest {
     @Test
     public void toBeDownloadedFileModified() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -625,7 +625,7 @@ public class CheckStateTaskTest {
     @Test
     public void toBeUploadedFileIsDeleted() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -665,7 +665,7 @@ public class CheckStateTaskTest {
     @Test
     public void modifiedButTimeStampIsSame() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(oldTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(oldTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -700,7 +700,7 @@ public class CheckStateTaskTest {
     @Test
     public void downloadFailedButCloudFileIsStillNewer() throws IOException, ApiException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         Files.createFile(localPath);
@@ -736,7 +736,7 @@ public class CheckStateTaskTest {
     @Test
     public void downloadFailedAndLocalFileIsNotFound() throws ApiException, IOException {
 
-        final InlineResponse20011Files file = this.createCloudFile(newTimeStamp, true, 0);
+        final FileInfo file = this.createCloudFile(newTimeStamp, true, 0);
         final SiaFile siaFile = new SiaFileFromFilesAPI(this.ctx, file);
         final Path localPath = siaFile.getLocalPath();
         DB.addForDownload(siaFile, localPath);
@@ -763,8 +763,8 @@ public class CheckStateTaskTest {
 
     }
 
-    private InlineResponse20011Files createCloudFile(final Date timeStamp, final boolean availability, final long fileSize) {
-        final InlineResponse20011Files file = new InlineResponse20011Files();
+    private FileInfo createCloudFile(final Date timeStamp, final boolean availability, final long fileSize) {
+        final FileInfo file = new FileInfo();
         final Path remotePath = this.ctx.getPathPrefix().resolve(Paths.get(name, String.valueOf(timeStamp.getTime())));
         file.setSiapath(remotePath.toString());
         file.setAvailable(availability);

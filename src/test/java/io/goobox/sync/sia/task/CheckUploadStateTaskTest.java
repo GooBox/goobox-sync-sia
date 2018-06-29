@@ -23,8 +23,8 @@ import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
+import io.goobox.sync.sia.client.api.model.FileInfo;
 import io.goobox.sync.sia.client.api.model.InlineResponse20011;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011Files;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -234,8 +234,8 @@ public class CheckUploadStateTaskTest {
     }
 
     @NotNull
-    private InlineResponse20011Files createCloudFile(long fileSize, double progress) {
-        final InlineResponse20011Files file = new InlineResponse20011Files();
+    private FileInfo createCloudFile(long fileSize, double progress) {
+        final FileInfo file = new FileInfo();
         file.setSiapath(this.cloudPath.toString());
         file.setLocalpath(this.localPath.toString());
         file.setFilesize(fileSize);

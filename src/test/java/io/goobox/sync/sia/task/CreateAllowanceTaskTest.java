@@ -24,7 +24,7 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.WalletApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20013;
+import io.goobox.sync.sia.client.api.model.InlineResponse20014;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008Settings;
 import io.goobox.sync.sia.client.api.model.InlineResponse2008SettingsAllowance;
@@ -56,7 +56,7 @@ public class CreateAllowanceTaskTest {
 
     private Path configPath;
     private Context ctx;
-    private InlineResponse20013 walletGetResponse;
+    private InlineResponse20014 walletGetResponse;
     private InlineResponse2008 renterGetResponse;
     private InlineResponse2008SettingsAllowance allowance;
 
@@ -66,11 +66,11 @@ public class CreateAllowanceTaskTest {
         this.ctx = new Context(new Config(this.configPath.resolve(App.ConfigFileName)));
 
         final double fund = 2234.85;
-        final int host = 10;
+        final long host = 10;
         final long period = 1234;
         final long renewWindow = 5;
 
-        walletGetResponse = new InlineResponse20013();
+        walletGetResponse = new InlineResponse20014();
         walletGetResponse.setConfirmedsiacoinbalance(APIUtils.toHasting(balance).toString());
         walletGetResponse.setUnlocked(true);
 
@@ -106,7 +106,7 @@ public class CreateAllowanceTaskTest {
                     newFund.toString(),
                     CreateAllowanceTask.NHosts,
                     CreateAllowanceTask.AllocationPeriod,
-                    CreateAllowanceTask.RenewWindow);
+                    CreateAllowanceTask.RenewWindow, null, null, null);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -126,7 +126,7 @@ public class CreateAllowanceTaskTest {
                     fund.toString(),
                     CreateAllowanceTask.NHosts,
                     CreateAllowanceTask.AllocationPeriod,
-                    CreateAllowanceTask.RenewWindow);
+                    CreateAllowanceTask.RenewWindow, null, null, null);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -151,7 +151,7 @@ public class CreateAllowanceTaskTest {
                     newFund.toString(),
                     CreateAllowanceTask.NHosts,
                     CreateAllowanceTask.AllocationPeriod,
-                    CreateAllowanceTask.RenewWindow);
+                    CreateAllowanceTask.RenewWindow, null, null, null);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx);
         assertEquals(new AllowanceInfo(allowance), task.call());
@@ -176,7 +176,7 @@ public class CreateAllowanceTaskTest {
                     fund.toString(),
                     CreateAllowanceTask.NHosts,
                     CreateAllowanceTask.AllocationPeriod,
-                    CreateAllowanceTask.RenewWindow);
+                    CreateAllowanceTask.RenewWindow, null, null, null);
         }};
         final CreateAllowanceTask task = new CreateAllowanceTask(this.ctx, fund);
         assertEquals(new AllowanceInfo(allowance), task.call());
