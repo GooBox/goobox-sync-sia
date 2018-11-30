@@ -21,7 +21,7 @@ import io.goobox.sync.sia.App;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse2006;
+import io.goobox.sync.sia.client.api.model.InlineResponse200;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class WaitSynchronizationTask implements Callable<Void> {
         final ConsensusApi api = new ConsensusApi(this.ctx.getApiClient());
         while (true) {
 
-            final InlineResponse2006 res = api.consensusGet();
+            final InlineResponse200 res = api.consensusGet();
             if (res.isSynced()) {
 
                 logger.info("Consensus DB is synchronized");

@@ -102,7 +102,7 @@ public class NotifyEmptyFundTaskTest {
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
         spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         info.setFinancialmetrics(spending);
-        info.setCurrentperiod(String.valueOf(currentPeriod));
+        info.setCurrentperiod(currentPeriod);
 
         this.walletInfo = new WalletInfo(address, primarySeed, wallet, info);
 

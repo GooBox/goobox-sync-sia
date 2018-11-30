@@ -119,7 +119,7 @@ public class GetWalletInfoTaskTest {
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
         spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         renterGetResponse.setFinancialmetrics(spending);
-        renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
+        renterGetResponse.setCurrentperiod(currentPeriod);
 
         renterPriceGetResponse = new InlineResponse20013();
         renterPriceGetResponse.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());
