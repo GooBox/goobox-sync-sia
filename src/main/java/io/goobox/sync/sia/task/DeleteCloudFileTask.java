@@ -21,7 +21,7 @@ import io.goobox.sync.sia.APIUtils;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011;
+import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -71,7 +71,7 @@ public class DeleteCloudFileTask implements Callable<Void> {
         final RenterApi api = new RenterApi(this.ctx.getApiClient());
         try {
 
-            final InlineResponse20011 files = api.renterFilesGet();
+            final InlineResponse20012 files = api.renterFilesGet();
             if (files.getFiles() == null) {
 
                 logger.warn("No files exist in the cloud storage");

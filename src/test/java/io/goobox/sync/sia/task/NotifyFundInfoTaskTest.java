@@ -293,7 +293,7 @@ public class NotifyFundInfoTaskTest {
         spending.setStoragespending(APIUtils.toHasting(storageSpending).toString());
         spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         info.setFinancialmetrics(spending);
-        info.setCurrentperiod(String.valueOf(currentPeriod));
+        info.setCurrentperiod(currentPeriod);
 
         return new WalletInfo(address, primarySeed, wallet, info);
 

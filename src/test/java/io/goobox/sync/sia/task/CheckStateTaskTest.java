@@ -23,7 +23,7 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.FileInfo;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011;
+import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
@@ -116,7 +116,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(files);
             api.renterFilesGet();
             result = res;
@@ -161,7 +161,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -202,7 +202,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -240,7 +240,7 @@ public class CheckStateTaskTest {
         DB.commit();
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
@@ -280,7 +280,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -337,7 +337,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
@@ -379,7 +379,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -411,7 +411,7 @@ public class CheckStateTaskTest {
         DB.commit();
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
@@ -445,7 +445,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -488,7 +488,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -530,7 +530,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
@@ -568,7 +568,7 @@ public class CheckStateTaskTest {
         DB.commit();
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -597,7 +597,7 @@ public class CheckStateTaskTest {
     public void modifiedFileIsDeleted() throws ApiException, IOException {
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = res;
@@ -639,7 +639,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -674,7 +674,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -710,7 +710,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;
@@ -744,7 +744,7 @@ public class CheckStateTaskTest {
 
         DB.commit();
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = res;

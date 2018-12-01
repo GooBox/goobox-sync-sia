@@ -22,7 +22,7 @@ import io.goobox.sync.sia.Config;
 import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.ConsensusApi;
-import io.goobox.sync.sia.client.api.model.InlineResponse2006;
+import io.goobox.sync.sia.client.api.model.InlineResponse200;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.integration.junit4.JMockit;
@@ -61,10 +61,10 @@ public class WaitSynchronizationTaskTest {
     public void testWaitSynchronization(@Mocked Thread thread) throws InterruptedException, ApiException {
 
         new Expectations() {{
-            final InlineResponse2006 res1 = new InlineResponse2006();
+            final InlineResponse200 res1 = new InlineResponse200();
             res1.setSynced(false);
 
-            final InlineResponse2006 res2 = new InlineResponse2006();
+            final InlineResponse200 res2 = new InlineResponse200();
             res2.setSynced(true);
 
             consensus.consensusGet();
@@ -80,7 +80,7 @@ public class WaitSynchronizationTaskTest {
     public void testWaitSynchronizationWithoutSleep() throws ApiException {
 
         new Expectations() {{
-            final InlineResponse2006 res = new InlineResponse2006();
+            final InlineResponse200 res = new InlineResponse200();
             res.setSynced(true);
             consensus.consensusGet();
             result = res;

@@ -17,6 +17,7 @@
 package io.goobox.sync.sia;
 
 import io.goobox.sync.common.Utils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +55,7 @@ public class Config {
     static final String SiadApiAddress = "siad-api-address";
     @SuppressWarnings("SpellCheckingInspection")
     static final String SiadGatewayAddress = "siad-gateway-address";
+    static final String SiaApiPassword = "sia-api-password";
 
     static final int MinimumParityPieces = 12;
     static final String DefaultApiAddress = "127.0.0.1:9983";
@@ -123,6 +125,9 @@ public class Config {
     @NotNull
     private String siadGatewayAddress;
 
+    @NotNull
+    private String siaApiPassword;
+
     /**
      * Create a config object associated with a given path.
      * <p>
@@ -141,6 +146,7 @@ public class Config {
         this.disableAutoAllocation = false;
         this.siadApiAddress = DefaultApiAddress;
         this.siadGatewayAddress = DefaultGatewayAddress;
+        this.siaApiPassword = RandomStringUtils.randomAlphabetic(32);
     }
 
     @NotNull
@@ -224,6 +230,15 @@ public class Config {
         this.siadGatewayAddress = siadGatewayAddress;
     }
 
+    @NotNull
+    public String getSiaApiPassword() {
+        return siaApiPassword;
+    }
+
+    public void setSiaApiPassword(@NotNull String siaApiPassword) {
+        this.siaApiPassword = siaApiPassword;
+    }
+
     @Override
     public String toString() {
         return new ReflectionToStringBuilder(this).toString();
@@ -243,14 +258,15 @@ public class Config {
                 Objects.equals(dataPieces, config.dataPieces) &&
                 Objects.equals(parityPieces, config.parityPieces) &&
                 Objects.equals(siadApiAddress, config.siadApiAddress) &&
-                Objects.equals(siadGatewayAddress, config.siadGatewayAddress);
+                Objects.equals(siadGatewayAddress, config.siadGatewayAddress) &&
+                Objects.equals(siaApiPassword, config.siaApiPassword);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
                 filePath, userName, primarySeed, syncDir, dataDir, dataPieces,
-                parityPieces, disableAutoAllocation, siadApiAddress, siadGatewayAddress);
+                parityPieces, disableAutoAllocation, siadApiAddress, siadGatewayAddress, siaApiPassword);
     }
 
     /**
@@ -281,6 +297,7 @@ public class Config {
         if (!this.siadGatewayAddress.equals(DefaultGatewayAddress)) {
             props.setProperty(SiadGatewayAddress, this.siadGatewayAddress);
         }
+        props.setProperty(SiaApiPassword, this.getSiaApiPassword());
 
         try (final BufferedWriter output = Files.newBufferedWriter(this.filePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             props.store(output, "");
@@ -351,6 +368,11 @@ public class Config {
         final String gatewayAddress = props.getProperty(SiadGatewayAddress);
         if (gatewayAddress != null) {
             cfg.setSiadGatewayAddress(gatewayAddress);
+        }
+
+        final String siaApiPassword = props.getProperty(SiaApiPassword);
+        if (siaApiPassword != null) {
+            cfg.setSiaApiPassword(siaApiPassword);
         }
 
         logger.info("Sync directory: {}", cfg.getSyncDir());

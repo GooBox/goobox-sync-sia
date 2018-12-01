@@ -67,7 +67,7 @@ public class FileWatcher implements DirectoryChangeListener, Runnable, Closeable
 
         logger.info("Start watching {}", syncDir);
         this.syncDir = syncDir;
-        this.watcher = DirectoryWatcher.create(syncDir, this);
+        this.watcher = DirectoryWatcher.builder().path(syncDir).listener(this).build();
         this.watcher.watchAsync(executor);
         executor.scheduleAtFixedRate(this, 0, MinElapsedTime, TimeUnit.MILLISECONDS);
 

@@ -24,7 +24,7 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.FileInfo;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011;
+import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.db.CloudFile;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncState;
@@ -139,7 +139,7 @@ public class DeleteCloudFileTaskTest {
         DB.setForCloudDelete(cloudFile);
 
         new Expectations() {{
-            final InlineResponse20011 list = new InlineResponse20011();
+            final InlineResponse20012 list = new InlineResponse20012();
             list.setFiles(files);
             api.renterFilesGet();
             result = list;
@@ -175,7 +175,7 @@ public class DeleteCloudFileTaskTest {
         DB.setForCloudDelete(siaFile);
 
         new Expectations() {{
-            final InlineResponse20011 list = new InlineResponse20011();
+            final InlineResponse20012 list = new InlineResponse20012();
             list.setFiles(Collections.emptyList());
             api.renterFilesGet();
             result = list;
@@ -196,7 +196,7 @@ public class DeleteCloudFileTaskTest {
 
         // expecting the api won't be called.
         new Expectations() {{
-            final InlineResponse20011 list = new InlineResponse20011();
+            final InlineResponse20012 list = new InlineResponse20012();
             list.setFiles(Collections.singletonList(file));
             api.renterFilesGet();
             result = list;
