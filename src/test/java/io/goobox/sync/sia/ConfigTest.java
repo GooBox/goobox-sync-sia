@@ -52,6 +52,7 @@ public class ConfigTest {
     private boolean disableAutoAllocation;
     private String siadApiAddress;
     private String siadGatewayAddress;
+    private String siaApiPassword;
 
     private Path tmpPath;
 
@@ -79,6 +80,7 @@ public class ConfigTest {
         this.disableAutoAllocation = false;
         this.siadApiAddress = "127.0.0.1:9980";
         this.siadGatewayAddress = ":9999";
+        this.siaApiPassword = "abc";
 
         final File tmpFile = tmpPath.toFile();
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, true));
@@ -96,6 +98,7 @@ public class ConfigTest {
         assertEquals(disableAutoAllocation, cfg.isDisableAutoAllocation());
         assertEquals(siadApiAddress, cfg.getSiadApiAddress());
         assertEquals(siadGatewayAddress, cfg.getSiadGatewayAddress());
+        assertEquals(siaApiPassword, cfg.getSiaApiPassword());
         assertEquals(tmpPath, cfg.getFilePath());
 
     }
@@ -202,6 +205,7 @@ public class ConfigTest {
         cfg.setSyncDir(syncDir);
         cfg.setSiadApiAddress("192.168.0.1:9982");
         cfg.setSiadGatewayAddress(":9999");
+        cfg.setSiaApiPassword("abc");
         Deencapsulation.setField(cfg, "dataDir", dataDir);
 
         cfg.save();
@@ -226,6 +230,7 @@ public class ConfigTest {
         cfg.setDataPieces(5L);
         cfg.setParityPieces(12L);
         cfg.setSyncDir(Paths.get("sync-dir"));
+        cfg.setSiaApiPassword("password");
         Deencapsulation.setField(cfg, "dataDir", Paths.get("data-dir").toAbsolutePath());
 
         final BufferedWriter writer = new BufferedWriter(new FileWriter(tmpPath.toFile(), true));
@@ -269,6 +274,8 @@ public class ConfigTest {
             writer.println(String.format(KeyValue, Config.SiadGatewayAddress, siadGatewayAddress));
         }
 
+        writer.println(String.format(KeyValue, Config.SiaApiPassword, siaApiPassword));
+
         writer.flush();
         System.out.println(buf.toString());
         return buf.toString();
@@ -285,6 +292,7 @@ public class ConfigTest {
         cfg.setDataPieces(5L);
         cfg.setParityPieces(12L);
         cfg.setSyncDir(syncDir);
+        cfg.setSiaApiPassword("abc");
 
         cfg.save();
 

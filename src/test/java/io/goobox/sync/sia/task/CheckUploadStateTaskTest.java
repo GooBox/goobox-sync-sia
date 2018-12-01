@@ -24,7 +24,7 @@ import io.goobox.sync.sia.Context;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.RenterApi;
 import io.goobox.sync.sia.client.api.model.FileInfo;
-import io.goobox.sync.sia.client.api.model.InlineResponse20011;
+import io.goobox.sync.sia.client.api.model.InlineResponse20012;
 import io.goobox.sync.sia.db.DB;
 import io.goobox.sync.sia.db.SyncFile;
 import io.goobox.sync.sia.db.SyncState;
@@ -98,7 +98,7 @@ public class CheckUploadStateTaskTest {
         DB.setUploading(name);
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(
                     createCloudFile(1234, 100)
             ));
@@ -123,7 +123,7 @@ public class CheckUploadStateTaskTest {
         DB.setUploading(this.name);
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(
                     createCloudFile(1234, 95.2)
             ));
@@ -199,7 +199,7 @@ public class CheckUploadStateTaskTest {
         repository.update(syncFile);
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(
                     createCloudFile(1234L, 100)
             ));
@@ -217,7 +217,7 @@ public class CheckUploadStateTaskTest {
     public void deletedFileWhileBeingUploaded() throws ApiException {
 
         new Expectations() {{
-            final InlineResponse20011 res = new InlineResponse20011();
+            final InlineResponse20012 res = new InlineResponse20012();
             res.setFiles(Collections.singletonList(
                     createCloudFile(1234L, 100)
             ));

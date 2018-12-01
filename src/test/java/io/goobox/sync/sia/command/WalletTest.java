@@ -109,7 +109,7 @@ public class WalletTest {
         spending.setContractfees(APIUtils.toHasting(contractFees).toString());
         spending.setTotalallocated(APIUtils.toHasting(totalAllocated).toString());
         renterGetResponse.setFinancialmetrics(spending);
-        renterGetResponse.setCurrentperiod(String.valueOf(currentPeriod));
+        renterGetResponse.setCurrentperiod(currentPeriod);
 
         final InlineResponse20013 renterPriceGetResponse = new InlineResponse20013();
         renterPriceGetResponse.setDownloadterabyte(APIUtils.toHasting(downloadPrice).toString());

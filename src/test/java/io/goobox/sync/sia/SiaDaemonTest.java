@@ -43,7 +43,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -314,6 +316,7 @@ public class SiaDaemonTest {
             }
         }, 3000);
 
+        final Map<String, String> env = new HashMap<>();
         new Expectations() {{
             final ProcessBuilder cmd = new ProcessBuilder(daemonPath.toString(),
                     String.format("--api-addr=%s", cfg.getSiadApiAddress()),
@@ -321,6 +324,8 @@ public class SiaDaemonTest {
                     String.format("--sia-directory=%s", dataDir),
                     "--modules=cgrtw");
             cmd.redirectErrorStream(true);
+            cmd.environment();
+            result = env;
             cmd.start();
             result = proc;
             proc.getInputStream();
@@ -328,6 +333,7 @@ public class SiaDaemonTest {
         }};
 
         daemon.run();
+        assertEquals(env.get("SIA_API_PASSWORD"), cfg.getSiaApiPassword());
 
     }
 

@@ -91,7 +91,7 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
     /**
      * Version information.
      */
-    public static final String Version = "0.2.4";
+    public static final String Version = "0.2.5";
 
     /**
      * The number of the minimum required contracts.
@@ -412,10 +412,11 @@ public final class App implements Callable<Integer>, OverlayIconProvider {
                 }
                 retry++;
 
+                logger.debug("Failed to obtain the wallet information: {}", APIUtils.getErrorMessage(e));
                 logger.info("Waiting the daemon starts");
                 try {
                     Thread.sleep(DefaultSleepTime);
-                } catch (InterruptedException e1) {
+                } catch (final InterruptedException e1) {
                     logger.error("Interrupted while waiting for the sia daemon to start: {}", e1.getMessage());
                     return 1;
                 }
