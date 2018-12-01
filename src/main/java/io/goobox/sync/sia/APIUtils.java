@@ -18,7 +18,6 @@ package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
@@ -34,7 +33,6 @@ import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 public class APIUtils {
 
@@ -76,9 +74,8 @@ public class APIUtils {
 
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath(String.format("http://%s", cfg.getSiadApiAddress()));
-        final OkHttpClient httpClient = apiClient.getHttpClient();
-        httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-        httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+        apiClient.setConnectTimeout(0);
+        apiClient.setReadTimeout(0);
         return apiClient;
 
     }

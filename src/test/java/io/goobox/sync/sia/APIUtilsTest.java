@@ -18,7 +18,6 @@
 package io.goobox.sync.sia;
 
 import com.google.gson.Gson;
-import com.squareup.okhttp.OkHttpClient;
 import io.goobox.sync.sia.client.ApiClient;
 import io.goobox.sync.sia.client.ApiException;
 import io.goobox.sync.sia.client.api.model.StandardError;
@@ -36,7 +35,6 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
@@ -97,23 +95,18 @@ public class APIUtilsTest {
     @Test
     public void getApiClient(@Mocked ApiClient apiClient) {
 
-        final OkHttpClient httpClient = new OkHttpClient();
         final String siadAddress = "192.168.0.1:9985";
-
         final Config cfg = new Config(cfgPath);
         cfg.setSiadApiAddress(siadAddress);
-        new Expectations(httpClient) {{
+        new Expectations() {{
             new ApiClient();
             result = apiClient;
             apiClient.setBasePath(String.format("http://%s", siadAddress));
-
-            apiClient.getHttpClient();
-            result = httpClient;
-            httpClient.setConnectTimeout(0, TimeUnit.MILLISECONDS);
-            httpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
+            apiClient.setConnectTimeout(0);
+            apiClient.setReadTimeout(0);
         }};
         APIUtils.getApiClient(cfg);
-//        assertEquals(apiClient, APIUtils.getApiClient());
+//        assertEquals(apiClient, APIUtils.getApiClient(cfg));
 
     }
 
