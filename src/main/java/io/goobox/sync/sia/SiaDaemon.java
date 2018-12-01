@@ -41,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutionException;
@@ -130,6 +131,8 @@ public class SiaDaemon extends Thread implements Closeable {
                 String.format("--sia-directory=%s", this.dataDir),
                 "--modules=cgrtw");
         cmd.redirectErrorStream(true);
+        final Map<String, String> env = cmd.environment();
+        env.put("SIA_API_PASSWORD", this.cfg.getSiaApiPassword());
 
         logger.debug("Execute: {}", String.join(" ", cmd.command()));
         try {

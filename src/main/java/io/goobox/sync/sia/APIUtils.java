@@ -74,6 +74,7 @@ public class APIUtils {
 
         final ApiClient apiClient = new ApiClient();
         apiClient.setBasePath(String.format("http://%s", cfg.getSiadApiAddress()));
+        apiClient.setPassword(cfg.getSiaApiPassword());
         apiClient.setConnectTimeout(0);
         apiClient.setReadTimeout(0);
         return apiClient;

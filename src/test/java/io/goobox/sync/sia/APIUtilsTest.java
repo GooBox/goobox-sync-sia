@@ -104,6 +104,7 @@ public class APIUtilsTest {
             apiClient.setBasePath(String.format("http://%s", siadAddress));
             apiClient.setConnectTimeout(0);
             apiClient.setReadTimeout(0);
+            apiClient.setPassword(cfg.getSiaApiPassword());
         }};
         APIUtils.getApiClient(cfg);
 //        assertEquals(apiClient, APIUtils.getApiClient(cfg));
